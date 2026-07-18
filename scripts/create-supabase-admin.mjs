@@ -1,4 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { loadAdminEnv } from "./load-admin-env.mjs";
+
+loadAdminEnv();
 
 const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ADMIN_USERNAME", "ADMIN_PASSWORD", "ADMIN_AUTH_EMAIL"];
 const missing = required.filter((key) => !process.env[key]?.trim());

@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { loadAdminEnv } from "./load-admin-env.mjs";
+
+loadAdminEnv();
 
 const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
 const missing = required.filter((key) => !process.env[key]?.trim());

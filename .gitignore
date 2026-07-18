@@ -4,6 +4,7 @@ dist/
 
 .env
 .env.local
+.env.admin
 .env.*.local
 .env.admin.local
 .env.supabase.local
