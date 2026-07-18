@@ -1,13 +1,16 @@
 -- Run this on an existing Supabase project if admin login succeeds in Auth
 -- but the CMS shows "Login failed" or later cannot save content.
 
-create policy if not exists "admin read own admin account"
+drop policy if exists "admin read own admin account" on public.admin_users;
+drop policy if exists "admin update own login timestamp" on public.admin_users;
+
+create policy "admin read own admin account"
 on public.admin_users
 for select
 to authenticated
 using (user_id = auth.uid());
 
-create policy if not exists "admin update own login timestamp"
+create policy "admin update own login timestamp"
 on public.admin_users
 for update
 to authenticated
