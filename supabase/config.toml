@@ -1,0 +1,19 @@
+project_id = "portfolio-fazri"
+
+[api]
+enabled = true
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+
+[functions.submit-contact]
+verify_jwt = false
+
+[functions.submit-comment]
+verify_jwt = false
+
+[functions.like-comment]
+verify_jwt = false
