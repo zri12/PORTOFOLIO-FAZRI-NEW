@@ -1,46 +1,29 @@
-# Manual Supabase Setup
+# Manual Supabase SQL Setup
 
-Use this when you prefer the Supabase Dashboard SQL Editor instead of the CLI.
+Gunakan folder ini kalau menjalankan setup lewat Supabase Dashboard SQL Editor.
 
-Step 1:
-Run `combined_setup.sql`.
+## Urutan Wajib
 
-Step 2:
-Run `production_seed.sql`.
+Jalankan satu per satu, tunggu sukses sebelum lanjut ke file berikutnya:
 
-Step 3:
-Create Edge Function secrets:
+1. `01_extensions_and_enums.sql`
+2. `02_tables_and_indexes.sql`
+3. `03_functions_and_triggers.sql`
+4. `04_policies_and_grants.sql`
+5. `05_storage_buckets_and_policies.sql`
+6. `06_realtime.sql`
+7. `07_production_seed.sql`
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+## Opsional
 
-Step 4:
-Deploy:
+8. `08_optional_demo_seed.sql`
 
-- `submit-contact`
-- `submit-comment`
-- `like-comment`
+File opsional hanya menambahkan contoh komentar dan pesan kontak untuk testing admin. Jangan jalankan kalau tidak ingin data dummy.
 
-Step 5:
-Run the local admin creation script with:
+## Catatan
 
-- username `Fazrilukman`
-- initial password supplied only through `ADMIN_PASSWORD`
-- internal email alias `fazrilukman@portfolio-admin.example`
-
-Step 6:
-Run the asset upload script.
-
-Step 7:
-Regenerate database types.
-
-Step 8:
-Configure frontend `.env.local`.
-
-Step 9:
-Run verification script.
-
-Step 10:
-Log in and change the initial password when practical.
-
-Use a real email instead of the internal alias later if password recovery by email is required.
+- `combined_setup.sql` berisi gabungan file 1 sampai 7. Kalau SQL Editor terasa berat atau error, pakai urutan file kecil di atas.
+- `production_seed.sql` sama dengan `07_production_seed.sql`, disediakan agar nama lama tetap bisa dipakai.
+- `demo_seed.sql` sama dengan `08_optional_demo_seed.sql`.
+- Setelah SQL berhasil, Edge Functions tetap perlu dideploy lewat Supabase CLI.
+- Admin user tidak dibuat oleh SQL ini. Buat admin lewat script `scripts/create-supabase-admin.mjs` dengan service role key lokal.

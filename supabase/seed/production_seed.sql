@@ -177,7 +177,10 @@ on conflict (name) do update set
   active = excluded.active,
   display_order = excluded.display_order;
 
-delete from public.project_technologies;
+delete from public.project_technologies pt
+using public.projects p
+where pt.project_id = p.id
+  and p.slug in ('sinden', 'so-harmony', 'sumut-cluster', 'sm-v-lab-ipa', 'marketing-crm', 'portfolio-website');
 insert into public.project_technologies (project_id, technology_id, display_order)
 select p.id, t.id, relation.display_order
 from (
