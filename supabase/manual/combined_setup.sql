@@ -540,7 +540,9 @@ create policy "service role manages rate limits" on public.submission_rate_limit
 create policy "admin read activity logs" on public.activity_logs for select to authenticated using (public.is_active_admin());
 
 grant usage on schema public to anon, authenticated;
+grant usage on schema public to service_role;
 grant select on public.site_profiles, public.site_settings, public.projects, public.technologies, public.project_technologies, public.creative_works, public.experiences, public.certificates, public.visitor_comments, public.media_assets to anon, authenticated;
+grant all privileges on all tables in schema public to service_role;
 grant execute on function public.public_approved_comments() to anon, authenticated;
 
 

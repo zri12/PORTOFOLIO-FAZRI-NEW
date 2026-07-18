@@ -61,6 +61,16 @@ try {
   if (adminError) throw adminError;
   console.log(`Admin user ready: ${username} (${email})`);
 } catch (error) {
-  console.error(error instanceof Error ? error.message : "Failed to provision admin user.");
+  if (error instanceof Error) {
+    console.error(error.message);
+  } else if (error && typeof error === "object") {
+    const details = ["message", "error", "code", "hint", "details", "name"]
+      .map((key) => [key, error[key]])
+      .filter(([, value]) => value)
+      .map(([key, value]) => `${key}: ${String(value)}`);
+    console.error(details.length ? details.join("\n") : JSON.stringify(error));
+  } else {
+    console.error("Failed to provision admin user.");
+  }
   process.exit(1);
 }
