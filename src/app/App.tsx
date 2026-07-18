@@ -15,7 +15,9 @@ import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeModeProvider } from "./context/ThemeModeContext";
 import AdminCertificatesPage from "./pages/admin/AdminCertificatesPage";
+import AdminCertificateFormPage from "./pages/admin/AdminCertificateFormPage";
 import AdminCommentsPage from "./pages/admin/AdminCommentsPage";
+import AdminCreativeWorkFormPage from "./pages/admin/AdminCreativeWorkFormPage";
 import AdminCreativeWorksPage from "./pages/admin/AdminCreativeWorksPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminExperiencePage from "./pages/admin/AdminExperiencePage";
@@ -27,6 +29,7 @@ import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import AdminProjectFormPage from "./pages/admin/AdminProjectFormPage";
 import AdminProjectsPage from "./pages/admin/AdminProjectsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminTechnologyFormPage from "./pages/admin/AdminTechnologyFormPage";
 import AdminTechStackPage from "./pages/admin/AdminTechStackPage";
 import AboutPage from "./pages/public/AboutPage";
 import CertificatesPage from "./pages/public/CertificatesPage";
@@ -89,9 +92,15 @@ export function AppRouter() {
           <Route path="projects/new" element={<AdminProjectFormPage />} />
           <Route path="projects/:id/edit" element={<AdminProjectFormPage />} />
           <Route path="tech-stack" element={<AdminTechStackPage />} />
+          <Route path="tech-stack/new" element={<AdminTechnologyFormPage />} />
+          <Route path="tech-stack/:id/edit" element={<AdminTechnologyFormPage />} />
           <Route path="creative-works" element={<AdminCreativeWorksPage />} />
+          <Route path="creative-works/new" element={<AdminCreativeWorkFormPage />} />
+          <Route path="creative-works/:id/edit" element={<AdminCreativeWorkFormPage />} />
           <Route path="experience" element={<AdminExperiencePage />} />
           <Route path="certificates" element={<AdminCertificatesPage />} />
+          <Route path="certificates/new" element={<AdminCertificateFormPage />} />
+          <Route path="certificates/:id/edit" element={<AdminCertificateFormPage />} />
           <Route path="comments" element={<AdminCommentsPage />} />
           <Route path="messages" element={<AdminMessagesPage />} />
           <Route path="media" element={<AdminMediaPage />} />

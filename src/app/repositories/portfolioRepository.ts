@@ -72,6 +72,10 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       gallery: asArray(project.gallery, fallback.gallery),
       challenges: asArray(project.challenges, fallback.challenges),
       decisions: asArray(project.decisions, fallback.decisions),
+      coverImage: project.coverImage ?? fallback.coverImage ?? "",
+      heroImage: project.heroImage ?? fallback.heroImage ?? "",
+      mobilePreviewImage: project.mobilePreviewImage ?? fallback.mobilePreviewImage ?? "",
+      relatedProjectSlug: project.relatedProjectSlug ?? fallback.relatedProjectSlug,
       displayOrder: project.displayOrder ?? fallback.displayOrder ?? index + 1,
     };
   });
@@ -83,6 +87,7 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       ...seed.techStack[index % seed.techStack.length],
       ...item,
       id: item.id || uid("tech"),
+      logoUrl: item.logoUrl || "",
       active: item.active ?? true,
       featured: item.featured ?? false,
       displayOrder: item.displayOrder ?? index + 1,
@@ -258,9 +263,10 @@ export const portfolioRepository = {
   createProject(project: Partial<Project>) {
     const data = cloneData(getData());
     const base = data.projects[0];
+    const fallback = base || portfolioSeed.projects[0];
     const title = project.title || "New Project";
     const created: Project = {
-      ...base,
+      ...fallback,
       ...project,
       id: uuid(),
       title,
@@ -295,6 +301,7 @@ export const portfolioRepository = {
       id: uuid(),
       name: item.name || "New Technology",
       iconKey: item.iconKey || "code",
+      logoUrl: item.logoUrl || "",
       category: item.category || "Frontend",
       level: item.level || "Familiar",
       description: item.description || "Technology used in selected projects.",
@@ -318,7 +325,7 @@ export const portfolioRepository = {
   getCreativeWorks: () => byOrder(getData().creativeWorks),
   getCreativeWorkBySlug: (slug: string) => getData().creativeWorks.find((work) => work.slug === slug),
   createCreativeWork(item: Partial<CreativeWork>) {
-    const base = getData().creativeWorks[0];
+    const base = getData().creativeWorks[0] || portfolioSeed.creativeWorks[0];
     const title = item.title || "New Creative Work";
     const created: CreativeWork = { ...base, ...item, id: uuid(), title, slug: item.slug || slugify(title), status: item.status || "draft", featured: item.featured ?? false };
     updateData((data) => data.creativeWorks.unshift(created));
@@ -350,7 +357,7 @@ export const portfolioRepository = {
   },
   getCertificates: () => byOrder(getData().certificates),
   createCertificate(item: Partial<Certificate>) {
-    const base = getData().certificates[0];
+    const base = getData().certificates[0] || portfolioSeed.certificates[0];
     const created: Certificate = { ...base, ...item, id: uuid(), title: item.title || "New Certificate", featured: item.featured ?? false, published: item.published ?? true };
     updateData((data) => data.certificates.unshift(created));
     syncToBackend(() => supabasePortfolioRepository.upsertCertificate(created));

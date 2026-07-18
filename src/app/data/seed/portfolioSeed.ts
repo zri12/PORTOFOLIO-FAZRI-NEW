@@ -15,6 +15,9 @@ const baseProjectDetail = {
   testing: "Tested through form validation, responsive checks, route checks, and common user task walkthroughs.",
   deployment: "Prepared for static frontend deployment with future backend integration points.",
   result: "A clearer frontend experience that communicates system purpose without relying on exaggerated metrics.",
+  coverImage: "",
+  heroImage: "",
+  mobilePreviewImage: "",
 };
 
 const projects: Project[] = [
@@ -171,11 +174,11 @@ const projects: Project[] = [
 ];
 
 const techStack: Technology[] = [
-  ...["HTML5", "CSS3", "JavaScript", "TypeScript", "React", "Vite", "Next.js", "Tailwind CSS", "Bootstrap"].map((name, i) => ({ id: `tech-frontend-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), category: "Frontend" as const, level: i < 5 ? "Main Stack" as const : "Frequently Used" as const, description: `${name} for responsive web interfaces.`, featured: i < 6, active: true, displayOrder: i + 1 })),
-  ...["Laravel", "PHP", "Node.js", "Express"].map((name, i) => ({ id: `tech-backend-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), category: "Backend" as const, level: i < 2 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for server-side application work.`, featured: i < 2, active: true, displayOrder: i + 20 })),
-  ...["MySQL", "PostgreSQL", "Supabase", "Firebase", "SQLite"].map((name, i) => ({ id: `tech-db-${i}`, name, iconKey: name.toLowerCase(), category: "Database" as const, level: i < 3 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for structured application data.`, featured: i < 3, active: true, displayOrder: i + 40 })),
-  ...["Git", "GitHub", "Vercel", "cPanel", "XAMPP"].map((name, i) => ({ id: `tech-deploy-${i}`, name, iconKey: name.toLowerCase(), category: "Deployment" as const, level: i < 3 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for delivery and local workflow.`, featured: i < 3, active: true, displayOrder: i + 60 })),
-  ...["Figma", "Canva", "Photoshop", "Illustrator", "Premiere Pro", "After Effects", "Lightroom", "CapCut", "Blender", "OBS"].map((name, i) => ({ id: `tech-creative-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), category: "Creative" as const, level: i < 5 ? "Frequently Used" as const : "Familiar" as const, description: `${name} supports visual production and storytelling.`, featured: i < 5, active: true, displayOrder: i + 80 })),
+  ...["HTML5", "CSS3", "JavaScript", "TypeScript", "React", "Vite", "Next.js", "Tailwind CSS", "Bootstrap"].map((name, i) => ({ id: `tech-frontend-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), logoUrl: "", category: "Frontend" as const, level: i < 5 ? "Main Stack" as const : "Frequently Used" as const, description: `${name} for responsive web interfaces.`, featured: i < 6, active: true, displayOrder: i + 1 })),
+  ...["Laravel", "PHP", "Node.js", "Express"].map((name, i) => ({ id: `tech-backend-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), logoUrl: "", category: "Backend" as const, level: i < 2 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for server-side application work.`, featured: i < 2, active: true, displayOrder: i + 20 })),
+  ...["MySQL", "PostgreSQL", "Supabase", "Firebase", "SQLite"].map((name, i) => ({ id: `tech-db-${i}`, name, iconKey: name.toLowerCase(), logoUrl: "", category: "Database" as const, level: i < 3 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for structured application data.`, featured: i < 3, active: true, displayOrder: i + 40 })),
+  ...["Git", "GitHub", "Vercel", "cPanel", "XAMPP"].map((name, i) => ({ id: `tech-deploy-${i}`, name, iconKey: name.toLowerCase(), logoUrl: "", category: "Deployment" as const, level: i < 3 ? "Frequently Used" as const : "Familiar" as const, description: `${name} for delivery and local workflow.`, featured: i < 3, active: true, displayOrder: i + 60 })),
+  ...["Figma", "Canva", "Photoshop", "Illustrator", "Premiere Pro", "After Effects", "Lightroom", "CapCut", "Blender", "OBS"].map((name, i) => ({ id: `tech-creative-${i}`, name, iconKey: name.toLowerCase().replace(/[^a-z0-9]/g, ""), logoUrl: "", category: "Creative" as const, level: i < 5 ? "Frequently Used" as const : "Familiar" as const, description: `${name} supports visual production and storytelling.`, featured: i < 5, active: true, displayOrder: i + 80 })),
 ];
 
 export const portfolioSeed: PortfolioData = {

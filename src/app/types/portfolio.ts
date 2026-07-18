@@ -58,6 +58,10 @@ export interface Project {
   result: string;
   liveUrl: string;
   sourceUrl: string;
+  coverImage: string;
+  heroImage: string;
+  mobilePreviewImage: string;
+  relatedProjectSlug?: string;
   displayOrder: number;
 }
 
@@ -65,6 +69,7 @@ export interface Technology {
   id: string;
   name: string;
   iconKey: string;
+  logoUrl: string;
   category: "Frontend" | "Backend" | "Database" | "Deployment" | "Creative";
   level: LevelLabel;
   description: string;

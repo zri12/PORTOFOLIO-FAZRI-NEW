@@ -42,7 +42,7 @@ export default function ProjectDetailPage() {
   const index = projects.findIndex((entry) => entry.id === project.id);
   const previous = projects[(index - 1 + projects.length) % projects.length];
   const next = projects[(index + 1) % projects.length];
-  const related = projects.find((entry) => entry.category === project.category && entry.id !== project.id) || next;
+  const related = projects.find((entry) => entry.slug === project.relatedProjectSlug) || projects.find((entry) => entry.category === project.category && entry.id !== project.id) || next;
   const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
 
   return (
@@ -81,7 +81,7 @@ export default function ProjectDetailPage() {
                 <span className="ml-auto font-mono text-[10px] text-[var(--color-text-muted)]">{project.slug}.fazri.dev</span>
               </div>
               <div className="aspect-[16/11]">
-                <ProjectPreview slug={project.slug} />
+                {project.heroImage ? <img src={project.heroImage} alt={`${project.title} interface preview`} className="h-full w-full object-cover" /> : <ProjectPreview slug={project.slug} />}
               </div>
             </div>
           </div>
@@ -119,7 +119,10 @@ export default function ProjectDetailPage() {
                 {project.gallery.map((image, imageIndex) => <img key={image} src={image} alt={`${project.title} interface ${imageIndex + 1}`} className={imageIndex === 0 ? "md:col-span-2" : ""} loading="lazy" />)}
               </div>
             </DetailBlock>
-            <DetailBlock title={t("Responsive Screens")}><IconBlock icon={<Monitor />} text={t("Layouts are structured for desktop dashboards, tablet review, and mobile reading flows without relying on horizontal scrolling.")} /></DetailBlock>
+            <DetailBlock title={t("Responsive Screens")}>
+              <IconBlock icon={<Monitor />} text={t("Layouts are structured for desktop dashboards, tablet review, and mobile reading flows without relying on horizontal scrolling.")} />
+              {project.mobilePreviewImage && <img src={project.mobilePreviewImage} alt={`${project.title} responsive preview`} className="mt-5 max-h-[560px] w-full border border-[var(--color-border)] object-contain" loading="lazy" />}
+            </DetailBlock>
             <DetailBlock title={t("Challenges")}><List items={project.challenges.map(t)} /></DetailBlock>
             <DetailBlock title={t("Technical Decisions")}><List items={project.decisions.map(t)} /></DetailBlock>
             <DetailBlock title={t("Testing")}><p>{t(project.testing)}</p></DetailBlock>

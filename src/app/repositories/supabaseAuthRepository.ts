@@ -11,6 +11,9 @@ export const ADMIN_AUTH_CHANGE_EVENT = "admin-auth-change";
 function normalizeIdentifier(identifier: string) {
   const value = identifier.trim();
   if (value.includes("@")) return value.toLowerCase();
+  const configuredUsername = (import.meta.env.VITE_ADMIN_USERNAME || "Fazrilukman").trim().toLowerCase();
+  const configuredEmail = (import.meta.env.VITE_ADMIN_AUTH_EMAIL || "fajrilukman194@gmail.com").trim().toLowerCase();
+  if (value.toLowerCase() === configuredUsername && configuredEmail.includes("@")) return configuredEmail;
   const domain = import.meta.env.VITE_ADMIN_AUTH_DOMAIN || "portfolio-admin.example";
   return `${value.toLowerCase()}@${domain}`;
 }

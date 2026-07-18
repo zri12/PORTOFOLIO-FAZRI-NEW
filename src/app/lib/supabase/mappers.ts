@@ -27,6 +27,8 @@ function publicAssetUrl(value: unknown) {
   return supabase ? supabase.storage.from(publicBucket).getPublicUrl(source).data.publicUrl : source;
 }
 
+const asAssetArray = (value: unknown) => asStringArray(value).map(publicAssetUrl).filter(Boolean);
+
 export function mapProfile(row: Row | null | undefined, fallback: Profile): Profile {
   if (!row) return fallback;
   return {
@@ -145,7 +147,7 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     architecture: asString(row.architecture),
     dataStructure: asString(row.data_structure),
     process: asStringArray(row.process),
-    gallery: asStringArray(row.gallery),
+    gallery: asAssetArray(row.gallery),
     challenges: asStringArray(row.challenges),
     decisions: asStringArray(row.decisions),
     testing: asString(row.testing),
@@ -153,6 +155,10 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     result: asString(row.result),
     liveUrl: asString(row.live_url),
     sourceUrl: asString(row.source_url),
+    coverImage: publicAssetUrl(row.cover_path),
+    heroImage: publicAssetUrl(row.hero_path),
+    mobilePreviewImage: publicAssetUrl(row.mobile_preview_path),
+    relatedProjectSlug: asString(row.related_project_slug) || undefined,
     displayOrder: asNumber(row.display_order),
   };
 }
@@ -181,6 +187,10 @@ export function projectToRow(project: Project): Row {
     result: project.result,
     live_url: project.liveUrl || null,
     source_url: project.sourceUrl || null,
+    cover_path: project.coverImage || null,
+    hero_path: project.heroImage || null,
+    mobile_preview_path: project.mobilePreviewImage || null,
+    related_project_slug: project.relatedProjectSlug || null,
     objectives: project.objectives,
     target_users: project.targetUsers,
     responsibilities: project.responsibilities,
@@ -198,6 +208,7 @@ export function mapTechnology(row: Row): Technology {
     id: asString(row.id),
     name: asString(row.name),
     iconKey: asString(row.icon_key),
+    logoUrl: publicAssetUrl(row.logo_path),
     category: asString(row.category, "Frontend") as Technology["category"],
     level: asString(row.level, "Familiar") as Technology["level"],
     description: asString(row.description),
@@ -210,6 +221,7 @@ export function mapTechnology(row: Row): Technology {
 export const technologyToRow = (item: Technology): Row => ({
   name: item.name,
   icon_key: item.iconKey,
+  logo_path: item.logoUrl || null,
   category: item.category,
   level: item.level,
   description: item.description,
@@ -229,10 +241,10 @@ export function mapCreativeWork(row: Row): CreativeWork {
     tools: asStringArray(row.tools),
     description: asString(row.description),
     brief: asString(row.brief),
-    cover: asString(row.cover_path),
-    gallery: asStringArray(row.gallery),
-    beforeImage: asString(row.before_image_path) || undefined,
-    afterImage: asString(row.after_image_path) || undefined,
+    cover: publicAssetUrl(row.cover_path),
+    gallery: asAssetArray(row.gallery),
+    beforeImage: publicAssetUrl(row.before_image_path) || undefined,
+    afterImage: publicAssetUrl(row.after_image_path) || undefined,
     videoUrl: asString(row.video_url) || undefined,
     duration: asString(row.duration) || undefined,
     featured: asBool(row.featured),
@@ -300,7 +312,7 @@ export function mapCertificate(row: Row): Certificate {
     issueDate: asDate(row.issue_date),
     credentialId: asString(row.credential_id),
     credentialUrl: asString(row.credential_url),
-    image: asString(row.image_path),
+    image: publicAssetUrl(row.image_path),
     featured: asBool(row.featured),
     published: asBool(row.published, true),
     displayOrder: asNumber(row.display_order),

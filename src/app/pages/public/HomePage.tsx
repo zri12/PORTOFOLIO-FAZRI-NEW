@@ -1,7 +1,7 @@
 ﻿import { motion, useReducedMotion } from "motion/react";
 import { Link } from "react-router";
 import { ArrowRight, Award, BriefcaseBusiness, Camera, Check, ChevronRight, Code2, Download, Github, Instagram, Linkedin, Mail, MapPin, MessageCircle, Monitor, MousePointer2, Palette, Send, Sparkles, Wrench } from "lucide-react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { ProjectPreview } from "../../components/portfolio/ProjectPreview";
 import { SpiderWebField } from "../../components/portfolio/SpiderWebField";
@@ -33,9 +33,20 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
 
 export default function HomePage() {
   const { mode, toggleMode } = useContext(ThemeModeContext);
-  const { projects: projectsData, profile, creativeWorks, certificates, experiences, comments } = usePortfolioData();
+  const { projects: projectsData, profile, techStack, creativeWorks, certificates, experiences, comments } = usePortfolioData();
   const aboutImage = profile.aboutImageUrl || portrait;
   const [techTab, setTechTab] = useState<keyof typeof techGroups>("Frontend");
+  const groupedTech = useMemo(() => ({
+    Frontend: techStack.filter((tech) => tech.active && tech.category === "Frontend"),
+    Backend: techStack.filter((tech) => tech.active && ["Backend", "Database", "Deployment"].includes(tech.category)),
+    Creative: techStack.filter((tech) => tech.active && tech.category === "Creative"),
+  }), [techStack]);
+  const activeTechItems = groupedTech[techTab].length ? groupedTech[techTab] : techGroups[techTab].map((name, index) => ({
+    id: `${techTab}-${name}`,
+    name,
+    logoUrl: "",
+    level: index < 3 ? "Main Stack" : index < 6 ? "Frequently Used" : "Familiar",
+  }));
   const [sent, setSent] = useState(false);
   const [heroImageHover, setHeroImageHover] = useState(false);
   const [spiderSceneReady, setSpiderSceneReady] = useState(false);
@@ -206,7 +217,7 @@ export default function HomePage() {
 
     <section className="px-6 py-24"><div className="mx-auto max-w-7xl"><Reveal><Eyebrow>06 / Toolkit</Eyebrow><div className="flex flex-wrap items-end justify-between gap-6"><h2 className="font-manrope text-4xl font-bold">Technology Stack</h2><div className={`flex border ${mode === 'spider' ? 'border-red-500/30' : 'border-[var(--color-border)]'}`}>{(Object.keys(techGroups) as Array<keyof typeof techGroups>).map((tab) => <button key={tab} onClick={() => setTechTab(tab)} className={`px-4 py-2 text-xs font-semibold transition ${techTab === tab ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-muted)] hover:text-white"}`}>{tab}</button>)}</div></div></Reveal><motion.div layout className={`relative mt-10 grid gap-px border bg-[var(--color-border)] grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 ${mode === 'spider' ? 'border-red-500/30' : 'border-[var(--color-border)]'}`}>
       {mode === "spider" && <SpiderWebField className="absolute inset-0 w-full h-full opacity-30 pointer-events-none" />}
-      {techGroups[techTab].map((tech, index) => <motion.div layout key={tech} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * .035 }} className={`group relative z-10 bg-[var(--color-bg-primary)] p-5 hover:bg-[var(--color-surface-elevated)] ${mode === 'spider' ? 'hover:shadow-[inset_0_0_10px_rgba(255,64,85,0.2)]' : ''}`} title={`${tech} - ${index < 3 ? "Main Stack" : index < 6 ? "Frequently Used" : "Familiar"}`}><div className={`flex h-8 w-8 items-center justify-center border font-manrope text-xs font-bold text-[var(--color-accent-main)] ${mode === 'spider' ? 'border-red-500/40 group-hover:border-red-500' : 'border-[var(--color-border)]'}`}>{tech.slice(0, 2)}</div><p className="mt-7 text-sm font-semibold">{tech}</p><p className="mt-1 font-mono text-[8px] uppercase tracking-wider text-[var(--color-text-muted)]">{index < 3 ? "Main Stack" : index < 6 ? "Frequently Used" : "Familiar"}</p></motion.div>)}</motion.div></div></section>
+      {activeTechItems.map((tech, index) => <motion.div layout key={tech.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * .035 }} className={`group relative z-10 bg-[var(--color-bg-primary)] p-5 hover:bg-[var(--color-surface-elevated)] ${mode === 'spider' ? 'hover:shadow-[inset_0_0_10px_rgba(255,64,85,0.2)]' : ''}`} title={`${tech.name} - ${tech.level}`}><div className={`flex h-8 w-8 items-center justify-center border font-manrope text-xs font-bold text-[var(--color-accent-main)] ${mode === 'spider' ? 'border-red-500/40 group-hover:border-red-500' : 'border-[var(--color-border)]'}`}>{tech.logoUrl ? <img src={tech.logoUrl} alt="" className="h-5 w-5 object-contain" /> : tech.name.slice(0, 2)}</div><p className="mt-7 text-sm font-semibold">{tech.name}</p><p className="mt-1 font-mono text-[8px] uppercase tracking-wider text-[var(--color-text-muted)]">{tech.level}</p></motion.div>)}</motion.div></div></section>
 
     <section className="border-y border-white/5 bg-[#050505] px-6 py-24"><div className="mx-auto max-w-7xl"><Reveal><Eyebrow>07 / Beyond the browser</Eyebrow><div className="flex flex-wrap items-end justify-between gap-5"><h2 className="font-manrope text-4xl font-bold">Selected Creative Works</h2><Link to="/creative-works" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent-main)]">Explore creative archive <ArrowRight size={15} /></Link></div></Reveal><Reveal className="mt-10"><CardStack items={creativeStackItems} cardWidth={660} cardHeight={405} maxVisible={5} className={mode === "spider" ? "spider-creative-card" : ""} /></Reveal></div></section>
 

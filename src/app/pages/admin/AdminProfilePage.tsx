@@ -1,30 +1,15 @@
 import { useState } from "react";
+import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
-import { uploadPortfolioFile } from "../../lib/supabase/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 
 export default function AdminProfilePage() {
   const { profile } = usePortfolioData();
   const [draft, setDraft] = useState(profile);
   const [saved, setSaved] = useState(false);
-  const [uploading, setUploading] = useState<keyof typeof draft | null>(null);
-  const [uploadError, setUploadError] = useState("");
   const update = (key: keyof typeof draft, value: string) => setDraft({ ...draft, [key]: value });
-  const uploadImage = async (key: "logoUrl" | "faviconUrl" | "aboutImageUrl", file: File | null) => {
-    if (!file) return;
-    setUploading(key);
-    setUploadError("");
-    try {
-      const result = await uploadPortfolioFile(file, `profile/${key}`);
-      setDraft((current) => ({ ...current, [key]: result.url }));
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Upload failed.");
-    } finally {
-      setUploading(null);
-    }
-  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -43,11 +28,10 @@ export default function AdminProfilePage() {
         </FormSection>
         <FormSection title="Brand and Visual Assets">
           <div className="grid gap-4 lg:grid-cols-3">
-            <ImageUpload label="Website Logo" value={draft.logoUrl} busy={uploading === "logoUrl"} onUpload={(file) => void uploadImage("logoUrl", file)} onClear={() => update("logoUrl", "")} />
-            <ImageUpload label="Browser Logo / Favicon" value={draft.faviconUrl} busy={uploading === "faviconUrl"} onUpload={(file) => void uploadImage("faviconUrl", file)} onClear={() => update("faviconUrl", "")} />
-            <ImageUpload label="About Me Image" value={draft.aboutImageUrl} busy={uploading === "aboutImageUrl"} onUpload={(file) => void uploadImage("aboutImageUrl", file)} onClear={() => update("aboutImageUrl", "")} />
+            <AdminImageField label="Website Logo" value={draft.logoUrl} folder="profile/logo" hint="Recommended transparent PNG/SVG/WebP, square 512x512px. This replaces the FL mark across the website." aspect="aspect-square" onChange={(value) => update("logoUrl", value)} />
+            <AdminImageField label="Browser Logo / Favicon" value={draft.faviconUrl} folder="profile/favicon" hint="Recommended square 512x512px PNG/WebP. Browser tabs usually display it as 32x32px." aspect="aspect-square" onChange={(value) => update("faviconUrl", value)} />
+            <AdminImageField label="About Me Image" value={draft.aboutImageUrl} folder="profile/about" hint="Recommended portrait 1200x1500px or 4:5. Use a clean background so the overlay card remains readable." aspect="aspect-[4/5]" onChange={(value) => update("aboutImageUrl", value)} />
           </div>
-          {uploadError && <p className="mt-3 text-sm text-red-300">{uploadError}</p>}
         </FormSection>
         <FormSection title="Contact and Social">
           <div className="grid gap-4 md:grid-cols-2">
@@ -62,22 +46,6 @@ export default function AdminProfilePage() {
           {saved && <span className="text-sm text-emerald-300">Saved locally.</span>}
         </div>
       </div>
-    </div>
-  );
-}
-
-function ImageUpload({ label, value, busy, onUpload, onClear }: { label: string; value: string; busy: boolean; onUpload: (file: File | null) => void; onClear: () => void }) {
-  return (
-    <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4">
-      <p className="text-sm font-semibold text-[var(--color-text-secondary)]">{label}</p>
-      <div className="mt-3 flex aspect-[4/3] items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
-        {value ? <img src={value} alt={label} className="h-full w-full object-contain" /> : <span className="text-xs text-[var(--color-text-muted)]">No image</span>}
-      </div>
-      <label className="mt-3 flex cursor-pointer items-center justify-center border border-[var(--color-border)] px-3 py-2 text-sm font-bold hover:border-[var(--color-accent-main)]">
-        {busy ? "Uploading..." : "Upload Image"}
-        <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(event) => onUpload(event.target.files?.[0] || null)} />
-      </label>
-      {value && <button type="button" onClick={onClear} className="mt-2 w-full px-3 py-2 text-xs text-[var(--color-text-muted)] hover:text-red-300">Remove image</button>}
     </div>
   );
 }

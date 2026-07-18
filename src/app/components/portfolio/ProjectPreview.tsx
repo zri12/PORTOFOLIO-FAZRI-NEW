@@ -24,6 +24,15 @@ export function ProjectPreview({ slug, compact = false, className = "" }: Projec
 
   if (!project) return null;
 
+  if (project.coverImage) {
+    return (
+      <div className={`project-preview relative h-full overflow-hidden rounded-[1.25rem] border border-white/10 bg-slate-950 shadow-2xl ${className}`}>
+        <img src={project.coverImage} alt={`${project.title} preview`} className="h-full w-full object-cover" loading="lazy" />
+        <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,.08)_48%,transparent_50%)]" />
+      </div>
+    );
+  }
+
   return (
     <div className={`project-preview relative h-full overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${palette[project.slug as keyof typeof palette] ?? "from-cyan-400/20 via-slate-950 to-slate-500/10"} shadow-2xl ${className}`}>
       <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,.05)_48%,transparent_50%)]" />
