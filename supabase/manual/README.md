@@ -20,6 +20,14 @@ Jalankan satu per satu, tunggu sukses sebelum lanjut ke file berikutnya:
 
 File opsional hanya menambahkan contoh komentar dan pesan kontak untuk testing admin. Jangan jalankan kalau tidak ingin data dummy.
 
+## Import Data Frontend Dalam Satu File
+
+Kalau ingin Supabase langsung berisi data yang sama seperti tampilan frontend sekarang, jalankan file ini setelah file 1 sampai 6:
+
+7. `09_initial_frontend_content.sql`
+
+File ini sudah mencakup isi `07_production_seed.sql` plus contoh pesan kontak dari seed frontend. Jangan jalankan `07_production_seed.sql` lagi jika sudah memakai file ini.
+
 ## Catatan
 
 - `combined_setup.sql` berisi gabungan file 1 sampai 7. Kalau SQL Editor terasa berat atau error, pakai urutan file kecil di atas.

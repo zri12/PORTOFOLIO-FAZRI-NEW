@@ -37,7 +37,7 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      <section className="sticky top-20 z-30 border-y border-[var(--color-border)] bg-[var(--color-bg-primary)]/92 px-6 py-4 backdrop-blur">
+      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-primary)]/92 px-6 py-4">
         <div className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[minmax(0,1fr)_520px] xl:items-start">
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (

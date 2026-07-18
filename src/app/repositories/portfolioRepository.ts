@@ -16,7 +16,7 @@ import type {
 } from "../types/portfolio";
 
 const STORAGE_KEY = "fazri-portfolio-demo-v3";
-const CACHE_KEY = "fazri-portfolio-supabase-cache-v1";
+const CACHE_KEY = "fazri-portfolio-supabase-cache-v2";
 const CHANGE_EVENT = "portfolio-data-change";
 let cachedData: PortfolioData | null = null;
 let cachedRaw: string | null = null;
@@ -29,6 +29,22 @@ function cloneSeed(): PortfolioData {
 
 function cloneData(data: PortfolioData): PortfolioData {
   return JSON.parse(JSON.stringify(data)) as PortfolioData;
+}
+
+function emptySupabaseData(): PortfolioData {
+  const seed = cloneSeed();
+  return {
+    profile: seed.profile,
+    projects: [],
+    techStack: [],
+    creativeWorks: [],
+    experiences: [],
+    certificates: [],
+    comments: [],
+    messages: [],
+    media: [],
+    settings: seed.settings,
+  };
 }
 
 function asArray<T>(value: unknown, fallback: T[]): T[] {
@@ -156,7 +172,7 @@ function save(data: PortfolioData) {
 function getData(): PortfolioData {
   if (isSupabaseEnabled) {
     if (cachedData) return cachedData;
-    cachedData = readCache() || cloneSeed();
+    cachedData = readCache() || emptySupabaseData();
     cachedRaw = JSON.stringify(cachedData);
     void portfolioRepository.refresh().catch(reportBackendError);
     return cachedData;
@@ -206,7 +222,7 @@ export const portfolioRepository = {
     if (isSupabaseEnabled && !realtimeUnsubscribe && typeof window !== "undefined") {
       realtimeUnsubscribe = supabasePortfolioRepository.subscribe(() => {
         void portfolioRepository.refresh().catch(reportBackendError);
-      }, true);
+      }, false);
     }
     window.addEventListener(CHANGE_EVENT, callback);
     window.addEventListener("storage", callback);
@@ -219,7 +235,7 @@ export const portfolioRepository = {
   async refresh() {
     if (!isSupabaseEnabled) return getData();
     if (!refreshPromise) {
-      refreshPromise = supabasePortfolioRepository.loadPortfolioData(true)
+      refreshPromise = supabasePortfolioRepository.loadPortfolioData(false)
         .then((data) => {
           setCachedData(data);
           return data;

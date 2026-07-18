@@ -361,11 +361,11 @@ export const messageToRow = (item: ContactMessage): Row => ({
 export function mergeWithFallback(data: Partial<PortfolioData>, fallback: PortfolioData): PortfolioData {
   return {
     profile: data.profile || fallback.profile,
-    projects: data.projects?.length ? data.projects : fallback.projects,
-    techStack: data.techStack?.length ? data.techStack : fallback.techStack,
-    creativeWorks: data.creativeWorks?.length ? data.creativeWorks : fallback.creativeWorks,
-    experiences: data.experiences?.length ? data.experiences : fallback.experiences,
-    certificates: data.certificates?.length ? data.certificates : fallback.certificates,
+    projects: data.projects ?? fallback.projects,
+    techStack: data.techStack ?? fallback.techStack,
+    creativeWorks: data.creativeWorks ?? fallback.creativeWorks,
+    experiences: data.experiences ?? fallback.experiences,
+    certificates: data.certificates ?? fallback.certificates,
     comments: data.comments || [],
     messages: data.messages || [],
     media: data.media || [],
