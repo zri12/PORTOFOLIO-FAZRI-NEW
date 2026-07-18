@@ -46,6 +46,20 @@ try {
     });
     if (error) throw error;
     user = data.user;
+  } else {
+    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        ...(user.user_metadata || {}),
+        username,
+        display_name: user.user_metadata?.display_name || "Fazri L.",
+        role: user.user_metadata?.role || "owner",
+      },
+    });
+    if (error) throw error;
+    user = data.user;
   }
 
   if (!user?.id) throw new Error("Supabase Auth did not return a user ID.");

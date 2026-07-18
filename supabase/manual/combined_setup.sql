@@ -543,9 +543,14 @@ create policy "admin manage media" on public.media_assets for all to authenticat
 create policy "service role manages rate limits" on public.submission_rate_limits for all to service_role using (true) with check (true);
 create policy "admin read activity logs" on public.activity_logs for select to authenticated using (public.is_active_admin());
 
+create policy "admin read own admin account" on public.admin_users for select to authenticated using (user_id = auth.uid());
+create policy "admin update own login timestamp" on public.admin_users for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 grant usage on schema public to anon, authenticated;
 grant usage on schema public to service_role;
 grant select on public.site_profiles, public.site_settings, public.projects, public.technologies, public.project_technologies, public.creative_works, public.experiences, public.certificates, public.visitor_comments, public.media_assets to anon, authenticated;
+grant select, update on public.admin_users to authenticated;
+grant insert, update, delete on public.site_profiles, public.site_settings, public.projects, public.technologies, public.project_technologies, public.creative_works, public.experiences, public.certificates, public.visitor_comments, public.visitor_comment_contacts, public.comment_likes, public.contact_messages, public.media_assets to authenticated;
 grant all privileges on all tables in schema public to service_role;
 grant execute on function public.public_approved_comments() to anon, authenticated;
 
