@@ -2,6 +2,7 @@ import { ReactNode, useContext, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, User, Image as ImageIcon, Briefcase, Code2, PenTool, Award, MessageSquare, Mail, Settings, LogOut, ExternalLink, Menu } from "lucide-react";
 import { AdminAuthContext } from "../../context/AdminAuthContext";
+import { BrandMark } from "../common/BrandMark";
 
 export const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -73,9 +74,7 @@ function Sidebar({ signOut, className = "" }: { signOut: () => void; className?:
   return (
     <aside className={`w-72 border-r border-[var(--color-border)] bg-[var(--color-surface-elevated)] flex-col h-screen sticky top-0 ${className}`} onClick={(event) => event.stopPropagation()}>
       <div className="h-20 border-b border-[var(--color-border)] flex items-center px-8 gap-4">
-        <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-primary)] flex items-center justify-center border border-[var(--color-border)] shadow-sm">
-          <span className="font-manrope font-bold text-lg text-[var(--color-accent-main)]">FL</span>
-        </div>
+        <BrandMark className="h-10 w-10 rounded-xl bg-[var(--color-bg-primary)] shadow-sm [&_span]:text-lg" />
         <div>
           <span className="font-manrope font-bold text-[var(--color-text-main)] block leading-tight">Admin System</span>
           <span className="text-[10px] text-[var(--color-text-muted)] tracking-widest font-mono uppercase">Portfolio CMS</span>

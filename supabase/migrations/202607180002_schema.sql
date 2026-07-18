@@ -30,6 +30,8 @@ create table if not exists public.site_profiles (
   youtube_url text,
   tiktok_url text,
   cv_path text,
+  logo_path text,
+  favicon_path text,
   profile_image_path text,
   professional_character_path text,
   spider_character_path text,

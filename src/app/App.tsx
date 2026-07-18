@@ -5,6 +5,7 @@ import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { LoadingScreen } from "./components/common/LoadingScreen";
 import { RouteTransition } from "./components/common/RouteTransition";
 import ScrollToTop from "./components/common/ScrollToTop";
+import { SiteIdentityEffects } from "./components/common/SiteIdentityEffects";
 import { SmoothScrollProvider } from "./components/common/SmoothScrollProvider";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { Footer } from "./components/layout/Footer";
@@ -119,6 +120,7 @@ export default function App() {
       <ThemeModeProvider>
         <LanguageProvider>
           <AdminAuthProvider>
+            <SiteIdentityEffects />
             <AppRouter />
           </AdminAuthProvider>
         </LanguageProvider>

@@ -1,7 +1,7 @@
 insert into public.site_profiles (
   singleton_key, full_name, display_name, title, greeting, headline, description, biography, about_content,
   email, whatsapp, location, availability, github_url, linkedin_url, instagram_url, youtube_url, tiktok_url, cv_path,
-  profile_image_path, professional_character_path, spider_character_path
+  logo_path, favicon_path, profile_image_path, professional_character_path, spider_character_path
 ) values (
   'main',
   'Fazri Lukman Nurrohman',
@@ -22,6 +22,8 @@ insert into public.site_profiles (
   'https://youtube.com/@fazrilukman',
   'https://tiktok.com/@fazrilukman',
   '/cv-fazri-lukman.pdf',
+  null,
+  null,
   'seed/fazri.png',
   'seed/character-professional.png',
   'seed/character-spider.png'
@@ -44,6 +46,8 @@ insert into public.site_profiles (
   youtube_url = excluded.youtube_url,
   tiktok_url = excluded.tiktok_url,
   cv_path = excluded.cv_path,
+  logo_path = excluded.logo_path,
+  favicon_path = excluded.favicon_path,
   profile_image_path = excluded.profile_image_path,
   professional_character_path = excluded.professional_character_path,
   spider_character_path = excluded.spider_character_path;

@@ -20,6 +20,9 @@ export interface Profile {
   youtube: string;
   tiktok: string;
   cvUrl: string;
+  logoUrl: string;
+  faviconUrl: string;
+  aboutImageUrl: string;
 }
 
 export interface Project {

@@ -10,6 +10,7 @@ import type {
   Technology,
   VisitorComment,
 } from "../../types/portfolio";
+import { getSupabaseClient, publicBucket } from "./client";
 
 type Row = Record<string, unknown>;
 
@@ -18,6 +19,13 @@ const asString = (value: unknown, fallback = "") => typeof value === "string" ? 
 const asBool = (value: unknown, fallback = false) => typeof value === "boolean" ? value : fallback;
 const asNumber = (value: unknown, fallback = 0) => typeof value === "number" ? value : fallback;
 const asDate = (value: unknown) => asString(value).slice(0, 10);
+
+function publicAssetUrl(value: unknown) {
+  const source = asString(value);
+  if (!source || source.startsWith("http") || source.startsWith("data:") || source.startsWith("/")) return source;
+  const supabase = getSupabaseClient();
+  return supabase ? supabase.storage.from(publicBucket).getPublicUrl(source).data.publicUrl : source;
+}
 
 export function mapProfile(row: Row | null | undefined, fallback: Profile): Profile {
   if (!row) return fallback;
@@ -40,6 +48,9 @@ export function mapProfile(row: Row | null | undefined, fallback: Profile): Prof
     youtube: asString(row.youtube_url, fallback.youtube),
     tiktok: asString(row.tiktok_url, fallback.tiktok),
     cvUrl: asString(row.cv_path, fallback.cvUrl),
+    logoUrl: publicAssetUrl(row.logo_path) || fallback.logoUrl || "",
+    faviconUrl: publicAssetUrl(row.favicon_path) || fallback.faviconUrl || "",
+    aboutImageUrl: publicAssetUrl(row.profile_image_path) || fallback.aboutImageUrl || "",
   };
 }
 
@@ -64,6 +75,9 @@ export function profileToRow(profile: Profile): Row {
     youtube_url: profile.youtube,
     tiktok_url: profile.tiktok,
     cv_path: profile.cvUrl,
+    logo_path: profile.logoUrl || null,
+    favicon_path: profile.faviconUrl || null,
+    profile_image_path: profile.aboutImageUrl || null,
   };
 }
 

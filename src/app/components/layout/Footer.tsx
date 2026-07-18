@@ -1,9 +1,10 @@
-import { useContext } from "react";
+﻿import { useContext } from "react";
 import { Link } from "react-router";
-import { ArrowUpCircle, BriefcaseBusiness, Github, Instagram, Linkedin, Mail, MessageCircle, Youtube } from "lucide-react";
+import { ArrowUpCircle, Github, Instagram, Linkedin, Mail, MessageCircle, Youtube } from "lucide-react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { BrandMark } from "../common/BrandMark";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -18,9 +19,7 @@ export const Footer = () => {
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center border border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
-                <span className="font-manrope text-xl font-bold text-[var(--color-accent-main)]">FL</span>
-              </div>
+              <BrandMark className="h-12 w-12 [&_span]:text-xl" />
               <div>
                 <span className="block font-manrope text-lg font-bold">{profile.fullName}</span>
                 <span className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{t(profile.title)}</span>
@@ -64,7 +63,6 @@ export const Footer = () => {
         <div className="mt-14 flex flex-col gap-5 border-t border-[var(--color-border)] pt-8 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-[var(--color-text-muted)]">© {currentYear} {profile.fullName}. {t("All rights reserved.")}</p>
           <div className="flex items-center gap-5">
-            <Link to="/admin/login" className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"><BriefcaseBusiness size={14} /> {t("Admin Login")}</Link>
             <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)]" aria-label={t("Back to top")}>
               <ArrowUpCircle size={20} />
             </button>
@@ -85,3 +83,4 @@ function FooterList({ title, items, t }: { title: string; items: string[][]; t: 
     </div>
   );
 }
+
