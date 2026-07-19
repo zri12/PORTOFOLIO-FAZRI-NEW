@@ -74,18 +74,10 @@ export function DualCharacterReveal({ className = "" }: Props) {
     };
   }, []);
 
-  // Sync target radius with active mode.
+  // Keep the reveal lens available in both modes. Professional reveals Spider;
+  // Spider reveals Professional. The lens starts hidden until pointer/touch enters.
   useEffect(() => {
-    const el = frameRef.current;
-    if (!el) return;
-    if (spiderActive) {
-      target.current.r = Math.hypot(el.clientWidth, el.clientHeight) * 1.15;
-      // Keep expansion anchored near the last pointer for a beat, then it fills.
-      if (!hovering) {
-        target.current.x = el.clientWidth / 2;
-        target.current.y = el.clientHeight / 2;
-      }
-    } else if (!hovering) {
+    if (!hovering) {
       target.current.r = 0;
     }
   }, [spiderActive, hovering]);
@@ -115,7 +107,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   }, [reduce, spiderActive]);
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (reduce || spiderActive) return;
+    if (reduce) return;
     const el = frameRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -126,7 +118,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const updateTouchReveal = (clientX: number, clientY: number) => {
-    if (reduce || spiderActive) return;
+    if (reduce) return;
     const el = frameRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -138,19 +130,19 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const handleEnter = () => {
-    if (reduce || coarsePointer || spiderActive) return;
+    if (reduce || coarsePointer) return;
     setHovering(true);
     target.current.r = HOVER_RADIUS[bp];
   };
 
   const handleLeave = () => {
-    if (spiderActive || coarsePointer) return;
+    if (coarsePointer) return;
     setHovering(false);
     target.current.r = 0; // radius shrinks in place; position is not reset, so no jump
   };
 
   const handlePointerDown = (event: React.PointerEvent) => {
-    if (reduce || spiderActive || event.pointerType === "mouse") return;
+    if (reduce || event.pointerType === "mouse") return;
     handlePointerMove(event);
     setTapPreview(true);
   };
@@ -161,7 +153,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
     toggleMode();
   };
 
-  const spiderVisibleCrossfade = spiderActive || tapPreview;
+  const revealVisibleCrossfade = tapPreview;
   const useRadialMask = !reduce;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
@@ -210,8 +202,13 @@ export function DualCharacterReveal({ className = "" }: Props) {
           style={{
             transformOrigin: "50% 0%",
             transform: proTransform,
-            opacity: spiderActive ? 0 : 1,
-            transition: "opacity 260ms ease",
+            zIndex: spiderActive ? 2 : 1,
+            WebkitMaskImage: spiderActive ? maskValue : "none",
+            maskImage: spiderActive ? maskValue : "none",
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            opacity: spiderActive && !useRadialMask ? (revealVisibleCrossfade ? 1 : 0) : 1,
+            transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
           <img
@@ -230,12 +227,13 @@ export function DualCharacterReveal({ className = "" }: Props) {
           style={{
             transformOrigin: "50% 0%",
             transform: spiderTransform,
-            WebkitMaskImage: maskValue,
-            maskImage: maskValue,
+            zIndex: spiderActive ? 1 : 2,
+            WebkitMaskImage: spiderActive ? "none" : maskValue,
+            maskImage: spiderActive ? "none" : maskValue,
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
             backgroundColor: "transparent",
-            opacity: useRadialMask ? 1 : spiderVisibleCrossfade ? 1 : 0,
+            opacity: !spiderActive && !useRadialMask ? (revealVisibleCrossfade ? 1 : 0) : 1,
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
@@ -250,14 +248,14 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
         {/* CursorRevealBoundary — a thin (~1.5px), low-opacity crimson line that
             traces the reveal edge. No thick ring, no glowing portal. */}
-        {useRadialMask && !spiderActive && (
+        {useRadialMask && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 transition-opacity duration-300"
             style={{
               opacity: hovering ? 1 : 0,
               background:
-                "radial-gradient(circle var(--reveal-feather, 0px) at var(--reveal-x, 50%) var(--reveal-y, 50%), transparent 0px, transparent calc(var(--reveal-r, 0px) - 1.5px), rgba(229,34,61,0.42) var(--reveal-r, 0px), transparent calc(var(--reveal-r, 0px) + 1px))",
+                `radial-gradient(circle var(--reveal-feather, 0px) at var(--reveal-x, 50%) var(--reveal-y, 50%), transparent 0px, transparent calc(var(--reveal-r, 0px) - 1.5px), ${spiderActive ? "rgba(78,187,232,0.52)" : "rgba(229,34,61,0.42)"} var(--reveal-r, 0px), transparent calc(var(--reveal-r, 0px) + 1px))`,
             }}
           />
         )}
@@ -272,7 +270,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
         )}
 
         {/* Touch affordance. */}
-        {coarsePointer && !spiderActive && (
+        {coarsePointer && (
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
             {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>

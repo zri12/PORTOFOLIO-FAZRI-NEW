@@ -55,8 +55,8 @@ export const Navbar = () => {
 
         <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
           <button onClick={toggleMode} className={`mode-switch hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[var(--color-border)] transition-all text-sm font-medium ${mode === "spider" ? "mode-switch-spider" : "rounded-lg hover:bg-[var(--color-surface-elevated)]"}`}>
-            {mode === "professional" ? <Moon size={14} className="text-[var(--color-accent-main)]" /> : <Zap size={14} className="text-[var(--color-accent-main)]" />}
-            <span className="text-[var(--color-text-secondary)]">{mode === "professional" ? t("Pro Mode") : t("Spider Mode")}</span>
+            {mode === "professional" ? <Zap size={14} className="text-[var(--color-accent-main)]" /> : <Moon size={14} className="text-[var(--color-accent-main)]" />}
+            <span className="text-[var(--color-text-secondary)]">{mode === "professional" ? t("Spider Mode") : t("Pro Mode")}</span>
           </button>
 
           <button onClick={toggleLanguage} className="hidden min-h-9 items-center gap-1 border border-[var(--color-border)] p-1 font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[var(--color-text-muted)] transition hover:border-[var(--color-accent-main)]/50 sm:flex" aria-label="Switch language">

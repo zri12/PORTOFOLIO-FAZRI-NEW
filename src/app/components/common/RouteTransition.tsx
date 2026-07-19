@@ -23,7 +23,7 @@ export function RouteTransition({ children }: { children: React.ReactNode }) {
       />
       <motion.div
         key={location.pathname}
-        initial={reduce ? false : { opacity: 0, y: spider ? 10 : 14, scale: 0.996 }}
+        initial={false}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={reduce ? undefined : { opacity: 0, y: spider ? -6 : -10, scale: 0.997 }}
         transition={{ duration: spider ? 0.42 : 0.5, ease: [0.22, 1, 0.36, 1] }}

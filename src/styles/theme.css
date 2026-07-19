@@ -321,19 +321,49 @@ canvas { max-width: 100%; }
     padding-block: .75rem;
   }
   .splash-content {
+    width: min(100%, 21.75rem);
+    max-width: calc(100vw - 2.5rem);
     transform: none;
   }
   .splash-title {
+    font-size: clamp(2.08rem, 9.2vw, 2.42rem) !important;
+    line-height: .96 !important;
     letter-spacing: 0;
+    width: 100%;
+    text-align: center;
   }
   .splash-description {
-    max-width: 31ch;
+    max-width: 27ch;
   }
   .splash-skills {
-    max-width: 22rem;
+    max-width: 19.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
   }
   .splash-skills > span {
+    min-width: 0;
     padding: .45rem .65rem;
+    text-align: center;
+  }
+  .splash-skills > span:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, 9.5rem);
+  }
+  .splash-kicker {
+    width: 100%;
+    display: grid;
+    justify-items: center;
+    gap: .45rem;
+    text-align: center;
+  }
+  .splash-kicker span:first-child,
+  .splash-kicker span:last-child {
+    width: 100%;
+  }
+  .splash-kicker span:nth-child(2) {
+    width: 3.25rem;
   }
   .splash-skip {
     min-width: 8.75rem;
