@@ -20,27 +20,37 @@ export default function CertificatesPage() {
   const modal = certificates.find((item) => item.id === active);
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-32 text-[var(--color-text-main)]">
-      <section className="px-6 pb-14">
+    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+      <section className="px-5 pb-12 sm:px-6 sm:pb-14">
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow={t("Recognition")} title={t("Certificates and learning milestones.")} description={t("A concise archive of learning credentials that support the web development and design practice.")} />
           {featured && (
             <button onClick={() => setActive(featured.id)} className="mt-12 grid w-full overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left lg:grid-cols-[1fr_.8fr]">
-              <div className="p-8">
+              <div className="p-6 sm:p-8">
                 <Award className="text-[var(--color-accent-main)]" />
-                <p className="mt-16 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{t("Featured certificate")}</p>
-                <h2 className="mt-3 font-manrope text-3xl font-bold">{t(featured.title)}</h2>
+                <p className="mt-10 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)] sm:mt-16">{t("Featured certificate")}</p>
+                <h2 className="mt-3 font-manrope text-2xl font-bold sm:text-3xl">{t(featured.title)}</h2>
                 <p className="mt-3 text-[var(--color-text-secondary)]">{featured.issuer} / {featured.issueDate}</p>
               </div>
-              <img src={featured.image} alt={featured.title} className="h-full min-h-[280px] w-full object-cover" />
+              <div className="relative min-h-[280px] overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.22),transparent_48%),var(--color-bg-primary)]">
+                <img
+                  src={featured.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.hidden = true;
+                  }}
+                />
+              </div>
             </button>
           )}
         </div>
       </section>
-      <section className="px-6 pb-20">
+      <section className="px-5 pb-16 sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 border-y border-[var(--color-border)] py-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto">
               {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`border px-4 py-2 text-sm font-semibold ${category === item ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}>{t(item)}</button>)}
             </div>
             <label className="relative lg:w-80">
@@ -52,7 +62,18 @@ export default function CertificatesPage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map((item) => (
                 <button key={item.id} onClick={() => setActive(item.id)} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]">
-                  <img src={item.image} alt={item.title} className="aspect-[16/10] w-full object-cover" loading="lazy" />
+                  <div className="relative aspect-[16/10] overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.2),transparent_48%),var(--color-bg-primary)]">
+                    <img
+                      src={item.image}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.hidden = true;
+                      }}
+                    />
+                  </div>
                   <div className="p-5">
                     <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{t(item.category)}</p>
                     <h2 className="mt-3 font-manrope text-xl font-bold">{t(item.title)}</h2>

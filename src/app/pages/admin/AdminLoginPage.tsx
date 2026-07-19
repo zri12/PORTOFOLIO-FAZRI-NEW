@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--color-bg-primary)] p-6 font-inter">
+    <main className="relative flex min-h-screen items-center justify-center overflow-x-clip bg-[var(--color-bg-primary)] p-4 font-inter sm:p-6">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(78,187,232,.12),transparent_45%)]" />
       <div className="relative z-10 grid w-full max-w-5xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-2xl md:grid-cols-[.8fr_1.2fr]">
         <aside className="hidden border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-10 md:flex md:flex-col md:justify-between">
@@ -39,8 +39,8 @@ export default function AdminLoginPage() {
           </div>
           <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-text-muted)]">{mode} mode active</p>
         </aside>
-        <section className="p-8 md:p-12">
-          <h2 className="font-manrope text-3xl font-bold">Welcome Back</h2>
+        <section className="min-w-0 p-5 sm:p-8 md:p-12">
+          <h2 className="font-manrope text-2xl font-bold sm:text-3xl">Welcome Back</h2>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Login with your admin username or internal admin email.</p>
           <form onSubmit={(event) => { event.preventDefault(); if (identifier && password) void finishLogin(identifier, password, remember); }} className="mt-8 space-y-5">
             <label className="block">
@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-4 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               </div>
             </label>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                 <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
                 Remember me

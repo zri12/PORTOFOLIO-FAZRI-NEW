@@ -21,6 +21,10 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
   const navLinks = [
     { label: t("Home"), path: "/" },
     { label: t("About"), path: "/about" },
@@ -31,8 +35,8 @@ export const Navbar = () => {
   ];
 
   return (
-    <nav className={`portfolio-nav fixed top-0 w-full z-50 transition-all duration-500 border-b ${mode === "spider" ? "spider-nav" : ""} ${scrolled ? "bg-[var(--color-bg-secondary)]/80 backdrop-blur-md border-[var(--color-border)] py-4" : "bg-transparent border-transparent py-6"}`}>
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+    <nav className={`portfolio-nav fixed top-0 z-50 w-full border-b transition-all duration-500 ${mode === "spider" ? "spider-nav" : ""} ${scrolled || isOpen ? "border-[var(--color-border)] bg-[var(--color-bg-secondary)]/92 py-3 backdrop-blur-md sm:py-4" : "border-transparent bg-transparent py-4 sm:py-6"}`}>
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 sm:px-6">
         <Link to="/" className="flex items-center gap-3 group">
           <BrandMark className="h-10 w-10 rounded-xl transition-colors group-hover:border-[var(--color-accent-main)] [&_span]:text-lg" />
           <div className="hidden sm:flex flex-col">
@@ -49,7 +53,7 @@ export const Navbar = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
           <button onClick={toggleMode} className={`mode-switch hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[var(--color-border)] transition-all text-sm font-medium ${mode === "spider" ? "mode-switch-spider" : "rounded-lg hover:bg-[var(--color-surface-elevated)]"}`}>
             {mode === "professional" ? <Moon size={14} className="text-[var(--color-accent-main)]" /> : <Zap size={14} className="text-[var(--color-accent-main)]" />}
             <span className="text-[var(--color-text-secondary)]">{mode === "professional" ? t("Pro Mode") : t("Spider Mode")}</span>
@@ -60,10 +64,10 @@ export const Navbar = () => {
             <span className={`px-2 py-1 transition ${language === "id" ? "bg-[var(--color-accent-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-muted)]"}`}>IND</span>
           </button>
           
-          <Link to="/contact" className="hidden sm:flex items-center justify-center px-5 py-2 rounded-lg bg-[var(--color-text-main)] text-[var(--color-bg-primary)] font-medium text-sm hover:opacity-90 transition-opacity">
+          <Link to="/contact" className="hidden items-center justify-center rounded-lg bg-[var(--color-text-main)] px-5 py-2 text-sm font-medium text-[var(--color-bg-primary)] transition-opacity hover:opacity-90 lg:flex">
             {t("Contact Me")}
           </Link>
-          <button className="lg:hidden text-[var(--color-text-main)]" onClick={() => setIsOpen(!isOpen)}>
+          <button className="flex h-10 w-10 items-center justify-center text-[var(--color-text-main)] lg:hidden" onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? "Close navigation" : "Open navigation"} aria-expanded={isOpen}>
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -77,13 +81,13 @@ export const Navbar = () => {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] overflow-hidden"
           >
-            <div className="px-6 py-4 flex flex-col gap-4">
+            <div className="flex max-h-[calc(100svh-72px)] flex-col gap-1 overflow-y-auto px-5 py-4 sm:px-6">
               {navLinks.map((link) => (
-                <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)} className={`font-medium ${location.pathname === link.path ? "text-[var(--color-accent-main)]" : "text-[var(--color-text-main)]"}`}>
+                <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)} className={`border-b border-[var(--color-border)] py-3 font-medium ${location.pathname === link.path ? "text-[var(--color-accent-main)]" : "text-[var(--color-text-main)]"}`}>
                   {link.label}
                 </Link>
               ))}
-              <div className="border-t border-[var(--color-border)] pt-4 mt-2 flex justify-between items-center">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pt-3">
                 <button onClick={() => { toggleMode(); setIsOpen(false); }} className="flex items-center gap-2 py-2 text-sm font-medium text-[var(--color-accent-main)]">
                   {mode === "professional" ? <Zap size={16} /> : <Moon size={16} />}
                   {mode === "professional" ? t("Switch to Spider Mode") : t("Switch to Pro Mode")}

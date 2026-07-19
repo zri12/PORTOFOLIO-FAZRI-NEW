@@ -19,14 +19,14 @@ export default function CreativeWorkDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-32 text-[var(--color-text-main)]">
-      <section className="px-6 pb-16">
+    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+      <section className="px-5 pb-14 sm:px-6 sm:pb-16">
         <div className="mx-auto max-w-7xl">
           <Link to="/creative-works" className="mb-10 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"><ArrowLeft size={16} /> {t("Back to Creative Works")}</Link>
           <div className="grid gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(work.category)} / {work.year}</p>
-              <h1 className="mt-5 font-manrope text-5xl font-extrabold tracking-tight md:text-7xl">{t(work.title)}</h1>
+              <h1 className="mt-5 break-words font-manrope text-4xl font-extrabold tracking-tight sm:text-5xl md:text-7xl">{t(work.title)}</h1>
               <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)]">{t(work.description)}</p>
               <div className="mt-8 flex flex-wrap gap-2">{work.tools.map((tool) => <span key={tool} className="border border-[var(--color-border)] px-3 py-2 text-sm">{tool}</span>)}</div>
             </div>
@@ -34,7 +34,7 @@ export default function CreativeWorkDetailPage() {
           </div>
         </div>
       </section>
-      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-6 py-16">
+      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-5 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow={t("Creative brief")} title={t("Intent, process, and output.")} description={t(work.brief)} />
           <div className="mt-12 grid gap-6 md:grid-cols-3">

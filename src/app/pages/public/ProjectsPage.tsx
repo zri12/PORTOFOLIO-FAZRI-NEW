@@ -30,18 +30,18 @@ export default function ProjectsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-32 text-[var(--color-text-main)]">
-      <section className="px-6 pb-12">
+    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+      <section className="px-5 pb-10 sm:px-6 sm:pb-12">
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow="Project archive" title="Web systems, dashboards, and product interfaces." description="Filter by category or technology to inspect the work from several angles. Each project opens into a dedicated case study page." />
         </div>
       </section>
 
-      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-primary)]/92 px-6 py-4">
+      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-primary)]/92 px-5 py-4 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[minmax(0,1fr)_520px] xl:items-start">
-          <div className="flex flex-wrap gap-2">
+          <div className="no-scrollbar flex snap-x gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
             {categories.map((category) => (
-              <button key={category} onClick={() => setActiveCategory(category)} className={`min-h-11 border px-4 py-2 text-sm font-semibold transition ${activeCategory === category ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-main)]/50 hover:text-[var(--color-text-main)]"}`}>
+              <button key={category} onClick={() => setActiveCategory(category)} className={`min-h-11 shrink-0 snap-start whitespace-nowrap border px-4 py-2 text-sm font-semibold transition ${activeCategory === category ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-main)]/50 hover:text-[var(--color-text-main)]"}`}>
                 {category}
               </button>
             ))}
@@ -61,18 +61,18 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      <section className="px-6 py-14">
+      <section className="px-5 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-7xl">
           {filteredProjects.length === 0 ? (
             <EmptyState title="No projects match the current filters" description="Try clearing the filters or searching by project title, category, or technology." />
           ) : (
             <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">
               {filteredProjects.map((project) => (
-                <Link key={project.id} to={`/projects/${project.slug}`} className="group flex min-h-[540px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]/60">
+                <Link key={project.id} to={`/projects/${project.slug}`} className="group flex min-h-[460px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]/60 sm:min-h-[520px]">
                   <div className="relative aspect-[4/3] border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3">
                     <ProjectPreview slug={project.slug} compact />
                   </div>
-                  <div className="flex flex-1 flex-col p-6">
+                  <div className="flex flex-1 flex-col p-5 sm:p-6">
                     <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{project.category} / {project.clientType}</p>
                     <h3 className="mt-4 font-manrope text-2xl font-bold">{project.title}</h3>
                     <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--color-text-secondary)]">{project.shortDescription}</p>
@@ -85,7 +85,7 @@ export default function ProjectsPage() {
               ))}
             </div>
           )}
-          <div className="mt-16 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-8">
+          <div className="mt-12 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-6 sm:mt-16 sm:p-8">
             <h2 className="font-manrope text-2xl font-bold">Need a similar web system?</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">The project data is managed from the local admin prototype, so this archive is ready to connect to a real backend later.</p>
             <Link to="/contact" className="mt-6 inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Discuss a project <ArrowRight size={16} /></Link>

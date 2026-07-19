@@ -8,7 +8,7 @@ export function SplashProgress({ progress, status, mode }: SplashProgressProps) 
   const bounded = Math.max(0, Math.min(100, progress));
 
   return (
-    <div className="pointer-events-none absolute inset-x-6 bottom-7 z-20 mx-auto max-w-xl text-center">
+    <div className="splash-progress pointer-events-none z-20 mx-auto w-full max-w-xl text-center">
       <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[var(--color-accent-main)]" aria-live="polite">
         {status}
       </p>

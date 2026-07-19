@@ -46,8 +46,8 @@ export default function ProjectDetailPage() {
   const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-32 text-[var(--color-text-main)]">
-      <section className="px-6 pb-20">
+    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+      <section className="px-5 pb-16 sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 flex flex-wrap items-center gap-3 text-sm text-[var(--color-text-muted)]">
             <Link to="/" className="hover:text-[var(--color-text-main)]">{t("Home")}</Link>
@@ -57,11 +57,11 @@ export default function ProjectDetailPage() {
             <span className="text-[var(--color-accent-main)]">{project.title}</span>
           </div>
           <Link to="/projects" className="mb-10 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"><ArrowLeft size={16} /> {t("Back to Projects")}</Link>
-          <div className="grid gap-14 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+          <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-14">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(project.category)} / {project.year}</p>
-              <h1 className="mt-5 font-manrope text-5xl font-extrabold tracking-tight md:text-7xl">{project.title}</h1>
-              <p className="mt-6 text-xl leading-8 text-[var(--color-text-secondary)]">{t(project.fullDescription)}</p>
+              <h1 className="mt-5 break-words font-manrope text-4xl font-extrabold tracking-tight sm:text-5xl md:text-7xl">{project.title}</h1>
+              <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)] sm:text-xl">{t(project.fullDescription)}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href={project.liveUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]"><ExternalLink size={16} /> {t("Live Demo")}</a>
                 <a href={project.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-main)]"><Github size={16} /> {t("Source Code")}</a>
@@ -73,7 +73,7 @@ export default function ProjectDetailPage() {
                 <Meta label={t("Status")} value={t(project.status)} />
               </div>
             </div>
-            <div className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-2xl">
+            <div className="min-w-0 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-2xl sm:p-4">
               <div className="mb-4 flex items-center gap-2 border-b border-[var(--color-border)] pb-4">
                 <span className="h-3 w-3 rounded-full bg-red-400" />
                 <span className="h-3 w-3 rounded-full bg-yellow-300" />
@@ -88,7 +88,7 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-6 py-20">
+      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-5 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[320px_1fr]">
           <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
             <div>
@@ -132,7 +132,7 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="px-6 py-20">
+      <section className="px-5 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow={t("Related project")} title={related.title} description={t(related.shortDescription)} />
           <Link to={`/projects/${related.slug}`} className="mt-8 inline-flex items-center gap-2 border-b border-[var(--color-accent-main)] pb-2 text-sm font-bold">{t("Read related case study")} <ArrowRight size={16} /></Link>

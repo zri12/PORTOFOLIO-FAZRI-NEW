@@ -18,19 +18,19 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex font-inter">
       {/* Sidebar Desktop */}
       <Sidebar signOut={signOut} className="hidden lg:flex" />
-      {mobileOpen && <div className="fixed inset-0 z-50 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)}><Sidebar signOut={signOut} className="h-full w-80" /></div>}
+      {mobileOpen && <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)}><Sidebar signOut={signOut} onNavigate={() => setMobileOpen(false)} className="h-full w-[min(86vw,20rem)] shadow-2xl" /></div>}
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="h-20 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]/90 backdrop-blur-sm sticky top-0 z-30 flex items-center justify-between px-6 lg:px-10 shrink-0">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]/90 px-4 backdrop-blur-sm sm:h-20 sm:px-6 lg:px-10">
           <div className="flex items-center gap-4">
             <button onClick={() => setMobileOpen(true)} className="lg:hidden text-[var(--color-text-main)] w-10 h-10 rounded-xl bg-[var(--color-bg-secondary)] flex items-center justify-center border border-[var(--color-border)]" aria-label="Open admin navigation">
               <Menu size={20} />
             </button>
-            <h1 className="font-manrope font-bold text-xl lg:text-2xl text-[var(--color-text-main)] hidden sm:block">Dashboard</h1>
+            <h1 className="hidden font-manrope text-xl font-bold text-[var(--color-text-main)] sm:block lg:text-2xl">Portfolio CMS</h1>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-3 sm:border-l sm:border-[var(--color-border)] sm:pl-6">
               <div className="w-10 h-10 rounded-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] overflow-hidden flex items-center justify-center">
                 <User size={18} className="text-[var(--color-text-secondary)]" />
               </div>
@@ -43,7 +43,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-[var(--color-bg-primary)] p-6 lg:p-10 pb-32 relative">
+        <div className="relative flex-1 overflow-auto bg-[var(--color-bg-primary)] p-4 pb-24 sm:p-6 sm:pb-28 lg:p-10 lg:pb-32">
           {children}
         </div>
       </main>
@@ -70,17 +70,17 @@ const AdminNavLink = ({ to, icon: Icon, children }: { to: string, icon: any, chi
   );
 };
 
-function Sidebar({ signOut, className = "" }: { signOut: () => void; className?: string }) {
+function Sidebar({ signOut, onNavigate, className = "" }: { signOut: () => void; onNavigate?: () => void; className?: string }) {
   return (
-    <aside className={`w-72 border-r border-[var(--color-border)] bg-[var(--color-surface-elevated)] flex-col h-screen sticky top-0 ${className}`} onClick={(event) => event.stopPropagation()}>
-      <div className="h-20 border-b border-[var(--color-border)] flex items-center px-8 gap-4">
+    <aside className={`sticky top-0 h-screen w-72 max-w-full flex-col border-r border-[var(--color-border)] bg-[var(--color-surface-elevated)] ${className}`} onClick={(event) => event.stopPropagation()}>
+      <div className="flex h-16 items-center gap-4 border-b border-[var(--color-border)] px-5 sm:h-20 sm:px-8">
         <BrandMark className="h-10 w-10 rounded-xl bg-[var(--color-bg-primary)] shadow-sm [&_span]:text-lg" />
         <div>
           <span className="font-manrope font-bold text-[var(--color-text-main)] block leading-tight">Admin System</span>
           <span className="text-[10px] text-[var(--color-text-muted)] tracking-widest font-mono uppercase">Portfolio CMS</span>
         </div>
       </div>
-      <nav className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6" onClick={onNavigate}>
         <p className="px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 mt-4 first:mt-0">Core</p>
         <AdminNavLink to="/admin/dashboard" icon={LayoutDashboard}>Dashboard</AdminNavLink>
         <AdminNavLink to="/admin/profile" icon={User}>Profile</AdminNavLink>

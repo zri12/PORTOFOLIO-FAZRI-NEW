@@ -26,6 +26,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const compactViewport = window.matchMedia("(max-width: 1023px)").matches;
     const revealTargets = Array.from(
       document.querySelectorAll<HTMLElement>([
         "main > section",
@@ -52,7 +53,9 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
 
     revealTargets.forEach((element, index) => {
       element.classList.add("scroll-reveal");
-      element.style.setProperty("--reveal-delay", `${Math.min(index % 8, 7) * 45}ms`);
+      const delayStep = compactViewport ? 30 : 45;
+      const delayIndex = compactViewport ? Math.min(index % 4, 3) : Math.min(index % 8, 7);
+      element.style.setProperty("--reveal-delay", `${delayIndex * delayStep}ms`);
     });
 
     const observer = new IntersectionObserver(
@@ -67,7 +70,10 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
           observer.unobserve(entry.target);
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
+      {
+        rootMargin: compactViewport ? "0px 0px -2% 0px" : "0px 0px -8% 0px",
+        threshold: compactViewport ? 0.03 : 0.08,
+      }
     );
 
     revealTargets.forEach((element) => observer.observe(element));

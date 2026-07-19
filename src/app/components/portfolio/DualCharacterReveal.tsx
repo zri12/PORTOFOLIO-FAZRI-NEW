@@ -29,7 +29,7 @@ interface Cal {
 }
 
 // Small "discovery lens" — deliberately far smaller than a body-sized portal.
-const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 58, mobile: 0 };
+const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 58 };
 const FEATHER = 12;
 const LERP = 0.32; // fast, precise pointer follow
 
@@ -54,7 +54,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const [bp, setBp] = useState<Breakpoint>(getBreakpoint);
-  const isTouch = bp === "mobile" || bp === "tablet";
+  const [coarsePointer, setCoarsePointer] = useState(() => window.matchMedia("(hover: none), (pointer: coarse)").matches);
 
   const target = useRef({ x: 0, y: 0, r: 0 });
   const current = useRef({ x: 0, y: 0, r: 0 });
@@ -64,8 +64,14 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
   useEffect(() => {
     const onResize = () => setBp(getBreakpoint());
+    const pointerQuery = window.matchMedia("(hover: none), (pointer: coarse)");
+    const onPointerChange = () => setCoarsePointer(pointerQuery.matches);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    pointerQuery.addEventListener("change", onPointerChange);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      pointerQuery.removeEventListener("change", onPointerChange);
+    };
   }, []);
 
   // Sync target radius with active mode.
@@ -109,38 +115,54 @@ export function DualCharacterReveal({ className = "" }: Props) {
   }, [reduce, spiderActive]);
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (reduce || isTouch || spiderActive) return;
+    if (reduce || spiderActive) return;
     const el = frameRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     target.current.x = e.clientX - rect.left;
     target.current.y = e.clientY - rect.top;
     target.current.r = HOVER_RADIUS[bp];
+    setHovering(true);
+  };
+
+  const updateTouchReveal = (clientX: number, clientY: number) => {
+    if (reduce || spiderActive) return;
+    const el = frameRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    target.current.x = clientX - rect.left;
+    target.current.y = clientY - rect.top;
+    target.current.r = HOVER_RADIUS[bp];
+    setHovering(true);
+    setTapPreview(true);
   };
 
   const handleEnter = () => {
-    if (reduce || isTouch || spiderActive) return;
+    if (reduce || coarsePointer || spiderActive) return;
     setHovering(true);
     target.current.r = HOVER_RADIUS[bp];
   };
 
   const handleLeave = () => {
-    if (spiderActive) return;
+    if (spiderActive || coarsePointer) return;
     setHovering(false);
     target.current.r = 0; // radius shrinks in place; position is not reset, so no jump
   };
 
-  const handleClick = () => {
-    if (isTouch && !spiderActive && !tapPreview) {
-      setTapPreview(true);
-      return;
-    }
+  const handlePointerDown = (event: React.PointerEvent) => {
+    if (reduce || spiderActive || event.pointerType === "mouse") return;
+    handlePointerMove(event);
+    setTapPreview(true);
+  };
+
+  const handleClick = (event: React.MouseEvent) => {
+    if (coarsePointer || event.detail === 0) return;
     setTapPreview(false);
     toggleMode();
   };
 
-  const spiderVisibleCrossfade = spiderActive || tapPreview; // used only for reduce / touch
-  const useRadialMask = !reduce && !isTouch;
+  const spiderVisibleCrossfade = spiderActive || tapPreview;
+  const useRadialMask = !reduce;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -161,6 +183,15 @@ export function DualCharacterReveal({ className = "" }: Props) {
         onPointerMove={handlePointerMove}
         onPointerEnter={handleEnter}
         onPointerLeave={handleLeave}
+        onPointerDown={handlePointerDown}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (touch) updateTouchReveal(touch.clientX, touch.clientY);
+        }}
+        onTouchMove={(event) => {
+          const touch = event.touches[0];
+          if (touch) updateTouchReveal(touch.clientX, touch.clientY);
+        }}
         onClick={handleClick}
         role="button"
         tabIndex={0}
@@ -203,7 +234,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
             maskImage: maskValue,
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
-            backgroundColor: "var(--color-surface-elevated)",
+            backgroundColor: "transparent",
             opacity: useRadialMask ? 1 : spiderVisibleCrossfade ? 1 : 0,
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
@@ -233,16 +264,17 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
         {/* PortraitLighting — subtle crimson rim only when fully in Spider Mode. */}
         {spiderActive && (
-          <div aria-hidden className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 55px rgba(229,34,61,0.3)" }} />
+          <div
+            aria-hidden
+            className="portrait-spider-lighting pointer-events-none absolute inset-0"
+            style={{ boxShadow: "inset 0 0 55px rgba(229,34,61,0.22)" }}
+          />
         )}
 
-        {/* Bottom fade to blend into the page. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
-
         {/* Touch affordance. */}
-        {isTouch && !spiderActive && (
-          <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-3 py-1 font-mono text-[9px] uppercase tracking-[.16em] text-white/80 backdrop-blur">
-            {tapPreview ? "Tap again for Spider Mode" : "Tap to reveal"}
+        {coarsePointer && !spiderActive && (
+          <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
+            {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>
         )}
       </div>

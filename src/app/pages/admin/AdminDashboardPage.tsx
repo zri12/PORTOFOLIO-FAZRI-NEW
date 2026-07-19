@@ -21,9 +21,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl animate-in fade-in duration-500">
-      <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="font-manrope text-3xl font-bold text-[var(--color-text-main)]">Dashboard</h1>
+          <h1 className="font-manrope text-2xl font-bold text-[var(--color-text-main)] sm:text-3xl">Dashboard</h1>
           <p className="mt-2 text-[var(--color-text-secondary)]">Local CMS prototype overview. Changes persist in browser storage.</p>
         </div>
         <Link to="/admin/projects/new" className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-4 py-2.5 text-sm font-bold text-[var(--color-bg-primary)]"><Plus size={16} /> New Project</Link>
@@ -89,7 +89,7 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
 }
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
-  return <section className={`border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 ${className}`}><h2 className="mb-6 font-manrope text-xl font-bold">{title}</h2>{children}</section>;
+  return <section className={`min-w-0 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 sm:p-6 ${className}`}><h2 className="mb-6 font-manrope text-lg font-bold sm:text-xl">{title}</h2>{children}</section>;
 }
 
 function Activity({ title, meta }: { title: string; meta: string }) {

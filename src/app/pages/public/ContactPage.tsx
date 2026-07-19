@@ -83,16 +83,16 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[var(--color-bg-primary)] pt-32 text-[var(--color-text-main)]">
-      <section className="px-6 pb-16">
+    <main className="min-h-screen overflow-x-clip bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+      <section className="px-5 pb-12 sm:px-6 sm:pb-16">
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow="Contact" title="Let's build something meaningful." description="Have a website, digital product, dashboard, or creative idea in mind? Share the context and the next step can start clearly." />
         </div>
       </section>
-      <section className="px-6 pb-24">
+      <section className="px-5 pb-20 sm:px-6 sm:pb-24">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.15fr_.85fr]">
           <div className="space-y-8">
-            <form onSubmit={submitContact} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 md:p-8">
+            <form onSubmit={submitContact} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 sm:p-6 md:p-8">
               <div className="grid gap-5 md:grid-cols-2">
                 <Field label={t("Name")} name="name" required />
                 <Field label={t("Email")} name="email" type="email" required />
@@ -125,8 +125,8 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <aside className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 md:p-8">
-            <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] pb-6">
+          <aside className="min-w-0 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 sm:p-6 md:p-8">
+            <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-6 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{t("Guestbook")}</p>
                 <h2 className="mt-2 font-manrope text-2xl font-bold">{t("Visitor Comments")}</h2>
