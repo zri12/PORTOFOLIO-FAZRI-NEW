@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Mail, Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
@@ -7,6 +9,8 @@ import type { ContactMessage } from "../../types/portfolio";
 
 export default function AdminMessagesPage() {
   const { messages } = usePortfolioData();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const target = messages.find((message) => message.id === deleteId);
   const setStatus = (message: ContactMessage, status: ContactMessage["status"]) => portfolioRepository.updateMessage({ ...message, status });
   return (
     <div className="mx-auto max-w-6xl">
@@ -21,11 +25,12 @@ export default function AdminMessagesPage() {
               {(["New", "Read", "Replied", "Archived"] as const).map((status) => <button key={status} onClick={() => setStatus(message, status)} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">{status}</button>)}
               <a href={`mailto:${message.email}?subject=Re: ${message.subject}`} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold"><Mail size={14} /> Email</a>
               <a href={`https://wa.me/${message.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">WhatsApp</a>
-              <button onClick={() => portfolioRepository.deleteMessage(message.id)} className="border border-red-500/30 p-2 text-red-300"><Trash size={15} /></button>
+              <button onClick={() => setDeleteId(message.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={15} /></button>
             </div>
           </article>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete message?" description={`The message "${target?.subject || "this message"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete message" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteMessage(deleteId); setDeleteId(null); }} />
     </div>
   );
 }

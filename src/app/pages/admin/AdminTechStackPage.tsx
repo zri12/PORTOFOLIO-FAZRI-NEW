@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Edit, Plus, Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
@@ -9,7 +10,9 @@ import { portfolioRepository } from "../../repositories/portfolioRepository";
 export default function AdminTechStackPage() {
   const { techStack } = usePortfolioData();
   const [query, setQuery] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const filtered = techStack.filter((item) => `${item.name} ${item.category}`.toLowerCase().includes(query.toLowerCase()));
+  const target = techStack.find((item) => item.id === deleteId);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -24,7 +27,7 @@ export default function AdminTechStackPage() {
               </div>
               <div className="flex gap-2">
                 <Link to={`/admin/tech-stack/${item.id}/edit`} className="border border-[var(--color-border)] p-2" title="Edit"><Edit size={16} /></Link>
-                <button onClick={() => portfolioRepository.deleteTechnology(item.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={16} /></button>
+                <button onClick={() => setDeleteId(item.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={16} /></button>
               </div>
             </div>
             <h2 className="mt-5 font-manrope text-xl font-bold">{item.name}</h2>
@@ -38,6 +41,7 @@ export default function AdminTechStackPage() {
           </article>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete technology?" description={`"${target?.name || "This technology"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete technology" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteTechnology(deleteId); setDeleteId(null); }} />
     </div>
   );
 }

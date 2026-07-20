@@ -39,7 +39,7 @@ export default function AdminProjectsPage() {
           </article>
         ))}
       </div>
-      <ConfirmDialog open={Boolean(deleteId)} title="Delete project?" description={`This removes ${target?.title || "the project"} from local demo storage.`} confirmLabel="Delete" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteProject(deleteId); setDeleteId(null); }} />
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete project?" description={`"${target?.title || "This project"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete project" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteProject(deleteId); setDeleteId(null); }} />
     </div>
   );
 }

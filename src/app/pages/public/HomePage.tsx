@@ -46,9 +46,8 @@ function HomeCertificateCard({ certificate, index, onView }: { certificate: Cert
     >
       <article className="flex h-full min-h-[580px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[0_24px_70px_rgba(0,0,0,.16)] transition duration-500 group-hover:-translate-y-1.5 group-hover:border-[var(--color-accent-main)]/65 group-hover:shadow-[0_30px_80px_rgba(0,0,0,.28)]">
         <div className="relative flex h-[340px] shrink-0 items-center justify-center overflow-hidden border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_50%_18%,rgba(78,187,232,.14),transparent_52%),linear-gradient(145deg,var(--color-bg-secondary),var(--color-bg-primary))] p-5 sm:p-7">
-          <div className="absolute left-5 top-5 z-20 flex items-center gap-2">
+          <div className="absolute left-5 top-5 z-20">
             <span className="flex h-10 w-10 items-center justify-center border border-[var(--color-accent-main)]/45 bg-[var(--color-bg-primary)]/90 text-[var(--color-accent-main)] backdrop-blur"><Award size={18} /></span>
-            {isFeatured && <span className="border border-[var(--color-accent-main)]/35 bg-[var(--color-bg-primary)]/90 px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-main)] backdrop-blur">Featured</span>}
           </div>
           <span className="absolute right-5 top-6 z-20 font-mono text-[10px] tracking-[.18em] text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
           <div className="pointer-events-none absolute inset-x-7 bottom-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent-main),transparent)] opacity-35" />
@@ -80,7 +79,10 @@ function HomeCertificateCard({ certificate, index, onView }: { certificate: Cert
         </div>
         <div className="flex flex-1 flex-col p-6 sm:p-7">
           <div className="flex items-center justify-between gap-4">
-            <p className="font-mono text-[9px] uppercase tracking-[.2em] text-[var(--color-accent-main)]">{certificate.category}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <p className="truncate font-mono text-[9px] uppercase tracking-[.2em] text-[var(--color-accent-main)]">{certificate.category}</p>
+              {isFeatured && <span className="shrink-0 border border-[var(--color-accent-main)]/35 bg-[var(--color-accent-main)]/10 px-2 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-[var(--color-accent-main)]">Featured</span>}
+            </div>
             {year && <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{year}</span>}
           </div>
           <h3 className="mt-4 font-manrope text-[26px] font-bold leading-[1.15] tracking-[-.02em]">{certificate.title}</h3>

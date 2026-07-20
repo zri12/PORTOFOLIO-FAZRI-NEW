@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
@@ -8,7 +9,9 @@ import { portfolioRepository } from "../../repositories/portfolioRepository";
 export default function AdminCommentsPage() {
   const { comments } = usePortfolioData();
   const [query, setQuery] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const filtered = comments.filter((item) => `${item.name} ${item.message}`.toLowerCase().includes(query.toLowerCase()));
+  const target = comments.find((comment) => comment.id === deleteId);
   return (
     <div className="mx-auto max-w-6xl">
       <AdminPageHeader title="Comments" description="Approve, hide, pin, reply, and delete visitor comments from the local guestbook." />
@@ -23,11 +26,12 @@ export default function AdminCommentsPage() {
               <button onClick={() => portfolioRepository.updateComment({ ...comment, status: "approved" })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">Approve</button>
               <button onClick={() => portfolioRepository.updateComment({ ...comment, status: "hidden" })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">Hide</button>
               <button onClick={() => portfolioRepository.updateComment({ ...comment, pinned: !comment.pinned })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">{comment.pinned ? "Unpin" : "Pin"}</button>
-              <button onClick={() => portfolioRepository.deleteComment(comment.id)} className="border border-red-500/30 p-2 text-red-300"><Trash size={15} /></button>
+              <button onClick={() => setDeleteId(comment.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={15} /></button>
             </div>
           </article>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete comment?" description={`The comment from "${target?.name || "this visitor"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete comment" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteComment(deleteId); setDeleteId(null); }} />
     </div>
   );
 }

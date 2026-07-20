@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ImagePlus, Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { EmptyState } from "../../components/common/EmptyState";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { isSupabaseEnabled } from "../../lib/supabase/client";
@@ -12,6 +13,8 @@ export default function AdminMediaPage() {
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const target = media.find((item) => item.id === deleteId);
 
   useEffect(() => () => objectUrls.forEach((url) => URL.revokeObjectURL(url)), [objectUrls]);
 
@@ -57,12 +60,13 @@ export default function AdminMediaPage() {
               <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">{item.note}</p>
               <div className="mt-3 flex gap-2">
                 <button onClick={() => navigator.clipboard?.writeText(item.url)} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">Copy URL</button>
-                <button onClick={() => portfolioRepository.deleteMedia(item.id)} className="border border-red-500/30 p-2 text-red-300"><Trash size={14} /></button>
+                <button onClick={() => setDeleteId(item.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={14} /></button>
               </div>
             </article>
           ))}
         </div>
       )}
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete media item?" description={`"${target?.name || "This media item"}" will be removed from the media library. This action cannot be undone.`} confirmLabel="Delete media" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteMedia(deleteId); setDeleteId(null); }} />
     </div>
   );
 }

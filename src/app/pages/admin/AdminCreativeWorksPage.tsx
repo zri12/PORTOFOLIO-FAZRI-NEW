@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Copy, Edit, Plus, Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
@@ -9,7 +10,9 @@ import { portfolioRepository } from "../../repositories/portfolioRepository";
 export default function AdminCreativeWorksPage() {
   const { creativeWorks } = usePortfolioData();
   const [query, setQuery] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const filtered = creativeWorks.filter((item) => `${item.title} ${item.category}`.toLowerCase().includes(query.toLowerCase()));
+  const target = creativeWorks.find((item) => item.id === deleteId);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -28,12 +31,13 @@ export default function AdminCreativeWorksPage() {
                 <Link to={`/admin/creative-works/${item.id}/edit`} className="border border-[var(--color-border)] p-2" title="Edit"><Edit size={15} /></Link>
                 <button onClick={() => portfolioRepository.updateCreativeWork({ ...item, status: item.status === "published" ? "draft" : "published" })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">{item.status === "published" ? "Unpublish" : "Publish"}</button>
                 <button onClick={() => portfolioRepository.updateCreativeWork({ ...item, featured: !item.featured })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">{item.featured ? "Unfeature" : "Feature"}</button>
-                <button onClick={() => portfolioRepository.deleteCreativeWork(item.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={15} /></button>
+                <button onClick={() => setDeleteId(item.id)} className="border border-red-500/30 p-2 text-red-300" title="Delete"><Trash size={15} /></button>
               </div>
             </div>
           </article>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete creative work?" description={`"${target?.title || "This creative work"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete work" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteCreativeWork(deleteId); setDeleteId(null); }} />
     </div>
   );
 }
