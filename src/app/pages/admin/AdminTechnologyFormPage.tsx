@@ -31,16 +31,30 @@ export default function AdminTechnologyFormPage() {
   const navigate = useNavigate();
   const source = id ? techStack.find((item) => item.id === id) : undefined;
   const [draft, setDraft] = useState<Technology>(() => source || createDraft(techStack));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (source) setDraft(source);
     else if (!id) setDraft(createDraft(techStack));
   }, [id, source, techStack]);
 
-  const set = <K extends keyof Technology>(key: K, value: Technology[K]) => setDraft((current) => ({ ...current, [key]: value }));
-  const save = () => {
-    portfolioRepository.updateTechnology(draft);
-    navigate("/admin/tech-stack");
+  const set = <K extends keyof Technology>(key: K, value: Technology[K]) => {
+    setError("");
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      portfolioRepository.updateTechnology(draft);
+      await portfolioRepository.flushPendingWrites();
+      navigate("/admin/tech-stack");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Technology could not be saved to Supabase.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -75,8 +89,9 @@ export default function AdminTechnologyFormPage() {
           <AdminImageField label="Technology Logo" value={draft.logoUrl} folder={`technologies/${draft.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || draft.id}`} hint="Recommended transparent PNG/SVG/WebP, square 512x512px. This appears in admin cards and technology sections." aspect="aspect-square" onChange={(value) => set("logoUrl", value)} />
         </FormSection>
         <div className="flex flex-wrap gap-3">
-          <button onClick={save} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Save Technology</button>
+          <button onClick={() => void save()} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Save Technology"}</button>
           <button onClick={() => navigate("/admin/tech-stack")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
+          {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
     </div>

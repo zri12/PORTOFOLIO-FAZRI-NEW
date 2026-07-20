@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ImagePlus, Move, RotateCcw, Trash, Upload, X } from "lucide-react";
-import { isSupabaseEnabled } from "../../lib/supabase/client";
+import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../../lib/supabase/client";
 import { uploadPortfolioFile } from "../../lib/supabase/storage";
 
 type ImageFieldProps = {
@@ -15,7 +15,9 @@ type ImageFieldProps = {
 export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[16/10]", onChange }: ImageFieldProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [uploaded, setUploaded] = useState(false);
   const [editor, setEditor] = useState<CropRequest | null>(null);
+  const previewUrl = getPreviewUrl(value);
 
   const uploadCropped = async (file: File, previewUrl: string) => {
     if (!file) return;
@@ -24,10 +26,12 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
     try {
       if (!isSupabaseEnabled) {
         onChange(previewUrl);
+        setUploaded(true);
         return;
       }
       const result = await uploadPortfolioFile(file, folder);
       onChange(result.url);
+      setUploaded(true);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
     } finally {
@@ -55,17 +59,17 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
           <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{hint}</p>
         </div>
         {value && (
-          <button type="button" onClick={() => onChange("")} className="text-red-300" title="Remove image">
+          <button type="button" onClick={() => { onChange(""); setUploaded(false); }} className="text-red-300" title="Remove image">
             <Trash size={16} />
           </button>
         )}
       </div>
       <div className={`mt-4 flex ${aspect} items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)]`}>
-        {value ? <img src={value} alt={label} className="h-full w-full object-contain" /> : <ImagePlus className="text-[var(--color-text-muted)]" size={28} />}
+        {previewUrl ? <img src={previewUrl} alt={label} className="h-full w-full object-contain" /> : <ImagePlus className="text-[var(--color-text-muted)]" size={28} />}
       </div>
       <input
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => { setUploaded(false); onChange(event.target.value); }}
         placeholder="Image URL or uploaded public URL"
         className="mt-3 w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-xs outline-none focus:border-[var(--color-accent-main)]"
       />
@@ -74,6 +78,7 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
         <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(event) => void selectFile(event.target.files?.[0] || null)} />
       </label>
       {!isSupabaseEnabled && <p className="mt-2 text-xs leading-5 text-amber-200/80">Supabase env is not active, so this image is saved as a temporary local preview URL. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for permanent uploads.</p>}
+      {uploaded && <p className="mt-2 text-xs leading-5 text-emerald-300">Upload complete. Save this form to publish the image URL to the website.</p>}
       {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
       {editor && <CropEditor request={editor} onClose={() => setEditor(null)} />}
     </div>
@@ -141,7 +146,7 @@ export function AdminGalleryField({ label, values, folder, hint, onChange }: Gal
         {values.map((value, index) => (
           <div key={`${value}-${index}`} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
             <div className="aspect-[16/10] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)]">
-              {value ? <img src={value} alt={`${label} ${index + 1}`} className="h-full w-full object-contain" /> : null}
+              {value ? <img src={getPreviewUrl(value)} alt={`${label} ${index + 1}`} className="h-full w-full object-contain" /> : null}
             </div>
             <input value={value} onChange={(event) => updateAt(index, event.target.value)} className="mt-2 w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 text-xs outline-none" />
             <button type="button" onClick={() => removeAt(index)} className="mt-2 text-xs text-red-300">Remove</button>
@@ -183,6 +188,12 @@ function fileToDataUrl(file: File) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function getPreviewUrl(value: string) {
+  if (!value || value.startsWith("http") || value.startsWith("data:") || value.startsWith("/") || value.startsWith("blob:")) return value;
+  const supabase = getSupabaseClient();
+  return supabase ? supabase.storage.from(publicBucket).getPublicUrl(value).data.publicUrl : value;
 }
 
 async function cropImage(request: CropRequest, zoom: number, offsetX: number, offsetY: number) {
@@ -247,7 +258,7 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] p-4">
           <div>
             <p className="font-manrope text-xl font-bold">Crop image</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} · zoom, drag position with sliders, then apply.</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - zoom, drag position with sliders, then apply.</p>
           </div>
           <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label="Close crop editor">
             <X size={18} />

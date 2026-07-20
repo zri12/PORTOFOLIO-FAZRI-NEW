@@ -29,6 +29,26 @@ function publicAssetUrl(value: unknown) {
 
 const asAssetArray = (value: unknown) => asStringArray(value).map(publicAssetUrl).filter(Boolean);
 
+function storagePathFromPublicUrl(value: string) {
+  if (!value.startsWith("http")) return value;
+  try {
+    const url = new URL(value);
+    const marker = `/storage/v1/object/public/${publicBucket}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return value;
+    return decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+  } catch {
+    return value;
+  }
+}
+
+const toStoredAsset = (value: string | undefined | null) => {
+  const source = value?.trim();
+  return source ? storagePathFromPublicUrl(source) : null;
+};
+
+const toStoredAssetArray = (values: string[]) => values.map((value) => storagePathFromPublicUrl(value)).filter(Boolean);
+
 export function mapProfile(row: Row | null | undefined, fallback: Profile): Profile {
   if (!row) return fallback;
   return {
@@ -77,9 +97,9 @@ export function profileToRow(profile: Profile): Row {
     youtube_url: profile.youtube,
     tiktok_url: profile.tiktok,
     cv_path: profile.cvUrl,
-    logo_path: profile.logoUrl || null,
-    favicon_path: profile.faviconUrl || null,
-    profile_image_path: profile.aboutImageUrl || null,
+    logo_path: toStoredAsset(profile.logoUrl),
+    favicon_path: toStoredAsset(profile.faviconUrl),
+    profile_image_path: toStoredAsset(profile.aboutImageUrl),
   };
 }
 
@@ -187,16 +207,16 @@ export function projectToRow(project: Project): Row {
     result: project.result,
     live_url: project.liveUrl || null,
     source_url: project.sourceUrl || null,
-    cover_path: project.coverImage || null,
-    hero_path: project.heroImage || null,
-    mobile_preview_path: project.mobilePreviewImage || null,
+    cover_path: toStoredAsset(project.coverImage),
+    hero_path: toStoredAsset(project.heroImage),
+    mobile_preview_path: toStoredAsset(project.mobilePreviewImage),
     related_project_slug: project.relatedProjectSlug || null,
     objectives: project.objectives,
     target_users: project.targetUsers,
     responsibilities: project.responsibilities,
     features: project.features,
     process: project.process,
-    gallery: project.gallery,
+    gallery: toStoredAssetArray(project.gallery),
     challenges: project.challenges,
     decisions: project.decisions,
     display_order: project.displayOrder,
@@ -221,7 +241,7 @@ export function mapTechnology(row: Row): Technology {
 export const technologyToRow = (item: Technology): Row => ({
   name: item.name,
   icon_key: item.iconKey,
-  logo_path: item.logoUrl || null,
+  logo_path: toStoredAsset(item.logoUrl),
   category: item.category,
   level: item.level,
   description: item.description,
@@ -261,13 +281,13 @@ export const creativeWorkToRow = (item: CreativeWork): Row => ({
   year: item.year,
   description: item.description,
   brief: item.brief,
-  cover_path: item.cover || null,
-  before_image_path: item.beforeImage || null,
-  after_image_path: item.afterImage || null,
+  cover_path: toStoredAsset(item.cover),
+  before_image_path: toStoredAsset(item.beforeImage),
+  after_image_path: toStoredAsset(item.afterImage),
   video_url: item.videoUrl || null,
   duration: item.duration || null,
   tools: item.tools,
-  gallery: item.gallery,
+  gallery: toStoredAssetArray(item.gallery),
   featured: item.featured,
   status: item.status,
   display_order: item.displayOrder,
@@ -326,7 +346,7 @@ export const certificateToRow = (item: Certificate): Row => ({
   issue_date: item.issueDate || null,
   credential_id: item.credentialId || null,
   credential_url: item.credentialUrl || null,
-  image_path: item.image || null,
+  image_path: toStoredAsset(item.image),
   featured: item.featured,
   published: item.published,
   display_order: item.displayOrder,

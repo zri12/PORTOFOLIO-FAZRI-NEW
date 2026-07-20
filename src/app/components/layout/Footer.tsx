@@ -13,11 +13,11 @@ export const Footer = () => {
   const { t } = useLanguage();
 
   return (
-    <footer className="relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] pb-12 pt-20">
-      <div className="absolute right-0 top-0 h-96 w-96 -translate-y-1/2 translate-x-1/3 rounded-full bg-[var(--color-accent-main)]/5 blur-[100px]" />
-      <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12">
-          <div className="lg:col-span-4">
+    <footer className="relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] pb-[calc(3rem+env(safe-area-inset-bottom))] pt-14 sm:pt-20">
+      <div className="absolute right-0 top-0 hidden h-96 w-96 -translate-y-1/2 translate-x-1/3 rounded-full bg-[var(--color-accent-main)]/5 blur-[100px] sm:block" />
+      <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-6">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-12">
+          <div className="sm:col-span-2 lg:col-span-4">
             <Link to="/" className="flex items-center gap-3">
               <BrandMark className="h-12 w-12 [&_span]:text-xl" />
               <div>
@@ -34,7 +34,7 @@ export const Footer = () => {
           </div>
           <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Contact", "/contact"]]} t={t} />
           <FooterList title={t("Featured Projects")} items={projects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} />
-          <div className="lg:col-span-3">
+          <div className="sm:col-span-2 lg:col-span-3">
             <h4 className="mb-5 font-manrope font-bold">{t("Connect")}</h4>
             <div className="mb-6 grid grid-cols-4 gap-3">
               {[
@@ -60,8 +60,8 @@ export const Footer = () => {
             </div>
           </div>
         </div>
-        <div className="mt-14 flex flex-col gap-5 border-t border-[var(--color-border)] pt-8 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-[var(--color-text-muted)]">© {currentYear} {profile.fullName}. {t("All rights reserved.")}</p>
+        <div className="mt-12 flex items-end justify-between gap-5 border-t border-[var(--color-border)] pt-7 sm:mt-14 md:items-center">
+          <p className="max-w-[17rem] text-sm leading-6 text-[var(--color-text-muted)] sm:max-w-none">© {currentYear} {profile.fullName}. {t("All rights reserved.")}</p>
           <div className="flex items-center gap-5">
             <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)]" aria-label={t("Back to top")}>
               <ArrowUpCircle size={20} />

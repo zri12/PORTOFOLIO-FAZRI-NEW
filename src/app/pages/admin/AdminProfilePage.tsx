@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
@@ -8,8 +8,33 @@ import { portfolioRepository } from "../../repositories/portfolioRepository";
 export default function AdminProfilePage() {
   const { profile } = usePortfolioData();
   const [draft, setDraft] = useState(profile);
-  const [saved, setSaved] = useState(false);
-  const update = (key: keyof typeof draft, value: string) => setDraft({ ...draft, [key]: value });
+  const [dirty, setDirty] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [error, setError] = useState("");
+  const update = (key: keyof typeof draft, value: string) => {
+    setDirty(true);
+    setStatus("idle");
+    setError("");
+    setDraft({ ...draft, [key]: value });
+  };
+
+  useEffect(() => {
+    if (!dirty) setDraft(profile);
+  }, [dirty, profile]);
+
+  const saveProfile = async () => {
+    setStatus("saving");
+    setError("");
+    try {
+      portfolioRepository.updateProfile(draft);
+      await portfolioRepository.flushPendingWrites();
+      setDirty(false);
+      setStatus("saved");
+    } catch (saveError) {
+      setStatus("error");
+      setError(saveError instanceof Error ? saveError.message : "Profile could not be saved to Supabase.");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -41,9 +66,10 @@ export default function AdminProfilePage() {
           </div>
         </FormSection>
         <div className="flex items-center gap-3">
-          <button onClick={() => { portfolioRepository.updateProfile(draft); setSaved(true); }} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Save Profile</button>
-          <button onClick={() => setDraft(profile)} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold">Reset</button>
-          {saved && <span className="text-sm text-emerald-300">Saved locally.</span>}
+          <button onClick={() => void saveProfile()} disabled={status === "saving"} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{status === "saving" ? "Saving..." : "Save Profile"}</button>
+          <button onClick={() => { setDraft(profile); setDirty(false); setStatus("idle"); setError(""); }} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold">Reset</button>
+          {status === "saved" && <span className="text-sm text-emerald-300">Saved to the active data source.</span>}
+          {status === "error" && <span className="text-sm text-red-300">{error}</span>}
         </div>
       </div>
     </div>

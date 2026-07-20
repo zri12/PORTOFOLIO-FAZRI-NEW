@@ -42,17 +42,31 @@ export default function AdminProjectFormPage() {
   const navigate = useNavigate();
   const source = id ? projects.find((project) => project.id === id) : undefined;
   const [draft, setDraft] = useState<Project>(() => source || createDraftProject(projects));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (source) setDraft(source);
     else if (!id) setDraft(createDraftProject(projects));
   }, [id, projects, source]);
 
-  const set = <K extends keyof Project>(key: K, value: Project[K]) => setDraft((current) => ({ ...current, [key]: value }));
-  const save = (status: Project["status"]) => {
+  const set = <K extends keyof Project>(key: K, value: Project[K]) => {
+    setError("");
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const save = async (status: Project["status"]) => {
     const next = { ...draft, status, slug: draft.slug || slugify(draft.title) };
-    portfolioRepository.updateProject(next);
-    navigate("/admin/projects");
+    setSaving(true);
+    setError("");
+    try {
+      portfolioRepository.updateProject(next);
+      await portfolioRepository.flushPendingWrites();
+      navigate("/admin/projects");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Project could not be saved to Supabase.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const relatedOptions = projects.filter((project) => project.id !== draft.id);
@@ -162,9 +176,10 @@ export default function AdminProjectFormPage() {
         </FormSection>
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => save("published")} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Publish</button>
-          <button onClick={() => save("draft")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold">Save Draft</button>
+          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Publish"}</button>
+          <button onClick={() => void save("draft")} disabled={saving} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold disabled:opacity-60">Save Draft</button>
           <button onClick={() => navigate("/admin/projects")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
+          {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
     </div>

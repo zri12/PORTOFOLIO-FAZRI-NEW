@@ -31,16 +31,30 @@ export default function AdminCertificateFormPage() {
   const navigate = useNavigate();
   const source = id ? certificates.find((item) => item.id === id) : undefined;
   const [draft, setDraft] = useState<Certificate>(() => source || createDraft(certificates));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (source) setDraft(source);
     else if (!id) setDraft(createDraft(certificates));
   }, [certificates, id, source]);
 
-  const set = <K extends keyof Certificate>(key: K, value: Certificate[K]) => setDraft((current) => ({ ...current, [key]: value }));
-  const save = () => {
-    portfolioRepository.updateCertificate(draft);
-    navigate("/admin/certificates");
+  const set = <K extends keyof Certificate>(key: K, value: Certificate[K]) => {
+    setError("");
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      portfolioRepository.updateCertificate(draft);
+      await portfolioRepository.flushPendingWrites();
+      navigate("/admin/certificates");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Certificate could not be saved to Supabase.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -66,8 +80,9 @@ export default function AdminCertificateFormPage() {
           <AdminImageField label="Certificate Preview Image" value={draft.image} folder={`certificates/${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || draft.id}`} hint="Recommended 1600x1000px for web certificates or high quality A4 scan. Keep text readable because this opens in a preview modal." onChange={(value) => set("image", value)} />
         </FormSection>
         <div className="flex flex-wrap gap-3">
-          <button onClick={save} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Save Certificate</button>
+          <button onClick={() => void save()} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Save Certificate"}</button>
           <button onClick={() => navigate("/admin/certificates")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
+          {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
     </div>

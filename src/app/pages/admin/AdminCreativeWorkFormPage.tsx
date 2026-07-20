@@ -33,16 +33,30 @@ export default function AdminCreativeWorkFormPage() {
   const navigate = useNavigate();
   const source = id ? creativeWorks.find((item) => item.id === id) : undefined;
   const [draft, setDraft] = useState<CreativeWork>(() => source || createDraft(creativeWorks));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (source) setDraft(source);
     else if (!id) setDraft(createDraft(creativeWorks));
   }, [creativeWorks, id, source]);
 
-  const set = <K extends keyof CreativeWork>(key: K, value: CreativeWork[K]) => setDraft((current) => ({ ...current, [key]: value }));
-  const save = (status: CreativeWork["status"]) => {
-    portfolioRepository.updateCreativeWork({ ...draft, status, slug: draft.slug || slugify(draft.title) });
-    navigate("/admin/creative-works");
+  const set = <K extends keyof CreativeWork>(key: K, value: CreativeWork[K]) => {
+    setError("");
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const save = async (status: CreativeWork["status"]) => {
+    setSaving(true);
+    setError("");
+    try {
+      portfolioRepository.updateCreativeWork({ ...draft, status, slug: draft.slug || slugify(draft.title) });
+      await portfolioRepository.flushPendingWrites();
+      navigate("/admin/creative-works");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Creative work could not be saved to Supabase.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -81,9 +95,10 @@ export default function AdminCreativeWorkFormPage() {
           <AdminGalleryField label="Creative Gallery" values={draft.gallery} folder={`creative-works/${draft.slug || draft.id}/gallery`} hint="Recommended 1600x1000px or consistent 16:10 images. Use 3-8 images for a clean detail page." onChange={(values) => set("gallery", values)} />
         </FormSection>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => save("published")} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Publish</button>
-          <button onClick={() => save("draft")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold">Save Draft</button>
+          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Publish"}</button>
+          <button onClick={() => void save("draft")} disabled={saving} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold disabled:opacity-60">Save Draft</button>
           <button onClick={() => navigate("/admin/creative-works")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
+          {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
     </div>

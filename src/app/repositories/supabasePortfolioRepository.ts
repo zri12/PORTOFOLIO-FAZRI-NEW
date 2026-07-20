@@ -1,5 +1,5 @@
 import { portfolioSeed } from "../data/seed/portfolioSeed";
-import { getSupabaseClient, isSupabaseEnabled } from "../lib/supabase/client";
+import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../lib/supabase/client";
 import {
   certificateToRow,
   commentToRow,
@@ -69,6 +69,25 @@ function toMediaItem(row: Row): MediaItem {
     note: String(row.notes || row.alt || "Stored in Supabase Storage."),
     createdAt: String(row.created_at || new Date().toISOString()),
   };
+}
+
+function mediaTypeFromMime(mimeType: string) {
+  if (mimeType.startsWith("image/")) return "image";
+  if (mimeType.startsWith("video/")) return "video";
+  return "file";
+}
+
+function storagePathFromPublicUrl(value: string) {
+  if (!value.startsWith("http")) return value;
+  try {
+    const url = new URL(value);
+    const marker = `/storage/v1/object/public/${publicBucket}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return value;
+    return decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+  } catch {
+    return value;
+  }
 }
 
 export const supabasePortfolioRepository = {
@@ -320,6 +339,25 @@ export const supabasePortfolioRepository = {
     const supabase = getSupabaseClient();
     if (!supabase) return;
     const { error } = await supabase.from("media_assets").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  async upsertMedia(item: MediaItem) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const mimeType = item.type || "file";
+    const objectPath = storagePathFromPublicUrl(item.url);
+    const { error } = await supabase.from("media_assets").upsert({
+      id: item.id,
+      bucket_id: publicBucket,
+      object_path: objectPath,
+      name: item.name,
+      media_type: mediaTypeFromMime(mimeType),
+      mime_type: mimeType,
+      size_bytes: item.size,
+      public: true,
+      notes: item.note || null,
+    }, { onConflict: "id" });
     if (error) throw error;
   },
 };

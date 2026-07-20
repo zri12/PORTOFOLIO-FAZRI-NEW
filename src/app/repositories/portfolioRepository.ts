@@ -21,6 +21,7 @@ const CHANGE_EVENT = "portfolio-data-change";
 let cachedData: PortfolioData | null = null;
 let cachedRaw: string | null = null;
 let refreshPromise: Promise<PortfolioData> | null = null;
+let backendSyncPromise: Promise<void> | null = null;
 let realtimeUnsubscribe: (() => void) | null = null;
 
 function cloneSeed(): PortfolioData {
@@ -154,8 +155,15 @@ function setCachedData(data: PortfolioData) {
 }
 
 function syncToBackend(action: () => Promise<unknown>) {
-  if (!isSupabaseEnabled) return;
-  void action().then(() => portfolioRepository.refresh()).catch(reportBackendError);
+  if (!isSupabaseEnabled) return Promise.resolve();
+  backendSyncPromise = (backendSyncPromise || Promise.resolve())
+    .catch(() => undefined)
+    .then(async () => {
+      await action();
+      await portfolioRepository.refresh();
+    });
+  void backendSyncPromise.catch(reportBackendError);
+  return backendSyncPromise;
 }
 
 function uuid() {
@@ -250,6 +258,10 @@ export const portfolioRepository = {
         });
     }
     return refreshPromise;
+  },
+  async flushPendingWrites() {
+    if (backendSyncPromise) await backendSyncPromise;
+    return isSupabaseEnabled ? portfolioRepository.refresh() : getData();
   },
   getProfile: () => getData().profile,
   updateProfile(profile: PortfolioData["profile"]) {
@@ -412,6 +424,7 @@ export const portfolioRepository = {
   createMedia(item: Omit<MediaItem, "id" | "createdAt">) {
     const media: MediaItem = { ...item, id: uuid(), createdAt: new Date().toISOString() };
     updateData((data) => data.media.unshift(media));
+    syncToBackend(() => supabasePortfolioRepository.upsertMedia(media));
     return media;
   },
   deleteMedia(id: string) {

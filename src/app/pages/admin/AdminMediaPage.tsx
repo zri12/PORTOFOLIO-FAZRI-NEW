@@ -22,8 +22,7 @@ export default function AdminMediaPage() {
     try {
       for (const file of Array.from(files)) {
         if (isSupabaseEnabled) {
-          const uploaded = await uploadPortfolioFile(file);
-          portfolioRepository.createMedia({ name: file.name, type: file.type || "file", size: file.size, url: uploaded.url, note: `Supabase Storage: ${uploaded.path}` });
+          await uploadPortfolioFile(file);
         } else {
           const url = URL.createObjectURL(file);
           setObjectUrls((items) => [...items, url]);
@@ -48,7 +47,7 @@ export default function AdminMediaPage() {
         <input type="file" multiple className="sr-only" disabled={uploading} onChange={(event) => void handleFiles(event.target.files)} />
       </label>
       {error && <p className="mb-6 border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {media.length === 0 ? <EmptyState title="No media selected" description="Choose files to create temporary previews and metadata rows." /> : (
+      {media.length === 0 ? <EmptyState title="No media selected" description={isSupabaseEnabled ? "Upload files to store them in Supabase Storage and register them in media assets." : "Choose files to create temporary previews and metadata rows."} /> : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {media.map((item) => (
             <article key={item.id} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
