@@ -1,62 +1,23 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Keeps ScrollTrigger measurements fresh while preserving native scrolling.
- * A previous Lenis wrapper smoothed every wheel event and made all public
- * pages feel delayed or held back during normal scrolling.
+ * Uses native scrolling and one lightweight section observer. Page-level
+ * Motion components own their detailed reveals, avoiding duplicate animation
+ * work on every nested card, image, and grid item.
  */
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const refresh = () => ScrollTrigger.refresh();
-    const refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
-    window.addEventListener("resize", refresh);
-
-    return () => {
-      cancelAnimationFrame(refreshFrame);
-      window.removeEventListener("resize", refresh);
-    };
-  }, []);
-
-  useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const compactViewport = window.matchMedia("(max-width: 1023px)").matches;
-    const revealTargets = Array.from(
-      document.querySelectorAll<HTMLElement>([
-        "main > section",
-        "main article",
-        "main aside",
-        "main form",
-        "main .grid > a",
-        "main .grid > button",
-        "main .grid > div",
-        "main img",
-        "footer > div",
-      ].join(", "))
-    ).filter(
-      (element) =>
-        !element.closest(
-          "[data-no-reveal], .fixed, [role='dialog'], .hero-section-shell",
-        ) && !element.matches(".hero-section-shell"),
-    );
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("main > section"));
+    const revealTargets = compactViewport || reduceMotion
+      ? []
+      : sections.filter((section) => !section.matches(".hero-section-shell, [data-no-reveal]"));
 
-    if (reduceMotion) {
-      revealTargets.forEach((element) => element.classList.add("scroll-reveal-visible"));
-      return;
-    }
-
-    revealTargets.forEach((element, index) => {
-      element.classList.add("scroll-reveal");
-      const delayStep = compactViewport ? 30 : 45;
-      const delayIndex = compactViewport ? Math.min(index % 4, 3) : Math.min(index % 8, 7);
-      element.style.setProperty("--reveal-delay", `${delayIndex * delayStep}ms`);
-    });
+    revealTargets.forEach((element) => element.classList.add("scroll-reveal"));
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -64,24 +25,27 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
           if (!entry.isIntersecting) return;
           entry.target.classList.add("scroll-reveal-visible");
           if (entry.target instanceof HTMLElement && entry.target.matches("main > section")) {
-            const sections = Array.from(document.querySelectorAll("main > section"));
             window.dispatchEvent(new CustomEvent("portfolio-section-active", { detail: { index: sections.indexOf(entry.target), id: entry.target.id || "" } }));
           }
-          observer.unobserve(entry.target);
+          if (!entry.target.matches("main > section") || entry.intersectionRatio >= 0.05) {
+            observer.unobserve(entry.target);
+          }
         });
       },
       {
-        rootMargin: compactViewport ? "0px 0px -2% 0px" : "0px 0px -8% 0px",
-        threshold: compactViewport ? 0.03 : 0.08,
+        rootMargin: "0px 0px -4% 0px",
+        threshold: [0.01, 0.05],
       }
     );
 
-    revealTargets.forEach((element) => observer.observe(element));
-    const refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    sections.forEach((section) => observer.observe(section));
 
     return () => {
-      cancelAnimationFrame(refreshFrame);
       observer.disconnect();
+      revealTargets.forEach((element) => {
+        element.classList.remove("scroll-reveal", "scroll-reveal-visible");
+        element.style.removeProperty("--reveal-delay");
+      });
     };
   }, [pathname]);
 

@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ChevronDown, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
 import { Link } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function cn(...classes: Array<string | undefined | null | false>) {
   return classes.filter(Boolean).join(" ");
@@ -58,7 +58,10 @@ export function CardStack<T extends CardStackItem>({
   const reduceMotion = useReducedMotion();
   const [active, setActive] = useState(() => wrapIndex(initialIndex, items.length));
   const [hovering, setHovering] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [coarsePointer] = useState(() => window.matchMedia("(hover: none), (pointer: coarse)").matches);
   const maxOffset = Math.max(0, Math.floor(maxVisible / 2));
+  const stackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setActive((current) => wrapIndex(current, items.length));
@@ -68,17 +71,26 @@ export function CardStack<T extends CardStackItem>({
   const next = () => setActive((current) => wrapIndex(current + 1, items.length));
 
   useEffect(() => {
-    if (!autoAdvance || reduceMotion || !items.length) return;
+    const stack = stackRef.current;
+    if (!stack) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { rootMargin: "120px 0px", threshold: 0.01 });
+    observer.observe(stack);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!autoAdvance || reduceMotion || coarsePointer || !inView || document.visibilityState !== "visible" || !items.length) return;
     if (pauseOnHover && hovering) return;
     const timer = window.setInterval(next, Math.max(900, intervalMs));
     return () => window.clearInterval(timer);
-  }, [autoAdvance, hovering, intervalMs, items.length, pauseOnHover, reduceMotion]);
+  }, [autoAdvance, coarsePointer, hovering, inView, intervalMs, items.length, pauseOnHover, reduceMotion]);
 
   if (!items.length) return null;
   const activeItem = items[active];
 
   return (
     <div
+      ref={stackRef}
       className={cn("relative w-full overflow-x-clip overflow-y-visible", className)}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
@@ -157,7 +169,7 @@ export function CardStack<T extends CardStackItem>({
         <button
           type="button"
           onClick={next}
-          className="absolute right-0 top-1/2 z-[120] flex h-14 w-11 -translate-y-1/2 items-center justify-center rounded-l-2xl border border-white/10 bg-black/80 text-white shadow-2xl transition hover:bg-white hover:text-black"
+          className="absolute right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[120] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/85 text-white shadow-2xl transition hover:bg-white hover:text-black sm:right-6 sm:h-14 sm:w-14"
           aria-label="Next creative work"
         >
           <ChevronRight size={24} />
@@ -200,7 +212,7 @@ function DefaultStackCard({ item }: { item: CardStackItem }) {
   return (
     <div className="group relative h-full w-full">
       {item.imageSrc ? (
-        <img src={item.imageSrc} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" draggable={false} loading="lazy" />
+        <img src={item.imageSrc} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" draggable={false} loading="lazy" decoding="async" />
       ) : (
         <div className="h-full w-full bg-[var(--color-bg-secondary)]" />
       )}

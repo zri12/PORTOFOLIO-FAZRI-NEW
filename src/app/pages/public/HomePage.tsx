@@ -1,19 +1,20 @@
 ﻿import { motion, useReducedMotion } from "motion/react";
 import { Link } from "react-router";
 import { ArrowRight, Award, BriefcaseBusiness, Camera, Check, ChevronRight, Code2, Download, Github, Instagram, Linkedin, Mail, MapPin, MessageCircle, Monitor, MousePointer2, Palette, Send, Sparkles, Wrench, X } from "lucide-react";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { ProjectPreview } from "../../components/portfolio/ProjectPreview";
 import { SpiderWebField } from "../../components/portfolio/SpiderWebField";
 import { DualCharacterReveal } from "../../components/portfolio/DualCharacterReveal";
 import { CardStack } from "../../components/portfolio/CardStack";
-import { SpiderWebArchitecture3D } from "../../components/portfolio/SpiderWebArchitecture3D";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import portrait from "../../../imports/fazri.png";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
 import type { Certificate } from "../../types/portfolio";
+
+const SpiderWebArchitecture3D = lazy(() => import("../../components/portfolio/SpiderWebArchitecture3D").then((module) => ({ default: module.SpiderWebArchitecture3D })));
 
 const creativeImages = [
   "https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?auto=format&fit=crop&w=1300&q=90",
@@ -30,7 +31,7 @@ const techGroups = {
 };
 
 function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[.22em] text-[var(--color-accent-main)]">{children}</p>; }
-function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); return <motion.div initial={reduce ? false : { opacity: 0, y: 30 }} whileInView={reduce ? {} : { opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: .7, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
+function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); const animate = !reduce && window.innerWidth >= 1024; return <motion.div initial={animate ? { opacity: 0, y: 24 } : false} whileInView={animate ? { opacity: 1, y: 0 } : {}} viewport={{ once: true, amount: 0.12 }} transition={{ duration: .55, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
 
 function HomeCertificateCard({ certificate, index, onView }: { certificate: Certificate; index: number; onView: (id: string) => void }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -150,6 +151,7 @@ export default function HomePage() {
   const [sent, setSent] = useState(false);
   const [heroImageHover, setHeroImageHover] = useState(false);
   const [spiderSceneReady, setSpiderSceneReady] = useState(false);
+  const [compactViewport, setCompactViewport] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const reduce = useReducedMotion();
   useDocumentMeta({ title: `${profile.fullName} - ${profile.title}`, description: profile.headline });
   const heroCharRef = useRef<HTMLDivElement>(null);
@@ -191,7 +193,14 @@ export default function HomePage() {
   };
   const isSpiderMode = mode === "spider";
   useEffect(() => {
-    if (!isSpiderMode) {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const updateCompactViewport = () => setCompactViewport(query.matches);
+    query.addEventListener("change", updateCompactViewport);
+    return () => query.removeEventListener("change", updateCompactViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isSpiderMode || compactViewport) {
       setSpiderSceneReady(false);
       return;
     }
@@ -199,7 +208,7 @@ export default function HomePage() {
     const delay = reduce ? 0 : 1400;
     const timer = window.setTimeout(() => setSpiderSceneReady(true), delay);
     return () => window.clearTimeout(timer);
-  }, [isSpiderMode, reduce]);
+  }, [compactViewport, isSpiderMode, reduce]);
 
   const heroBaseImage = isSpiderMode ? spiderCharacter : professionalCharacter;
   const heroRevealImage = isSpiderMode ? professionalCharacter : spiderCharacter;
@@ -218,7 +227,11 @@ export default function HomePage() {
     <main className={`portfolio-canvas overflow-x-clip bg-[var(--color-bg-primary)] text-[var(--color-text-main)] ${mode === "spider" ? "spider-mode-active" : ""}`}>
     <section className="hero-section-shell relative isolate min-h-[100svh] overflow-hidden border-b border-[var(--color-border)] lg:h-[100svh] lg:min-h-[720px]">
       <div className="hero-atmosphere pointer-events-none absolute inset-0" />
-      {isSpiderMode && spiderSceneReady && <SpiderWebArchitecture3D className="absolute inset-0 z-[3]" />}
+      {isSpiderMode && spiderSceneReady && !compactViewport && (
+        <Suspense fallback={null}>
+          <SpiderWebArchitecture3D className="absolute inset-0 z-[3]" />
+        </Suspense>
+      )}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-1/3 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
       <div className="hero-layout relative z-10 flex min-h-[100svh] items-center overflow-hidden px-5 pb-0 pt-24 sm:px-6 sm:pt-28 lg:h-full lg:min-h-0 lg:pb-12 lg:pt-24">
 

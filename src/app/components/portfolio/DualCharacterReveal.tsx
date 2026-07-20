@@ -9,16 +9,16 @@ type Breakpoint = "desktop" | "laptop" | "tablet" | "mobile";
 // Per-breakpoint, per-image calibration. The two source photos have slightly
 // different canvas dimensions and body proportions, so each image is aligned
 // independently (head-top / eye-line / shoulders / torso) via scale + offset on
-// an INNER wrapper, with transform-origin at 50% 0% so scaling never shifts the
-// top of the head. Values are starting points tuned against the real assets.
+// an INNER wrapper, with transform-origin at 50% 100% so both subjects stay
+// anchored to the same baseline while their transparent bounds are normalized.
 const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal }> = {
-  // Scaled up (origin 50% 0%) so the character fills the frame confidently and
-  // the empty space beneath the subject is cropped. Spider is scaled slightly
-  // less because its source framing is tighter, keeping both heads the same size.
-  desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.23, scaleY: 1.275, x: 0, y: -1.2 } },
-  laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.21, scaleY: 1.255, x: 0, y: -1.15 } },
-  tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.17, scaleY: 1.21, x: 0, y: -1 } },
-  mobile: { professional: { scaleX: 1.1, scaleY: 1.1, x: 0, y: 0 }, spider: { scaleX: 1.13, scaleY: 1.17, x: 0, y: -0.9 } },
+  // The professional source is 484x515 while the Spider source is 500x500.
+  // These values normalize their alpha bounds, not their canvases, so the
+  // head, shoulder line, crossed arms, and elbows share the same coordinates.
+  desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
+  laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
+  tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
+  mobile: { professional: { scaleX: 1.1, scaleY: 1.1, x: 0, y: 0 }, spider: { scaleX: 1.058, scaleY: 1.112, x: 0, y: 0 } },
 };
 
 interface Cal {
@@ -30,7 +30,7 @@ interface Cal {
 
 // Small "discovery lens" — deliberately far smaller than a body-sized portal.
 const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 58 };
-const FEATHER = 12;
+const FEATHER = 5;
 const LERP = 0.32; // fast, precise pointer follow
 
 function getBreakpoint(): Breakpoint {
@@ -53,6 +53,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
   const frameRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const touchHideTimerRef = useRef<number | null>(null);
   const [bp, setBp] = useState<Breakpoint>(getBreakpoint);
   const [coarsePointer, setCoarsePointer] = useState(() => window.matchMedia("(hover: none), (pointer: coarse)").matches);
 
@@ -71,6 +72,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
     return () => {
       window.removeEventListener("resize", onResize);
       pointerQuery.removeEventListener("change", onPointerChange);
+      if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
     };
   }, []);
 
@@ -84,7 +86,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
   // rAF loop drives CSS custom properties directly — no React re-render per frame.
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || coarsePointer) return;
     const el = frameRef.current;
     if (!el) return;
     const tick = () => {
@@ -104,7 +106,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [reduce, spiderActive]);
+  }, [coarsePointer, reduce, spiderActive]);
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (reduce) return;
@@ -115,18 +117,6 @@ export function DualCharacterReveal({ className = "" }: Props) {
     target.current.y = e.clientY - rect.top;
     target.current.r = HOVER_RADIUS[bp];
     setHovering(true);
-  };
-
-  const updateTouchReveal = (clientX: number, clientY: number) => {
-    if (reduce) return;
-    const el = frameRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    target.current.x = clientX - rect.left;
-    target.current.y = clientY - rect.top;
-    target.current.r = HOVER_RADIUS[bp];
-    setHovering(true);
-    setTapPreview(true);
   };
 
   const handleEnter = () => {
@@ -141,8 +131,22 @@ export function DualCharacterReveal({ className = "" }: Props) {
     target.current.r = 0; // radius shrinks in place; position is not reset, so no jump
   };
 
+  const hideTouchReveal = (immediate = false) => {
+    if (!coarsePointer) return;
+    const hide = () => {
+      setHovering(false);
+      setTapPreview(false);
+      target.current.r = 0;
+      touchHideTimerRef.current = null;
+    };
+    if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
+    if (immediate) hide();
+    else touchHideTimerRef.current = window.setTimeout(hide, 850);
+  };
+
   const handlePointerDown = (event: React.PointerEvent) => {
     if (reduce || event.pointerType === "mouse") return;
+    if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
     handlePointerMove(event);
     setTapPreview(true);
   };
@@ -154,7 +158,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const revealVisibleCrossfade = tapPreview;
-  const useRadialMask = !reduce;
+  const useRadialMask = !reduce && !coarsePointer;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -176,14 +180,8 @@ export function DualCharacterReveal({ className = "" }: Props) {
         onPointerEnter={handleEnter}
         onPointerLeave={handleLeave}
         onPointerDown={handlePointerDown}
-        onTouchStart={(event) => {
-          const touch = event.touches[0];
-          if (touch) updateTouchReveal(touch.clientX, touch.clientY);
-        }}
-        onTouchMove={(event) => {
-          const touch = event.touches[0];
-          if (touch) updateTouchReveal(touch.clientX, touch.clientY);
-        }}
+        onPointerUp={() => hideTouchReveal(false)}
+        onPointerCancel={() => hideTouchReveal(true)}
         onClick={handleClick}
         role="button"
         tabIndex={0}
@@ -194,14 +192,12 @@ export function DualCharacterReveal({ className = "" }: Props) {
             toggleMode();
           }
         }}
-        className="group relative h-full w-full cursor-pointer select-none overflow-hidden"
+        className="group relative h-full w-full cursor-pointer select-none overflow-hidden touch-pan-y"
       >
         {/* ProfessionalLayer */}
         <div
           className="absolute inset-0"
           style={{
-            transformOrigin: "50% 0%",
-            transform: proTransform,
             zIndex: spiderActive ? 2 : 1,
             WebkitMaskImage: spiderActive ? maskValue : "none",
             maskImage: spiderActive ? maskValue : "none",
@@ -211,13 +207,18 @@ export function DualCharacterReveal({ className = "" }: Props) {
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
-          <img
-            src={professionalCharacter}
-            alt="Fazri Lukman Nurrohman in a professional dark suit, arms crossed"
-            loading="eager"
-            draggable={false}
-            className="h-full w-full object-contain object-[50%_0%]"
-          />
+          <div
+            className="absolute inset-0"
+            style={{ transformOrigin: "50% 100%", transform: proTransform }}
+          >
+            <img
+              src={professionalCharacter}
+              alt="Fazri Lukman Nurrohman in a professional dark suit, arms crossed"
+              loading="eager"
+              draggable={false}
+              className="h-full w-full object-contain object-[50%_100%]"
+            />
+          </div>
         </div>
 
         {/* SpiderLayer — revealed through the pointer mask (desktop/laptop) or a
@@ -225,8 +226,6 @@ export function DualCharacterReveal({ className = "" }: Props) {
         <div
           className="absolute inset-0"
           style={{
-            transformOrigin: "50% 0%",
-            transform: spiderTransform,
             zIndex: spiderActive ? 1 : 2,
             WebkitMaskImage: spiderActive ? "none" : maskValue,
             maskImage: spiderActive ? "none" : maskValue,
@@ -237,13 +236,18 @@ export function DualCharacterReveal({ className = "" }: Props) {
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
-          <img
-            src={spiderCharacter}
-            alt="Fazri in an original crimson spider-inspired suit, arms crossed"
-            loading="eager"
-            draggable={false}
-            className="h-full w-full object-contain object-[50%_0%]"
-          />
+          <div
+            className="absolute inset-0"
+            style={{ transformOrigin: "50% 100%", transform: spiderTransform }}
+          >
+            <img
+              src={spiderCharacter}
+              alt="Fazri in an original crimson spider-inspired suit, arms crossed"
+              loading="eager"
+              draggable={false}
+              className="h-full w-full object-contain object-[50%_100%]"
+            />
+          </div>
         </div>
 
         {/* CursorRevealBoundary — a thin (~1.5px), low-opacity crimson line that

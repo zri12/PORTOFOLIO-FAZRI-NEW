@@ -1,14 +1,14 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { SplashProgress } from "../animation/SplashProgress";
-import { SplashWebGLShader } from "../animation/SplashWebGLShader";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
-import portrait from "../../../imports/fazri.png";
+
+const SplashWebGLShader = lazy(() => import("../animation/SplashWebGLShader").then((module) => ({ default: module.SplashWebGLShader })));
 
 const BOOT_SPLASH_KEY = "__fazri_portfolio_boot_splash_seen__";
-const SPLASH_MIN_MS = 2850;
+const SPLASH_MIN_MS = 1800;
 const SPLASH_EXIT_MS = 620;
 const SPLASH_ASSET_TIMEOUT_MS = 1900;
 
@@ -28,6 +28,7 @@ interface LoadingScreenProps {
 export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   const { mode } = useContext(ThemeModeContext);
   const reduced = !!useReducedMotion();
+  const compactViewport = window.matchMedia("(max-width: 767px)").matches;
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const bodyOverflowRef = useRef("");
   const [visible, setVisible] = useState(() => !(window as Window & { [BOOT_SPLASH_KEY]?: boolean })[BOOT_SPLASH_KEY]);
@@ -55,13 +56,12 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
     document.body.style.overflow = "hidden";
 
     let done = false;
-    const minDuration = reduced ? 720 : SPLASH_MIN_MS;
+    const minDuration = reduced || compactViewport ? 620 : SPLASH_MIN_MS;
     const start = performance.now();
     const criticalAssets = Promise.race([
       Promise.all([
         preloadImage(mode === "spider" ? spiderCharacter : professionalCharacter),
         preloadImage(mode === "spider" ? professionalCharacter : spiderCharacter),
-        preloadImage(portrait),
       ]),
       new Promise<void>((resolve) => window.setTimeout(resolve, SPLASH_ASSET_TIMEOUT_MS)),
     ]);
@@ -99,7 +99,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = bodyOverflowRef.current;
     };
-  }, [mode, reduced, visible]);
+  }, [compactViewport, mode, reduced, visible]);
 
   if (!visible) return null;
 
@@ -118,7 +118,11 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       aria-live="polite"
       aria-label={status}
     >
-      <SplashWebGLShader exiting={exiting} reduced={reduced} />
+      {!reduced && !compactViewport && (
+        <Suspense fallback={null}>
+          <SplashWebGLShader exiting={exiting} />
+        </Suspense>
+      )}
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,.12),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.52)_58%,rgba(0,0,0,.72))]" />
       <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[length:84px_84px] opacity-20 [mask-image:radial-gradient(circle_at_50%_38%,#000,transparent_70%)]" />
 

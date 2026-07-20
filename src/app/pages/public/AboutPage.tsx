@@ -12,7 +12,7 @@ const journey = [
   ["05", "Current focus", "Creating polished web experiences with modern animation, stronger systems thinking, and dimensional interaction."],
 ];
 const values = ["Useful before ornamental", "Careful with the details", "Clear communication throughout", "Always learning in public"];
-function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); return <motion.div initial={reduce ? false : { opacity: 0, y: 25 }} whileInView={reduce ? {} : { opacity: 1, y: 0 }} viewport={{ once: true, amount: .15 }} transition={{ duration: .65 }} className={className}>{children}</motion.div>; }
+function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); const animate = !reduce && window.innerWidth >= 1024; return <motion.div initial={animate ? { opacity: 0, y: 22 } : false} whileInView={animate ? { opacity: 1, y: 0 } : {}} viewport={{ once: true, amount: .12 }} transition={{ duration: .52 }} className={className}>{children}</motion.div>; }
 function Label({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] uppercase tracking-[.2em] text-[var(--color-accent-main)]">{children}</p>; }
 
 export default function AboutPage() {

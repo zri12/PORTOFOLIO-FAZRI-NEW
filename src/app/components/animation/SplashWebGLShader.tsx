@@ -80,8 +80,8 @@ export function SplashWebGLShader({ exiting = false, reduced = false }: SplashWe
 
     const initScene = () => {
       refs.scene = new THREE.Scene();
-      refs.renderer = new THREE.WebGLRenderer({ canvas });
-      refs.renderer.setPixelRatio(window.devicePixelRatio);
+      refs.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+      refs.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       refs.renderer.setClearColor(new THREE.Color(0x000000));
 
       refs.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1);
@@ -120,21 +120,28 @@ export function SplashWebGLShader({ exiting = false, reduced = false }: SplashWe
       handleResize();
     };
 
+    let pageVisible = document.visibilityState === "visible";
+    const onVisibility = () => {
+      pageVisible = document.visibilityState === "visible";
+    };
     const animate = () => {
+      refs.animationId = requestAnimationFrame(animate);
+      if (!pageVisible) return;
       if (refs.uniforms) refs.uniforms.time.value += 0.01;
       if (refs.renderer && refs.scene && refs.camera) {
         refs.renderer.render(refs.scene, refs.camera);
       }
-      refs.animationId = requestAnimationFrame(animate);
     };
 
     initScene();
     animate();
     window.addEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       if (refs.animationId) cancelAnimationFrame(refs.animationId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (refs.mesh) {
         refs.scene?.remove(refs.mesh);
         refs.mesh.geometry.dispose();
