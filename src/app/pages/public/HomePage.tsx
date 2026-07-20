@@ -243,7 +243,57 @@ export default function HomePage() {
 
     <section className="px-6 py-24"><div className="mx-auto max-w-7xl"><Reveal><Eyebrow>08 / Journey</Eyebrow><h2 className="font-manrope text-4xl font-bold">Experience & ongoing practice</h2></Reveal><div className="mt-12 border-l border-[var(--color-border)] pl-6 lg:ml-[22%] lg:pl-12">{[["2024 - Present", "Creative Web Developer", "Independent & client collaborations", "Indonesia", "Building useful platforms, product interfaces, and visual experiences with a strong implementation focus."], ["2023 - 2024", "Web Development Projects", "Academic and client work", "Medan", "Shipped dashboards, operational systems, and data-focused web applications."], ["2022 - 2023", "Exploration & foundation", "Learning and organization activities", "Indonesia", "Strengthened a cross-disciplinary practice across development, UI design and visual production."]].map(([period, role, org, location, description]) => <Reveal key={role} className="relative pb-12 last:pb-0"><span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full border-2 border-[var(--color-bg-primary)] bg-[var(--color-accent-main)] lg:-left-[55px]" /><p className="font-mono text-[10px] text-[var(--color-accent-main)]">{period}</p><div className="mt-3 grid gap-3 lg:grid-cols-[.7fr_1.3fr]"><div><h3 className="font-manrope text-xl font-bold">{role}</h3><p className="mt-1 text-sm text-[var(--color-text-muted)]">{org} - {location}</p></div><div><p className="text-sm leading-6 text-[var(--color-text-secondary)]">{description}</p><div className="mt-3 flex gap-2"><span className="border border-[var(--color-border)] px-2 py-1 font-mono text-[8px] text-[var(--color-text-muted)]">React</span><span className="border border-[var(--color-border)] px-2 py-1 font-mono text-[8px] text-[var(--color-text-muted)]">UI Design</span></div></div></div></Reveal>)}</div></div></section>
 
-    <section className="bg-[var(--color-surface-elevated)] px-6 py-24"><div className="mx-auto max-w-7xl"><Reveal><Eyebrow>09 / Recognition</Eyebrow><div className="flex flex-wrap items-end justify-between gap-5"><h2 className="font-manrope text-4xl font-bold">Certificates & achievements</h2><Link to="/certificates" className="text-sm font-semibold text-[var(--color-accent-main)]">View certificate archive <ArrowRight className="inline" size={15} /></Link></div></Reveal>{homeCertificates.length > 0 && <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{homeCertificates.map((certificate, index) => { const isFeatured = certificate.featured || index === 0; const year = certificate.issueDate ? new Date(certificate.issueDate).getFullYear() : ""; const cardContent = <article className={`group flex h-full flex-col overflow-hidden border border-[var(--color-border)] ${isFeatured ? "bg-[var(--color-bg-secondary)]" : "bg-[var(--color-bg-primary)]"}`}><div className={`flex min-h-[190px] items-center justify-center overflow-hidden ${isFeatured ? "bg-[linear-gradient(135deg,rgba(216,231,232,.18),rgba(78,187,232,.08)),var(--color-bg-primary)]" : "bg-[var(--color-bg-primary)]"} p-3`}><img src={certificate.image} alt="" aria-hidden="true" loading="lazy" className="h-auto max-h-[330px] w-full object-contain transition duration-500 group-hover:scale-[1.02]" onError={(event) => { event.currentTarget.hidden = true; }} /></div><div className="flex flex-1 flex-col p-6"><Award size={22} className="text-[var(--color-accent-main)]" /><p className="mt-8 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{certificate.category}</p><h3 className="mt-2 font-manrope text-xl font-bold">{certificate.title}</h3><p className="mt-2 text-sm text-[var(--color-text-secondary)]">{certificate.issuer}{year ? ` - ${year}` : ""}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold underline underline-offset-4">View Certificate <ArrowRight size={13} /></span></div></article>; return <Reveal key={certificate.id}>{certificate.credentialUrl ? <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="block h-full">{cardContent}</a> : <Link to="/certificates" className="block h-full">{cardContent}</Link>}</Reveal>; })}</div>}</div></section>
+    <section className="relative overflow-hidden border-y border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-6 py-24">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(78,187,232,.08),transparent_36%,rgba(115,213,194,.06)_72%,transparent)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent-main),transparent)]" />
+      <div className="relative mx-auto max-w-7xl">
+        <Reveal>
+          <Eyebrow>09 / Recognition</Eyebrow>
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <h2 className="font-manrope text-4xl font-bold tracking-[-.025em]">Certificates & achievements</h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--color-text-secondary)]">Selected learning records that strengthen the web development practice and keep the portfolio grounded in real progress.</p>
+            </div>
+            <Link to="/certificates" className="inline-flex items-center gap-2 border-b border-[var(--color-accent-main)] pb-2 text-sm font-semibold text-[var(--color-accent-main)]">View certificate archive <ArrowRight size={15} /></Link>
+          </div>
+        </Reveal>
+        {homeCertificates.length > 0 && (
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-12">
+            {homeCertificates.map((certificate, index) => {
+              const isFeatured = certificate.featured || index === 0;
+              const year = certificate.issueDate?.slice(0, 4) || "";
+              const cardContent = (
+                <article className={`group relative flex h-full min-h-[360px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] transition duration-500 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/70 ${isFeatured ? "xl:col-span-6" : "xl:col-span-3"}`}>
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(78,187,232,.14),transparent_34%,rgba(255,255,255,.035)_72%,transparent)] opacity-70 transition group-hover:opacity-100" />
+                  <div className="relative flex min-h-[230px] flex-1 items-center justify-center overflow-hidden border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_50%_0%,rgba(78,187,232,.15),transparent_42%),var(--color-bg-secondary)] p-5">
+                    <div className="absolute left-5 top-5 flex h-9 w-9 items-center justify-center border border-[var(--color-accent-main)]/40 bg-[var(--color-bg-primary)]/80 text-[var(--color-accent-main)] backdrop-blur">
+                      <Award size={18} />
+                    </div>
+                    <span className="absolute right-5 top-5 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
+                    {certificate.image ? (
+                      <img src={certificate.image} alt="" aria-hidden="true" loading="lazy" className={`relative z-10 h-auto w-full object-contain drop-shadow-[0_24px_38px_rgba(0,0,0,.42)] transition duration-500 group-hover:scale-[1.025] ${isFeatured ? "max-h-[430px]" : "max-h-[270px]"}`} onError={(event) => { event.currentTarget.hidden = true; }} />
+                    ) : (
+                      <div className="relative z-10 flex h-36 w-full items-center justify-center border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]"><Award size={30} /></div>
+                    )}
+                  </div>
+                  <div className="relative z-10 p-6">
+                    <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{certificate.category}</p>
+                    <h3 className="mt-3 font-manrope text-2xl font-bold leading-tight tracking-[-.02em]">{certificate.title}</h3>
+                    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-[var(--color-text-secondary)]">
+                      <span>{certificate.issuer || "Independent learning"}</span>
+                      {year && <span className="text-[var(--color-text-muted)]">/ {year}</span>}
+                    </div>
+                    {certificate.credentialId && <p className="mt-4 w-fit border border-[var(--color-border)] px-3 py-2 font-mono text-[9px] uppercase tracking-[.12em] text-[var(--color-text-muted)]">{certificate.credentialId}</p>}
+                    <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[var(--color-text-main)] underline underline-offset-4 transition group-hover:text-[var(--color-accent-main)]">View Certificate <ArrowRight size={13} /></span>
+                  </div>
+                </article>
+              );
+              return <Reveal key={certificate.id} className={isFeatured ? "xl:col-span-6" : "xl:col-span-3"}>{certificate.credentialUrl ? <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="block h-full">{cardContent}</a> : <Link to="/certificates" className="block h-full">{cardContent}</Link>}</Reveal>;
+            })}
+          </div>
+        )}
+      </div>
+    </section>
 
     <section className="px-6 py-24"><div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-2"><Reveal className="border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-8 relative overflow-hidden">
       {mode === "spider" && <div className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-red-500/10 to-transparent pointer-events-none" />}
