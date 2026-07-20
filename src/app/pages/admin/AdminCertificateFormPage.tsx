@@ -5,6 +5,7 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Certificate } from "../../types/portfolio";
 
@@ -51,7 +52,7 @@ export default function AdminCertificateFormPage() {
       await portfolioRepository.flushPendingWrites();
       navigate("/admin/certificates");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Certificate could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Certificate could not be saved to Supabase."));
     } finally {
       setSaving(false);
     }

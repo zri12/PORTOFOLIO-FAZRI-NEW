@@ -43,6 +43,10 @@ try {
         display_name: "Fazri L.",
         role: "owner",
       },
+      app_metadata: {
+        role: "owner",
+        username,
+      },
     });
     if (error) throw error;
     user = data.user;
@@ -56,6 +60,11 @@ try {
         username,
         display_name: user.user_metadata?.display_name || "Fazri L.",
         role: user.user_metadata?.role || "owner",
+      },
+      app_metadata: {
+        ...(user.app_metadata || {}),
+        role: user.app_metadata?.role || "owner",
+        username,
       },
     });
     if (error) throw error;

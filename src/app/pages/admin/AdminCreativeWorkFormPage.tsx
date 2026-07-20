@@ -6,6 +6,7 @@ import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { CreativeWork } from "../../types/portfolio";
 
@@ -53,7 +54,7 @@ export default function AdminCreativeWorkFormPage() {
       await portfolioRepository.flushPendingWrites();
       navigate("/admin/creative-works");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Creative work could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Creative work could not be saved to Supabase."));
     } finally {
       setSaving(false);
     }

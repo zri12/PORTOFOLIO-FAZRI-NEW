@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 
 export default function AdminSettingsPage() {
@@ -32,7 +33,7 @@ export default function AdminSettingsPage() {
       setStatus("saved");
     } catch (saveError) {
       setStatus("error");
-      setError(saveError instanceof Error ? saveError.message : "Settings could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Settings could not be saved to Supabase."));
     }
   };
 

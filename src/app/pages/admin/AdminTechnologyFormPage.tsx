@@ -4,6 +4,7 @@ import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Technology } from "../../types/portfolio";
 
@@ -51,7 +52,7 @@ export default function AdminTechnologyFormPage() {
       await portfolioRepository.flushPendingWrites();
       navigate("/admin/tech-stack");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Technology could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Technology could not be saved to Supabase."));
     } finally {
       setSaving(false);
     }

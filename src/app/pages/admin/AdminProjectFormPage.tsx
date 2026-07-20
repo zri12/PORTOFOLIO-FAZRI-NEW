@@ -6,6 +6,7 @@ import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Project } from "../../types/portfolio";
 
@@ -63,7 +64,7 @@ export default function AdminProjectFormPage() {
       await portfolioRepository.flushPendingWrites();
       navigate("/admin/projects");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Project could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Project could not be saved to Supabase."));
     } finally {
       setSaving(false);
     }

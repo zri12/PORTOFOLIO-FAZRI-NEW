@@ -3,6 +3,7 @@ import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 
 export default function AdminProfilePage() {
@@ -32,7 +33,7 @@ export default function AdminProfilePage() {
       setStatus("saved");
     } catch (saveError) {
       setStatus("error");
-      setError(saveError instanceof Error ? saveError.message : "Profile could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Profile could not be saved to Supabase."));
     }
   };
 

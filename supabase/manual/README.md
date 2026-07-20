@@ -28,6 +28,16 @@ Kalau ingin Supabase langsung berisi data yang sama seperti tampilan frontend se
 
 File ini sudah mencakup isi `07_production_seed.sql` plus contoh pesan kontak dari seed frontend. Jangan jalankan `07_production_seed.sql` lagi jika sudah memakai file ini.
 
+## Fix Existing Project
+
+Kalau Supabase project sudah terlanjur dibuat sebelum update admin CMS terbaru, jalankan file fix sesuai urutan:
+
+10. `10_fix_service_role_grants.sql`
+11. `11_add_profile_brand_images.sql`
+12. `12_add_admin_content_image_fields.sql`
+13. `13_fix_admin_login_and_cms_grants.sql`
+14. `14_admin_metadata_access.sql`
+
 ## Catatan
 
 - `combined_setup.sql` berisi gabungan file 1 sampai 7. Kalau SQL Editor terasa berat atau error, pakai urutan file kecil di atas.

@@ -4,6 +4,7 @@ import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { DualCharacterReveal } from "../../components/portfolio/DualCharacterReveal";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 
 export default function AdminHeroPage() {
@@ -46,7 +47,7 @@ export default function AdminHeroPage() {
       setStatus("saved");
     } catch (saveError) {
       setStatus("error");
-      setError(saveError instanceof Error ? saveError.message : "Hero settings could not be saved to Supabase.");
+      setError(formatAdminSaveError(saveError, "Hero settings could not be saved to Supabase."));
     }
   };
 
