@@ -1,6 +1,6 @@
 ﻿import { motion, useReducedMotion } from "motion/react";
 import { Link } from "react-router";
-import { ArrowRight, Award, BriefcaseBusiness, Camera, Check, ChevronRight, Code2, Download, Github, Instagram, Linkedin, Mail, MapPin, MessageCircle, Monitor, MousePointer2, Palette, Send, Sparkles, Wrench } from "lucide-react";
+import { ArrowRight, Award, BriefcaseBusiness, Camera, Check, ChevronRight, Code2, Download, Github, Instagram, Linkedin, Mail, MapPin, MessageCircle, Monitor, MousePointer2, Palette, Send, Sparkles, Wrench, X } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { ProjectPreview } from "../../components/portfolio/ProjectPreview";
@@ -32,7 +32,7 @@ const techGroups = {
 function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[.22em] text-[var(--color-accent-main)]">{children}</p>; }
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); return <motion.div initial={reduce ? false : { opacity: 0, y: 30 }} whileInView={reduce ? {} : { opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: .7, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
 
-function HomeCertificateCard({ certificate, index }: { certificate: Certificate; index: number }) {
+function HomeCertificateCard({ certificate, index, onView }: { certificate: Certificate; index: number; onView: (id: string) => void }) {
   const [imageFailed, setImageFailed] = useState(false);
   const hasImage = Boolean(certificate.image) && !imageFailed;
   const year = certificate.issueDate?.slice(0, 4) || "";
@@ -68,7 +68,39 @@ function HomeCertificateCard({ certificate, index }: { certificate: Certificate;
       </div>
     </article>
   );
-  return certificate.credentialUrl ? <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="block h-full">{content}</a> : <Link to="/certificates" className="block h-full">{content}</Link>;
+  return <button type="button" onClick={() => onView(certificate.id)} className="block h-full w-full text-left text-[var(--color-text-main)]" aria-label={`View ${certificate.title} certificate`}>{content}</button>;
+}
+
+function CertificatePreviewModal({ certificate, onClose }: { certificate: Certificate; onClose: () => void }) {
+  const year = certificate.issueDate?.slice(0, 4) || "";
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/82 p-3 backdrop-blur-sm sm:p-5" role="dialog" aria-modal="true" aria-label={`${certificate.title} certificate preview`}>
+      <div className="flex h-[calc(100svh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-secondary)] shadow-2xl sm:h-[calc(100svh-2.5rem)]">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{certificate.category}</p>
+            <h2 className="truncate font-manrope text-xl font-bold sm:text-2xl">{certificate.title}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="shrink-0 p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label="Close certificate preview"><X size={20} /></button>
+        </div>
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] bg-[var(--color-bg-primary)] lg:grid-cols-[1fr_320px] lg:grid-rows-1">
+          <div className="flex min-h-0 items-center justify-center p-3 sm:p-5">
+            {certificate.image ? <img src={certificate.image} alt={certificate.title} className="max-h-full max-w-full object-contain" /> : <div className="flex h-full min-h-[260px] w-full items-center justify-center border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]"><Award size={36} /></div>}
+          </div>
+          <aside className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-5 lg:border-l lg:border-t-0">
+            <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-text-muted)]">Certificate details</p>
+            <div className="mt-5 space-y-4 text-sm text-[var(--color-text-secondary)]">
+              <p><span className="block text-[var(--color-text-muted)]">Issuer</span>{certificate.issuer || "Independent learning"}</p>
+              {year && <p><span className="block text-[var(--color-text-muted)]">Year</span>{year}</p>}
+              {certificate.credentialId && <p><span className="block text-[var(--color-text-muted)]">Credential ID</span>{certificate.credentialId}</p>}
+            </div>
+            {certificate.credentialUrl && <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 border-b border-[var(--color-accent-main)] pb-2 text-xs font-bold text-[var(--color-accent-main)]">Open credential <ArrowRight size={13} /></a>}
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function HomePage() {
@@ -76,6 +108,7 @@ export default function HomePage() {
   const { projects: projectsData, profile, techStack, creativeWorks, certificates, experiences, comments } = usePortfolioData();
   const aboutImage = profile.aboutImageUrl || portrait;
   const [techTab, setTechTab] = useState<keyof typeof techGroups>("Frontend");
+  const [activeCertificateId, setActiveCertificateId] = useState<string | null>(null);
   const groupedTech = useMemo(() => ({
     Frontend: techStack.filter((tech) => tech.active && tech.category === "Frontend"),
     Backend: techStack.filter((tech) => tech.active && ["Backend", "Database", "Deployment"].includes(tech.category)),
@@ -101,6 +134,7 @@ export default function HomePage() {
   const homeCertificates = certificates
     .filter((certificate) => certificate.published)
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  const activeHomeCertificate = homeCertificates.find((certificate) => certificate.id === activeCertificateId);
 
   const updateHeroReveal = (event: React.PointerEvent<HTMLDivElement>) => {
     const stage = heroImageRef.current;
@@ -301,7 +335,7 @@ export default function HomePage() {
           <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {homeCertificates.map((certificate, index) => (
               <Reveal key={certificate.id}>
-                <HomeCertificateCard certificate={certificate} index={index} />
+                <HomeCertificateCard certificate={certificate} index={index} onView={setActiveCertificateId} />
               </Reveal>
             ))}
           </div>
@@ -317,6 +351,7 @@ export default function HomePage() {
       <div className="final-ambient absolute inset-0" />
       {mode === "spider" && <SpiderWebField className="absolute inset-0 w-full h-full opacity-60" />}
       <Reveal className="relative mx-auto max-w-3xl text-center"><Eyebrow>11 / Let's make it real</Eyebrow><h2 className="font-manrope text-5xl font-bold tracking-[-.035em] md:text-6xl">Let's Build Something Meaningful.</h2><p className="mx-auto mt-5 max-w-xl leading-7 text-[var(--color-text-secondary)]">A clear idea, a complex challenge, or an early sketch-the right next step can start with a conversation.</p><div className="mt-9 flex flex-wrap justify-center gap-3"><Link to="/contact" className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Start a Project <ArrowRight size={16} /></Link><Link to="/projects" className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold hover:bg-white/5">View All Projects</Link></div></Reveal></section>
+    {activeHomeCertificate && <CertificatePreviewModal certificate={activeHomeCertificate} onClose={() => setActiveCertificateId(null)} />}
     </main>
   );
 }

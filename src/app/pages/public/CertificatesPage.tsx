@@ -86,17 +86,28 @@ export default function CertificatesPage() {
         </div>
       </section>
       {modal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4" role="dialog" aria-modal="true">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-            <div className="flex items-center justify-between border-b border-[var(--color-border)] p-5">
-              <h2 className="font-manrope text-2xl font-bold">{t(modal.title)}</h2>
-              <button onClick={() => setActive(null)} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label={t("Close certificate preview")}><X size={20} /></button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/82 p-3 backdrop-blur-sm sm:p-5" role="dialog" aria-modal="true">
+          <div className="flex h-[calc(100svh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-secondary)] shadow-2xl sm:h-[calc(100svh-2.5rem)]">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3 sm:px-5">
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(modal.category)}</p>
+                <h2 className="truncate font-manrope text-xl font-bold sm:text-2xl">{t(modal.title)}</h2>
+              </div>
+              <button onClick={() => setActive(null)} className="shrink-0 p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label={t("Close certificate preview")}><X size={20} /></button>
             </div>
-            <img src={modal.image} alt={modal.title} className="h-auto w-full object-contain" />
-            <div className="grid gap-4 p-5 text-sm text-[var(--color-text-secondary)] md:grid-cols-3">
-              <p><span className="block text-[var(--color-text-muted)]">{t("Issuer")}</span>{modal.issuer}</p>
-              <p><span className="block text-[var(--color-text-muted)]">{t("Credential ID")}</span>{modal.credentialId}</p>
-              <a href={modal.credentialUrl} target="_blank" rel="noreferrer" className="text-[var(--color-accent-main)]">{t("Open credential")}</a>
+            <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] bg-[var(--color-bg-primary)] lg:grid-cols-[1fr_320px] lg:grid-rows-1">
+              <div className="flex min-h-0 items-center justify-center p-3 sm:p-5">
+                {modal.image ? <img src={modal.image} alt={modal.title} className="max-h-full max-w-full object-contain" /> : <div className="flex h-full min-h-[260px] w-full items-center justify-center border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]"><Award size={36} /></div>}
+              </div>
+              <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-5 lg:border-l lg:border-t-0">
+                <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-text-muted)]">{t("Certificate details")}</p>
+                <div className="mt-5 space-y-4 text-sm text-[var(--color-text-secondary)]">
+                  <p><span className="block text-[var(--color-text-muted)]">{t("Issuer")}</span>{modal.issuer || t("Independent learning")}</p>
+                  <p><span className="block text-[var(--color-text-muted)]">{t("Issue Date")}</span>{modal.issueDate}</p>
+                  {modal.credentialId && <p><span className="block text-[var(--color-text-muted)]">{t("Credential ID")}</span>{modal.credentialId}</p>}
+                </div>
+                {modal.credentialUrl && <a href={modal.credentialUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 border-b border-[var(--color-accent-main)] pb-2 text-xs font-bold text-[var(--color-accent-main)]">{t("Open credential")}</a>}
+              </div>
             </div>
           </div>
         </div>
