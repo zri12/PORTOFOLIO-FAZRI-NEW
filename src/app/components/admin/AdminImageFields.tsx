@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Move, RotateCcw, Trash, Upload, X } from "lucide-react";
 import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../../lib/supabase/client";
 import { uploadPortfolioFile } from "../../lib/supabase/storage";
@@ -9,15 +9,18 @@ type ImageFieldProps = {
   folder: string;
   hint: string;
   aspect?: string;
+  cropMode?: "fixed" | "original";
   onChange: (value: string) => void;
 };
 
-export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[16/10]", onChange }: ImageFieldProps) {
+export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[16/10]", cropMode = "fixed", onChange }: ImageFieldProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [uploaded, setUploaded] = useState(false);
   const [editor, setEditor] = useState<CropRequest | null>(null);
   const previewUrl = getPreviewUrl(value);
+  const shouldCrop = cropMode === "fixed";
+  const previewFrameClass = shouldCrop ? aspect : "min-h-[160px]";
 
   const uploadCropped = async (file: File, previewUrl: string) => {
     if (!file) return;
@@ -39,9 +42,32 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
     }
   };
 
+  const uploadOriginal = async (file: File) => {
+    setBusy(true);
+    setError("");
+    try {
+      if (!isSupabaseEnabled) {
+        onChange(await fileToDataUrl(file));
+        setUploaded(true);
+        return;
+      }
+      const result = await uploadPortfolioFile(file, folder);
+      onChange(result.url);
+      setUploaded(true);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const selectFile = async (file: File | null) => {
     if (!file) return;
     setError("");
+    if (!shouldCrop) {
+      await uploadOriginal(file);
+      return;
+    }
     setEditor({
       file,
       dataUrl: await fileToDataUrl(file),
@@ -64,8 +90,8 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
           </button>
         )}
       </div>
-      <div className={`mt-4 flex ${aspect} items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)]`}>
-        {previewUrl ? <img src={previewUrl} alt={label} className="h-full w-full object-contain" /> : <ImagePlus className="text-[var(--color-text-muted)]" size={28} />}
+      <div className={`mt-4 flex ${previewFrameClass} items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)]`}>
+        {previewUrl ? <img src={previewUrl} alt={label} className={shouldCrop ? "h-full w-full object-contain" : "h-auto max-h-[420px] w-full object-contain"} /> : <ImagePlus className="text-[var(--color-text-muted)]" size={28} />}
       </div>
       <input
         value={value}
@@ -74,7 +100,7 @@ export function AdminImageField({ label, value, folder, hint, aspect = "aspect-[
         className="mt-3 w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-xs outline-none focus:border-[var(--color-accent-main)]"
       />
       <label className="mt-3 inline-flex cursor-pointer items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold hover:border-[var(--color-accent-main)]">
-        <Upload size={14} /> {busy ? "Uploading..." : "Upload and crop image"}
+        <Upload size={14} /> {busy ? "Uploading..." : shouldCrop ? "Upload and crop image" : "Upload image"}
         <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(event) => void selectFile(event.target.files?.[0] || null)} />
       </label>
       {!isSupabaseEnabled && <p className="mt-2 text-xs leading-5 text-amber-200/80">Supabase env is not active, so this image is saved as a temporary local preview URL. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for permanent uploads.</p>}
@@ -231,12 +257,15 @@ async function cropImage(request: CropRequest, zoom: number, offsetX: number, of
   return { file, previewUrl: canvas.toDataURL("image/webp", 0.9) };
 }
 
+const clampMove = (value: number) => Math.min(100, Math.max(-100, value));
+
 function CropEditor({ request, onClose }: { request: CropRequest; onClose: () => void }) {
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const drag = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const apply = async () => {
     setBusy(true);
@@ -252,13 +281,42 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
     }
   };
 
+  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (busy) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: offsetX,
+      originY: offsetY,
+    };
+  };
+
+  const moveDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const current = drag.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const nextX = current.originX + ((event.clientX - current.startX) / Math.max(1, rect.width)) * 220;
+    const nextY = current.originY + ((event.clientY - current.startY) / Math.max(1, rect.height)) * 220;
+    setOffsetX(clampMove(nextX));
+    setOffsetY(clampMove(nextY));
+  };
+
+  const stopDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId === event.pointerId) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      drag.current = null;
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
       <div className="w-full max-w-3xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] p-4">
           <div>
             <p className="font-manrope text-xl font-bold">Crop image</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - zoom, drag position with sliders, then apply.</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - drag the image or use sliders, then apply.</p>
           </div>
           <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label="Close crop editor">
             <X size={18} />
@@ -267,7 +325,14 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
 
         <div className="grid gap-5 p-4 lg:grid-cols-[1fr_260px]">
           <div className="flex min-h-[280px] items-center justify-center bg-[var(--color-bg-primary)] p-4">
-            <div className="relative w-full max-w-xl overflow-hidden border border-[var(--color-border)] bg-black" style={{ aspectRatio: request.aspectRatio }}>
+            <div
+              className="relative w-full max-w-xl cursor-grab touch-none overflow-hidden border border-[var(--color-border)] bg-black active:cursor-grabbing"
+              style={{ aspectRatio: request.aspectRatio }}
+              onPointerDown={startDrag}
+              onPointerMove={moveDrag}
+              onPointerUp={stopDrag}
+              onPointerCancel={stopDrag}
+            >
               <img
                 src={request.dataUrl}
                 alt=""

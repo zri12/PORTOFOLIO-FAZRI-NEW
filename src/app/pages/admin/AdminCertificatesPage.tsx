@@ -13,7 +13,9 @@ export default function AdminCertificatesPage() {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {certificates.map((item) => (
           <article key={item.id} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
-            <img src={item.image} alt={item.title} className="aspect-[16/10] w-full object-cover" />
+            <div className="flex min-h-[180px] items-center justify-center bg-[var(--color-bg-primary)] p-3">
+              <img src={item.image} alt={item.title} className="h-auto max-h-[360px] w-full object-contain" />
+            </div>
             <div className="p-5">
               <div className="mb-3 flex gap-2"><StatusBadge status={item.category} />{item.published ? <StatusBadge status="published" /> : <StatusBadge status="draft" />}{item.featured && <StatusBadge status="featured" />}</div>
               <h2 className="font-manrope text-xl font-bold">{item.title}</h2>

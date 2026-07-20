@@ -78,7 +78,7 @@ export default function AdminCertificateFormPage() {
           </div>
         </FormSection>
         <FormSection title="Certificate Image">
-          <AdminImageField label="Certificate Preview Image" value={draft.image} folder={`certificates/${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || draft.id}`} hint="Recommended 1600x1000px for web certificates or high quality A4 scan. Keep text readable because this opens in a preview modal." onChange={(value) => set("image", value)} />
+          <AdminImageField label="Certificate Preview Image" value={draft.image} folder={`certificates/${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || draft.id}`} hint="Upload the certificate at its original size. The website keeps the real image ratio so certificate text remains readable." cropMode="original" onChange={(value) => set("image", value)} />
         </FormSection>
         <div className="flex flex-wrap gap-3">
           <button onClick={() => void save()} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Save Certificate"}</button>

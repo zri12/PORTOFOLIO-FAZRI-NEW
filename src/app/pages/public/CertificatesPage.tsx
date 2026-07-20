@@ -32,12 +32,12 @@ export default function CertificatesPage() {
                 <h2 className="mt-3 font-manrope text-2xl font-bold sm:text-3xl">{t(featured.title)}</h2>
                 <p className="mt-3 text-[var(--color-text-secondary)]">{featured.issuer} / {featured.issueDate}</p>
               </div>
-              <div className="relative min-h-[280px] overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.22),transparent_48%),var(--color-bg-primary)]">
+              <div className="flex min-h-[280px] items-center justify-center overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.22),transparent_48%),var(--color-bg-primary)] p-4">
                 <img
                   src={featured.image}
                   alt=""
                   aria-hidden="true"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="h-auto max-h-[520px] w-full object-contain"
                   onError={(event) => {
                     event.currentTarget.hidden = true;
                   }}
@@ -62,12 +62,12 @@ export default function CertificatesPage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map((item) => (
                 <button key={item.id} onClick={() => setActive(item.id)} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]">
-                  <div className="relative aspect-[16/10] overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.2),transparent_48%),var(--color-bg-primary)]">
+                  <div className="flex min-h-[180px] items-center justify-center overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.2),transparent_48%),var(--color-bg-primary)] p-3">
                     <img
                       src={item.image}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className="h-auto max-h-[360px] w-full object-contain"
                       loading="lazy"
                       onError={(event) => {
                         event.currentTarget.hidden = true;
@@ -92,7 +92,7 @@ export default function CertificatesPage() {
               <h2 className="font-manrope text-2xl font-bold">{t(modal.title)}</h2>
               <button onClick={() => setActive(null)} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label={t("Close certificate preview")}><X size={20} /></button>
             </div>
-            <img src={modal.image} alt={modal.title} className="w-full" />
+            <img src={modal.image} alt={modal.title} className="h-auto w-full object-contain" />
             <div className="grid gap-4 p-5 text-sm text-[var(--color-text-secondary)] md:grid-cols-3">
               <p><span className="block text-[var(--color-text-muted)]">{t("Issuer")}</span>{modal.issuer}</p>
               <p><span className="block text-[var(--color-text-muted)]">{t("Credential ID")}</span>{modal.credentialId}</p>
