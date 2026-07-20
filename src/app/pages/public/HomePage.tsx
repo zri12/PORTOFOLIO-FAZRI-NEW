@@ -13,6 +13,7 @@ import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import portrait from "../../../imports/fazri.png";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
+import type { Certificate } from "../../types/portfolio";
 
 const creativeImages = [
   "https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?auto=format&fit=crop&w=1300&q=90",
@@ -30,6 +31,45 @@ const techGroups = {
 
 function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[.22em] text-[var(--color-accent-main)]">{children}</p>; }
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); return <motion.div initial={reduce ? false : { opacity: 0, y: 30 }} whileInView={reduce ? {} : { opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: .7, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
+
+function HomeCertificateCard({ certificate, index }: { certificate: Certificate; index: number }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasImage = Boolean(certificate.image) && !imageFailed;
+  const year = certificate.issueDate?.slice(0, 4) || "";
+  const isFeatured = certificate.featured || index === 0;
+  const content = (
+    <article className="group flex h-full min-h-[430px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] transition duration-500 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/70">
+      <div className="relative h-60 overflow-hidden border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_50%_-20%,rgba(78,187,232,.18),transparent_48%),var(--color-bg-secondary)] p-5">
+        <div className="absolute left-5 top-5 z-20 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center border border-[var(--color-accent-main)]/45 bg-[var(--color-bg-primary)]/85 text-[var(--color-accent-main)] backdrop-blur"><Award size={17} /></span>
+          {isFeatured && <span className="border border-[var(--color-accent-main)]/35 bg-[var(--color-accent-main)]/10 px-2 py-1 font-mono text-[9px] uppercase tracking-[.14em] text-[var(--color-accent-main)]">Featured</span>}
+        </div>
+        <span className="absolute right-5 top-5 z-20 font-mono text-[10px] tracking-[.16em] text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
+        {hasImage ? (
+          <img src={certificate.image} alt="" aria-hidden="true" loading="lazy" className="relative z-10 mx-auto h-full w-full object-contain drop-shadow-[0_20px_34px_rgba(0,0,0,.45)] transition duration-500 group-hover:scale-[1.025]" onError={() => setImageFailed(true)} />
+        ) : (
+          <div className="relative z-10 flex h-full flex-col justify-end border border-[var(--color-border)] bg-[linear-gradient(135deg,rgba(78,187,232,.08),rgba(255,255,255,.025))] p-5">
+            <div className="absolute right-5 top-5 font-manrope text-5xl font-black text-white/[.035]">FL</div>
+            <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">Certificate</p>
+            <div className="mt-5 space-y-2">
+              <span className="block h-px w-full bg-[var(--color-border)]" />
+              <span className="block h-px w-2/3 bg-[var(--color-border)]" />
+              <span className="block h-px w-1/2 bg-[var(--color-border)]" />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-6">
+        <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{certificate.category}</p>
+        <h3 className="mt-3 font-manrope text-2xl font-bold leading-tight tracking-[-.02em]">{certificate.title}</h3>
+        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">{certificate.issuer || "Independent learning"}{year ? <span className="text-[var(--color-text-muted)]"> / {year}</span> : null}</p>
+        {certificate.credentialId && <p className="mt-5 w-fit border border-[var(--color-border)] px-3 py-2 font-mono text-[9px] uppercase tracking-[.12em] text-[var(--color-text-muted)]">{certificate.credentialId}</p>}
+        <span className="mt-auto inline-flex pt-7 items-center gap-2 text-xs font-bold text-[var(--color-text-main)] underline underline-offset-4 transition group-hover:text-[var(--color-accent-main)]">View Certificate <ArrowRight size={13} /></span>
+      </div>
+    </article>
+  );
+  return certificate.credentialUrl ? <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="block h-full">{content}</a> : <Link to="/certificates" className="block h-full">{content}</Link>;
+}
 
 export default function HomePage() {
   const { mode, toggleMode } = useContext(ThemeModeContext);
@@ -258,38 +298,12 @@ export default function HomePage() {
           </div>
         </Reveal>
         {homeCertificates.length > 0 && (
-          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-12">
-            {homeCertificates.map((certificate, index) => {
-              const isFeatured = certificate.featured || index === 0;
-              const year = certificate.issueDate?.slice(0, 4) || "";
-              const cardContent = (
-                <article className={`group relative flex h-full min-h-[360px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] transition duration-500 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/70 ${isFeatured ? "xl:col-span-6" : "xl:col-span-3"}`}>
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(78,187,232,.14),transparent_34%,rgba(255,255,255,.035)_72%,transparent)] opacity-70 transition group-hover:opacity-100" />
-                  <div className="relative flex min-h-[230px] flex-1 items-center justify-center overflow-hidden border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_50%_0%,rgba(78,187,232,.15),transparent_42%),var(--color-bg-secondary)] p-5">
-                    <div className="absolute left-5 top-5 flex h-9 w-9 items-center justify-center border border-[var(--color-accent-main)]/40 bg-[var(--color-bg-primary)]/80 text-[var(--color-accent-main)] backdrop-blur">
-                      <Award size={18} />
-                    </div>
-                    <span className="absolute right-5 top-5 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
-                    {certificate.image ? (
-                      <img src={certificate.image} alt="" aria-hidden="true" loading="lazy" className={`relative z-10 h-auto w-full object-contain drop-shadow-[0_24px_38px_rgba(0,0,0,.42)] transition duration-500 group-hover:scale-[1.025] ${isFeatured ? "max-h-[430px]" : "max-h-[270px]"}`} onError={(event) => { event.currentTarget.hidden = true; }} />
-                    ) : (
-                      <div className="relative z-10 flex h-36 w-full items-center justify-center border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]"><Award size={30} /></div>
-                    )}
-                  </div>
-                  <div className="relative z-10 p-6">
-                    <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{certificate.category}</p>
-                    <h3 className="mt-3 font-manrope text-2xl font-bold leading-tight tracking-[-.02em]">{certificate.title}</h3>
-                    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-[var(--color-text-secondary)]">
-                      <span>{certificate.issuer || "Independent learning"}</span>
-                      {year && <span className="text-[var(--color-text-muted)]">/ {year}</span>}
-                    </div>
-                    {certificate.credentialId && <p className="mt-4 w-fit border border-[var(--color-border)] px-3 py-2 font-mono text-[9px] uppercase tracking-[.12em] text-[var(--color-text-muted)]">{certificate.credentialId}</p>}
-                    <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[var(--color-text-main)] underline underline-offset-4 transition group-hover:text-[var(--color-accent-main)]">View Certificate <ArrowRight size={13} /></span>
-                  </div>
-                </article>
-              );
-              return <Reveal key={certificate.id} className={isFeatured ? "xl:col-span-6" : "xl:col-span-3"}>{certificate.credentialUrl ? <a href={certificate.credentialUrl} target="_blank" rel="noreferrer" className="block h-full">{cardContent}</a> : <Link to="/certificates" className="block h-full">{cardContent}</Link>}</Reveal>;
-            })}
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {homeCertificates.map((certificate, index) => (
+              <Reveal key={certificate.id}>
+                <HomeCertificateCard certificate={certificate} index={index} />
+              </Reveal>
+            ))}
           </div>
         )}
       </div>
