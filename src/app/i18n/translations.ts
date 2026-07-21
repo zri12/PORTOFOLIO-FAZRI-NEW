@@ -542,6 +542,16 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["Client", "Klien"],
   ["Tech Stack", "Teknologi"],
   ["Cancel", "Batal"],
+  ["Notes from the process of building digital products.", "Catatan dari proses membangun produk digital."],
+  ["Practical writing about web development, interface design, performance, and the decisions behind a product.", "Pembahasan praktis tentang web development, desain interface, performa, dan keputusan di balik sebuah produk."],
+  ["Article list", "Daftar artikel"],
+  ["No published articles yet.", "Belum ada artikel yang diterbitkan."],
+  ["New articles will appear here after they are published from the admin.", "Artikel baru akan muncul di sini setelah dipublikasikan dari admin."],
+  ["min read", "menit baca"],
+  ["Read", "Baca"],
+  ["Article not found.", "Artikel tidak ditemukan."],
+  ["Back to blog", "Kembali ke blog"],
+  ["All articles", "Semua artikel"],
 ];
 
 export const enToId = new Map([...enToIdEntries, ...extraEnToIdEntries]);

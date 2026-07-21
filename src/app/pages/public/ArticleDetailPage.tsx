@@ -3,11 +3,13 @@ import { ArrowLeft, Clock3 } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { useLanguage } from "../../context/LanguageContext";
 import type { ArticleBlock } from "../../types/portfolio";
 
 export default function ArticleDetailPage() {
   const { slug = "" } = useParams();
   const { articles, settings, profile } = usePortfolioData();
+  const { language, t } = useLanguage();
   const article = articles.find((item) => item.slug === slug && item.status === "published");
   const schema = useMemo(() => article ? {
     "@context": "https://schema.org",
@@ -23,32 +25,32 @@ export default function ArticleDetailPage() {
   } : undefined, [article, profile.fullName, settings.seoImage, settings.siteUrl]);
 
   useDocumentMeta({
-    title: article ? `${article.seoTitle || article.title} | ${profile.displayName}` : `Artikel tidak ditemukan | ${profile.displayName}`,
-    description: article?.seoDescription || article?.excerpt || "Artikel tidak ditemukan.",
+    title: article ? `${article.seoTitle || article.title} | ${profile.displayName}` : `Article not found | ${profile.displayName}`,
+    description: article?.seoDescription || article?.excerpt || "Article not found.",
     canonicalPath: `/blog/${slug}`,
     siteUrl: settings.siteUrl,
     image: article?.coverImage || settings.seoImage,
     type: "article",
     noIndex: !article,
-    language: "id",
+    language,
     structuredData: schema,
   });
 
   if (!article) {
-    return <main className="mx-auto min-h-[65vh] max-w-5xl px-5 pb-24 pt-36 sm:px-6"><p className="font-mono text-xs uppercase tracking-[.18em] text-[var(--color-accent-main)]">404 / Article</p><h1 className="mt-5 font-manrope text-4xl font-bold">Artikel tidak ditemukan.</h1><Link to="/blog" className="mt-8 inline-flex items-center gap-2 border-b border-current pb-1 font-bold"><ArrowLeft size={17} /> Kembali ke blog</Link></main>;
+    return <main className="mx-auto min-h-[65vh] max-w-5xl px-5 pb-24 pt-36 sm:px-6"><p className="font-mono text-xs uppercase tracking-[.18em] text-[var(--color-accent-main)]">404 / Article</p><h1 className="mt-5 font-manrope text-4xl font-bold">{t("Article not found.")}</h1><Link to="/blog" className="mt-8 inline-flex items-center gap-2 border-b border-current pb-1 font-bold"><ArrowLeft size={17} /> {t("Back to blog")}</Link></main>;
   }
 
-  const publishedDate = article.publishedAt ? new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(article.publishedAt)) : "";
+  const publishedDate = article.publishedAt ? new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", { dateStyle: "long" }).format(new Date(article.publishedAt)) : "";
 
   return (
     <main className="bg-[var(--color-bg-primary)] pb-24 pt-28 sm:pt-32">
       <article>
         <header className="mx-auto max-w-5xl px-5 sm:px-6">
-          <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]"><ArrowLeft size={16} /> Semua artikel</Link>
+          <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]"><ArrowLeft size={16} /> {t("All articles")}</Link>
           <p className="mt-10 font-mono text-xs font-bold uppercase tracking-[.18em] text-[var(--color-accent-main)]">{article.category}</p>
           <h1 className="mt-5 max-w-4xl font-manrope text-4xl font-bold leading-[1.08] sm:text-6xl">{article.title}</h1>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-[var(--color-text-secondary)] sm:text-xl">{article.excerpt}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--color-border)] py-5 text-sm text-[var(--color-text-muted)]"><span>{article.author}</span><span>{publishedDate}</span><span className="flex items-center gap-2"><Clock3 size={15} /> {article.readingTime} menit baca</span></div>
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--color-border)] py-5 text-sm text-[var(--color-text-muted)]"><span>{article.author}</span><span>{publishedDate}</span><span className="flex items-center gap-2"><Clock3 size={15} /> {article.readingTime} {t("min read")}</span></div>
         </header>
 
         {article.coverImage && <figure className="mx-auto mt-6 max-w-7xl px-5 sm:px-6"><img src={article.coverImage} alt={article.coverAlt || article.title} className="max-h-[720px] w-full object-cover" /><figcaption className="mt-3 text-xs text-[var(--color-text-muted)]">{article.coverAlt}</figcaption></figure>}

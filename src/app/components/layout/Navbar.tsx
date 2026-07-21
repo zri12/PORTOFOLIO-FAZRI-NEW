@@ -43,6 +43,8 @@ export const Navbar = () => {
     { label: t("Blog"), path: "/blog" },
     { label: t("Contact"), path: "/contact" },
   ];
+  const nextModeLabel = mode === "professional" ? t("Spider Mode") : t("Pro Mode");
+  const nextModeAction = mode === "professional" ? t("Switch to Spider Mode") : t("Switch to Pro Mode");
 
   return (
     <nav className={`portfolio-nav fixed top-0 z-50 w-full border-b transition-all duration-500 ${mode === "spider" ? "spider-nav" : ""} ${scrolled || isOpen ? "border-[var(--color-border)] bg-[var(--color-bg-secondary)]/92 py-3 backdrop-blur-md sm:py-4" : "border-transparent bg-transparent py-4 sm:py-6"}`}>
@@ -64,9 +66,9 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
-          <button onClick={toggleMode} className={`mode-switch hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[var(--color-border)] transition-all text-sm font-medium ${mode === "spider" ? "mode-switch-spider" : "rounded-lg hover:bg-[var(--color-surface-elevated)]"}`}>
+          <button data-no-translate onClick={toggleMode} aria-label={nextModeAction} title={nextModeAction} className={`mode-switch hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[var(--color-border)] transition-all text-sm font-medium ${mode === "spider" ? "mode-switch-spider" : "rounded-lg hover:bg-[var(--color-surface-elevated)]"}`}>
             {mode === "professional" ? <Zap size={14} className="text-[var(--color-accent-main)]" /> : <Moon size={14} className="text-[var(--color-accent-main)]" />}
-            <span className="text-[var(--color-text-secondary)]">{mode === "professional" ? t("Spider Mode") : t("Pro Mode")}</span>
+            <span className="text-[var(--color-text-secondary)]">{nextModeLabel}</span>
           </button>
 
           <button onClick={toggleLanguage} className="hidden min-h-9 items-center gap-1 border border-[var(--color-border)] p-1 font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[var(--color-text-muted)] transition hover:border-[var(--color-accent-main)]/50 sm:flex" aria-label="Switch language">
@@ -98,9 +100,9 @@ export const Navbar = () => {
                 </Link>
               ))}
               <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pt-3">
-                <button onClick={() => { toggleMode(); setIsOpen(false); }} className="flex items-center gap-2 py-2 text-sm font-medium text-[var(--color-accent-main)]">
+                <button data-no-translate onClick={() => { toggleMode(); setIsOpen(false); }} className="flex items-center gap-2 py-2 text-sm font-medium text-[var(--color-accent-main)]">
                   {mode === "professional" ? <Zap size={16} /> : <Moon size={16} />}
-                  {mode === "professional" ? t("Switch to Spider Mode") : t("Switch to Pro Mode")}
+                  {nextModeAction}
                 </button>
                 <button onClick={() => { toggleLanguage(); setIsOpen(false); }} className="flex items-center gap-1 border border-[var(--color-border)] p-1 font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[var(--color-text-muted)]">
                   <span className={`px-2 py-1 ${language === "en" ? "bg-[var(--color-accent-main)] text-[var(--color-bg-primary)]" : ""}`}>EN</span>

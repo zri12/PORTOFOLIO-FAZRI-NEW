@@ -18,7 +18,7 @@ const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal
   desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
   laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
   tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
-  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.16, scaleY: 1, x: 0, y: 0 } },
+  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 0.96, scaleY: 0.9, x: 0, y: 3.8 } },
 };
 
 interface Cal {
@@ -29,7 +29,7 @@ interface Cal {
 }
 
 // Small "discovery lens" — deliberately far smaller than a body-sized portal.
-const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 68 };
+const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 46 };
 const FEATHER = 5;
 const LERP = 0.32; // fast, precise pointer follow
 

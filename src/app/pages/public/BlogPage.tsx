@@ -3,9 +3,11 @@ import { Link } from "react-router";
 import { useMemo } from "react";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function BlogPage() {
   const { articles, settings, profile } = usePortfolioData();
+  const { language, t } = useLanguage();
   const published = articles
     .filter((article) => article.status === "published" && (!article.publishedAt || new Date(article.publishedAt) <= new Date()))
     .sort((a, b) => Number(b.featured) - Number(a.featured) || b.publishedAt.localeCompare(a.publishedAt));
@@ -13,18 +15,18 @@ export default function BlogPage() {
     "@context": "https://schema.org",
     "@type": "Blog",
     name: `Blog ${profile.fullName}`,
-    description: "Artikel tentang web development, interface design, dan proses membangun produk digital.",
+    description: "Articles about web development, interface design, and the process behind digital products.",
     url: `${settings.siteUrl.replace(/\/$/, "")}/blog`,
     author: { "@type": "Person", name: profile.fullName },
   }), [profile.fullName, settings.siteUrl]);
 
   useDocumentMeta({
     title: `Blog | ${profile.fullName}`,
-    description: "Artikel dan catatan Fazri Lukman Nurrohman tentang web development, interface design, dan pengalaman membangun produk digital.",
+    description: "Articles and notes from Fazri Lukman Nurrohman about web development, interface design, and building digital products.",
     canonicalPath: "/blog",
     siteUrl: settings.siteUrl,
     image: settings.seoImage,
-    language: "id",
+    language,
     structuredData: schema,
   });
 
@@ -33,16 +35,16 @@ export default function BlogPage() {
       <header className="mx-auto max-w-7xl px-5 sm:px-6">
         <p className="font-mono text-xs font-bold uppercase tracking-[.2em] text-[var(--color-accent-main)]">Insights / Journal</p>
         <div className="mt-5 grid gap-6 border-b border-[var(--color-border)] pb-10 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
-          <h1 className="max-w-3xl font-manrope text-4xl font-bold leading-tight sm:text-6xl">Catatan dari proses membangun produk digital.</h1>
-          <p className="max-w-xl text-base leading-8 text-[var(--color-text-secondary)] lg:justify-self-end">Pembahasan praktis tentang web development, desain interface, performa, dan keputusan di balik sebuah produk.</p>
+          <h1 className="max-w-3xl font-manrope text-4xl font-bold leading-tight sm:text-6xl">{t("Notes from the process of building digital products.")}</h1>
+          <p className="max-w-xl text-base leading-8 text-[var(--color-text-secondary)] lg:justify-self-end">{t("Practical writing about web development, interface design, performance, and the decisions behind a product.")}</p>
         </div>
       </header>
 
-      <section className="mx-auto mt-10 max-w-7xl px-5 sm:px-6" aria-label="Daftar artikel">
+      <section className="mx-auto mt-10 max-w-7xl px-5 sm:px-6" aria-label={t("Article list")}>
         {published.length === 0 ? (
           <div className="border-y border-[var(--color-border)] py-16">
-            <p className="font-manrope text-2xl font-bold">Belum ada artikel yang diterbitkan.</p>
-            <p className="mt-3 text-[var(--color-text-secondary)]">Artikel baru akan muncul di sini setelah dipublikasikan dari admin.</p>
+            <p className="font-manrope text-2xl font-bold">{t("No published articles yet.")}</p>
+            <p className="mt-3 text-[var(--color-text-secondary)]">{t("New articles will appear here after they are published from the admin.")}</p>
           </div>
         ) : (
           <div className="grid gap-px bg-[var(--color-border)] md:grid-cols-2 lg:grid-cols-3">
@@ -59,8 +61,8 @@ export default function BlogPage() {
                   <h2 className="mt-5 font-manrope text-2xl font-bold leading-tight sm:text-3xl"><Link to={`/blog/${article.slug}`} className="hover:text-[var(--color-accent-main)]">{article.title}</Link></h2>
                   <p className="mt-4 line-clamp-3 leading-7 text-[var(--color-text-secondary)]">{article.excerpt}</p>
                   <div className="mt-8 flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-5">
-                    <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"><Clock3 size={14} /> {article.readingTime} menit</span>
-                    <Link to={`/blog/${article.slug}`} aria-label={`Baca ${article.title}`} className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-text-main)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-accent-main)]"><ArrowUpRight size={18} /></Link>
+                    <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"><Clock3 size={14} /> {article.readingTime} {t("min read")}</span>
+                    <Link to={`/blog/${article.slug}`} aria-label={`${t("Read")} ${article.title}`} className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-text-main)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-accent-main)]"><ArrowUpRight size={18} /></Link>
                   </div>
                 </div>
               </article>
