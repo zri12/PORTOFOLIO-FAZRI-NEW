@@ -1,8 +1,22 @@
 import { useMemo, useState } from "react";
 import type React from "react";
-import { CheckCircle, Github, Instagram, Linkedin, Mail, MapPin, MessageCircle, Send, Smartphone, Youtube } from "lucide-react";
+import {
+  ArrowUpRight,
+  AtSign,
+  CheckCircle,
+  Github,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  MessageCircle,
+  MessageSquareText,
+  Send,
+  Smartphone,
+  Sparkles,
+  Youtube,
+} from "lucide-react";
 import { EmptyState } from "../../components/common/EmptyState";
-import { SectionHeading } from "../../components/common/SectionHeading";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
@@ -27,6 +41,15 @@ export default function ContactPage() {
     const approved = comments.filter((comment) => comment.status === "approved");
     return [...approved].sort((a, b) => commentSort === "Most liked" ? b.likes - a.likes : b.date.localeCompare(a.date));
   }, [commentSort, comments]);
+
+  const contactChannels = [
+    { icon: Mail, label: "Email", value: profile.email, href: `mailto:${profile.email}`, meta: "Direct project inquiry" },
+    { icon: Smartphone, label: "WhatsApp", value: t("Start Chat"), href: `https://wa.me/${(profile.whatsapp || "").replace(/\D/g, "")}`, meta: "Quick introduction" },
+    { icon: Linkedin, label: "LinkedIn", value: "@fazrilukman", href: profile.linkedin, meta: "Professional profile" },
+    { icon: Github, label: "GitHub", value: "@fazrilukman", href: profile.github, meta: "Code and repositories" },
+    { icon: Instagram, label: "Instagram", value: "@fazrilukman", href: profile.instagram, meta: "Visual practice" },
+    { icon: Youtube, label: "YouTube", value: "@fazrilukman", href: profile.youtube, meta: "Video archive" },
+  ].filter((item) => item.href && !item.href.endsWith("wa.me/"));
 
   const submitContact = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -84,15 +107,33 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
-      <section className="px-5 pb-12 sm:px-6 sm:pb-16">
-        <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow="Contact" title="Let's build something meaningful." description="Have a website, digital product, dashboard, or creative idea in mind? Share the context and the next step can start clearly." />
+      <section className="px-5 pb-14 sm:px-6 sm:pb-16">
+        <div className="mx-auto grid max-w-7xl gap-8 border-b border-[var(--color-border)] pb-12 lg:grid-cols-[1.08fr_.92fr] lg:items-end">
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[.22em] text-[var(--color-accent-main)]">Contact / Collaboration</p>
+            <h1 className="mt-5 max-w-3xl font-manrope text-4xl font-bold leading-tight tracking-[-.025em] sm:text-6xl">{t("Let's build something meaningful.")}</h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--color-text-secondary)]">{t("Have a website, digital product, dashboard, or creative idea in mind? Share the context and the next step can start clearly.")}</p>
+          </div>
+          <div className="grid gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-3">
+            <SignalTile icon={<MessageSquareText size={18} />} label="Response" value="Clear brief" />
+            <SignalTile icon={<AtSign size={18} />} label="Focus" value="Web first" />
+            <SignalTile icon={<Sparkles size={18} />} label="Support" value="Visual craft" />
+          </div>
         </div>
       </section>
+
       <section className="px-5 pb-20 sm:px-6 sm:pb-24">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.15fr_.85fr]">
-          <div className="space-y-8">
-            <form onSubmit={submitContact} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 sm:p-6 md:p-8">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.04fr_.96fr]">
+          <div className="min-w-0">
+            <form onSubmit={submitContact} className="relative overflow-hidden border border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface-elevated),var(--color-bg-secondary))] p-5 shadow-[0_24px_80px_rgba(0,0,0,.18)] sm:p-6 md:p-8">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent-main),transparent)]" />
+              <div className="mb-7 flex items-start justify-between gap-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">Project context</p>
+                  <h2 className="mt-2 font-manrope text-2xl font-bold">{t("Send Message")}</h2>
+                </div>
+                <span className="hidden h-11 w-11 shrink-0 items-center justify-center border border-[var(--color-border)] text-[var(--color-accent-main)] sm:flex"><Send size={18} /></span>
+              </div>
               <div className="grid gap-5 md:grid-cols-2">
                 <Field label={t("Name")} name="name" required />
                 <Field label={t("Email")} name="email" type="email" required />
@@ -103,24 +144,20 @@ export default function ContactPage() {
               </div>
               <label className="mt-5 block">
                 <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{t("Message")}</span>
-                <textarea name="message" required rows={6} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 outline-none focus:border-[var(--color-accent-main)]" placeholder={t("Tell me about the goal, audience, timeline, and what already exists.")} />
+                <textarea name="message" required rows={6} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 leading-7 outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" placeholder={t("Tell me about the goal, audience, timeline, and what already exists.")} />
               </label>
               {status === "error" && <p className="mt-4 text-sm text-red-300">{t("Please provide a valid email and a message with at least 10 characters.")}</p>}
               {status === "success" && <p className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-300"><CheckCircle size={16} /> {t("Message sent successfully.")}</p>}
-              <button disabled={status === "submitting"} className="mt-6 inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{status === "submitting" ? t("Sending...") : t("Send Message")} <Send size={16} /></button>
+              <button disabled={status === "submitting"} className="mt-6 inline-flex w-full items-center justify-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] transition-[opacity,transform] duration-200 hover:-translate-y-0.5 disabled:opacity-60 sm:w-auto">{status === "submitting" ? t("Sending...") : t("Send Message")} <Send size={16} /></button>
             </form>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <ContactCard icon={<Mail />} label="Email" value={profile.email} href={`mailto:${profile.email}`} />
-              <ContactCard icon={<Smartphone />} label="WhatsApp" value={t("Start Chat")} href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`} />
-              <ContactCard icon={<Linkedin />} label="LinkedIn" value="@fazrilukman" href={profile.linkedin} />
-              <ContactCard icon={<Github />} label="GitHub" value="@fazrilukman" href={profile.github} />
-              <ContactCard icon={<Instagram />} label="Instagram" value="@fazrilukman" href={profile.instagram} />
-              <ContactCard icon={<Youtube />} label="YouTube" value="@fazrilukman" href={profile.youtube} />
-              <div className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 md:col-span-2">
-                <MapPin className="text-[var(--color-accent-main)]" />
-                <p className="mt-4 font-bold">{profile.location}</p>
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{t(profile.availability)}</p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {contactChannels.map((channel, index) => <ContactCard key={channel.label} {...channel} index={index} />)}
+              <div className="group relative overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 sm:col-span-2">
+                <div className="absolute right-5 top-5 font-mono text-[10px] text-[var(--color-text-muted)]">GMT+7</div>
+                <span className="flex h-12 w-12 items-center justify-center border border-[var(--color-accent-main)]/35 bg-[var(--color-accent-main)]/10 text-[var(--color-accent-main)]"><MapPin size={22} /></span>
+                <p className="mt-5 font-manrope text-xl font-bold">{profile.location}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{t(profile.availability)}</p>
               </div>
             </div>
           </div>
@@ -140,10 +177,10 @@ export default function ContactPage() {
               <>
                 <form onSubmit={submitComment} className="my-6 space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <input value={commentDraft.name} onChange={(event) => setCommentDraft({ ...commentDraft, name: event.target.value })} placeholder={t("Name")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent-main)]" />
-                    <input value={commentDraft.email} onChange={(event) => setCommentDraft({ ...commentDraft, email: event.target.value })} placeholder={t("Email (hidden)")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent-main)]" />
+                    <input value={commentDraft.name} onChange={(event) => setCommentDraft({ ...commentDraft, name: event.target.value })} placeholder={t("Name")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
+                    <input value={commentDraft.email} onChange={(event) => setCommentDraft({ ...commentDraft, email: event.target.value })} placeholder={t("Email (hidden)")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
                   </div>
-                  <textarea value={commentDraft.message} onChange={(event) => setCommentDraft({ ...commentDraft, message: event.target.value })} placeholder={t("Leave a comment...")} rows={3} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent-main)]" />
+                  <textarea value={commentDraft.message} onChange={(event) => setCommentDraft({ ...commentDraft, message: event.target.value })} placeholder={t("Leave a comment...")} rows={3} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[var(--color-text-muted)]">{commentDraft.message.length}/500</span>
                     <button disabled={commentStatus === "submitting"} className="bg-[var(--color-text-main)] px-4 py-2 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{commentStatus === "submitting" ? t("Sending...") : t("Post")}</button>
@@ -179,14 +216,40 @@ export default function ContactPage() {
   );
 }
 
+function SignalTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="bg-[var(--color-bg-primary)] p-4">
+      <span className="text-[var(--color-accent-main)]">{icon}</span>
+      <p className="mt-5 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{label}</p>
+      <p className="mt-1 text-sm font-bold">{value}</p>
+    </div>
+  );
+}
+
 function Field({ label, name, type = "text", required = false }: { label: string; name: string; type?: string; required?: boolean }) {
-  return <label><span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{label}</span><input name={name} type={type} required={required} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-4 py-3 outline-none focus:border-[var(--color-accent-main)]" /></label>;
+  return <label><span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{label}</span><input name={name} type={type} required={required} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-4 py-3 outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" /></label>;
 }
 
 function Select({ label, name, options, t }: { label: string; name: string; options: string[]; t: (value: string) => string }) {
-  return <label><span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{label}</span><select name={name} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-4 py-3 outline-none focus:border-[var(--color-accent-main)]">{options.map((option) => <option key={option} value={option}>{t(option)}</option>)}</select></label>;
+  return <label><span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{label}</span><select name={name} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-4 py-3 outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]">{options.map((option) => <option key={option} value={option}>{t(option)}</option>)}</select></label>;
 }
 
-function ContactCard({ icon, label, value, href }: { icon: React.ReactNode; label: string; value: string; href: string }) {
-  return <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]"><span className="text-[var(--color-accent-main)]">{icon}</span><p className="mt-4 font-bold">{label}</p><p className="mt-1 text-sm text-[var(--color-text-secondary)]">{value}</p></a>;
+function ContactCard({ icon: Icon, label, value, href, meta, index }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string; href: string; meta: string; index: number }) {
+  return (
+    <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="group relative min-h-[172px] overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 transition-[transform,border-color,background-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/70 hover:bg-[var(--color-bg-secondary)]">
+      <div className="pointer-events-none absolute inset-x-5 top-0 h-px origin-left scale-x-0 bg-[var(--color-accent-main)] transition-transform duration-300 group-hover:scale-x-100" />
+      <span className="absolute right-5 top-5 font-mono text-[10px] text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
+      <span className="relative flex h-12 w-12 items-center justify-center border border-[var(--color-accent-main)]/35 bg-[var(--color-accent-main)]/10 text-[var(--color-accent-main)]">
+        <Icon size={22} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
+      </span>
+      <p className="mt-7 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{meta}</p>
+      <div className="mt-2 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-manrope text-xl font-bold">{label}</p>
+          <p className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">{value}</p>
+        </div>
+        <ArrowUpRight className="shrink-0 text-[var(--color-text-muted)] transition-[transform,color] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-[var(--color-accent-main)]" size={18} />
+      </div>
+    </a>
+  );
 }

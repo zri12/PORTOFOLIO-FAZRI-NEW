@@ -552,6 +552,22 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["Article not found.", "Artikel tidak ditemukan."],
   ["Back to blog", "Kembali ke blog"],
   ["All articles", "Semua artikel"],
+  ["Contact / Collaboration", "Kontak / Kolaborasi"],
+  ["Response", "Respons"],
+  ["Clear brief", "Brief jelas"],
+  ["Focus", "Fokus"],
+  ["Web first", "Web utama"],
+  ["Support", "Dukungan"],
+  ["Visual craft", "Karya visual"],
+  ["Project context", "Konteks proyek"],
+  ["Direct project inquiry", "Pertanyaan proyek langsung"],
+  ["Quick introduction", "Perkenalan singkat"],
+  ["Professional profile", "Profil profesional"],
+  ["Code and repositories", "Kode dan repository"],
+  ["Visual practice", "Praktik visual"],
+  ["Video archive", "Arsip video"],
+  ["Read article", "Baca artikel"],
+  ["Featured", "Unggulan"],
 ];
 
 export const enToId = new Map([...enToIdEntries, ...extraEnToIdEntries]);
