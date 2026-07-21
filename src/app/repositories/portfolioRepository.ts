@@ -18,6 +18,7 @@ import type {
 
 const STORAGE_KEY = "fazri-portfolio-demo-v3";
 const CACHE_KEY = "fazri-portfolio-supabase-cache-v4";
+const PRIVATE_CACHE_KEY = "fazri-portfolio-supabase-admin-cache-v4";
 const CACHE_SCHEMA_VERSION = 4;
 const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const CHANGE_EVENT = "portfolio-data-change";
@@ -25,8 +26,10 @@ const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 let cachedData: PortfolioData | null = null;
 let cachedRaw: string | null = null;
 let refreshPromise: Promise<PortfolioData> | null = null;
+let refreshIncludesPrivate = false;
 let backendSyncPromise: Promise<void> | null = null;
 let realtimeUnsubscribe: (() => void) | null = null;
+let realtimeIncludesPrivate = false;
 
 function cloneSeed(): PortfolioData {
   return JSON.parse(JSON.stringify(portfolioSeed)) as PortfolioData;
@@ -189,34 +192,43 @@ function reportBackendError(error: unknown) {
   console.error("Portfolio Supabase sync failed", error);
 }
 
-function persistCache(data: PortfolioData) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CACHE_KEY, JSON.stringify({ schemaVersion: CACHE_SCHEMA_VERSION, savedAt: new Date().toISOString(), data }));
+function shouldIncludePrivateData() {
+  return typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
 }
 
-function readCache(): PortfolioData | null {
+function getCacheKey(includePrivate = shouldIncludePrivateData()) {
+  return includePrivate ? PRIVATE_CACHE_KEY : CACHE_KEY;
+}
+
+function persistCache(data: PortfolioData, includePrivate = shouldIncludePrivateData()) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(getCacheKey(includePrivate), JSON.stringify({ schemaVersion: CACHE_SCHEMA_VERSION, savedAt: new Date().toISOString(), data }));
+}
+
+function readCache(includePrivate = shouldIncludePrivateData()): PortfolioData | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(CACHE_KEY);
+  const key = getCacheKey(includePrivate);
+  const raw = window.localStorage.getItem(key);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as { schemaVersion?: number; savedAt?: string; data?: PortfolioData };
     const savedAt = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
     const cacheIsCurrent = parsed.schemaVersion === CACHE_SCHEMA_VERSION && Date.now() - savedAt < CACHE_MAX_AGE_MS;
     if (!cacheIsCurrent) {
-      window.localStorage.removeItem(CACHE_KEY);
+      window.localStorage.removeItem(key);
       return null;
     }
     return parsed.data ? normalizeData(parsed.data) : null;
   } catch {
-    window.localStorage.removeItem(CACHE_KEY);
+    window.localStorage.removeItem(key);
     return null;
   }
 }
 
-function setCachedData(data: PortfolioData) {
+function setCachedData(data: PortfolioData, includePrivate = shouldIncludePrivateData()) {
   cachedData = mergePendingComments(normalizeData(data));
   cachedRaw = JSON.stringify(cachedData);
-  if (isSupabaseEnabled) persistCache(cachedData);
+  if (isSupabaseEnabled) persistCache(cachedData, includePrivate);
   emitChange();
 }
 
@@ -251,7 +263,7 @@ function save(data: PortfolioData) {
 function getData(): PortfolioData {
   if (isSupabaseEnabled) {
     if (cachedData) return cachedData;
-    cachedData = mergePendingComments(readCache() || emptySupabaseData());
+    cachedData = mergePendingComments(readCache(shouldIncludePrivateData()) || emptySupabaseData());
     cachedRaw = JSON.stringify(cachedData);
     void portfolioRepository.refresh().catch(reportBackendError);
     return cachedData;
@@ -299,9 +311,16 @@ function upsert<T extends { id: string }>(items: T[], item: T) {
 export const portfolioRepository = {
   subscribe(callback: () => void) {
     if (isSupabaseEnabled && !realtimeUnsubscribe && typeof window !== "undefined") {
+      realtimeIncludesPrivate = shouldIncludePrivateData();
       realtimeUnsubscribe = supabasePortfolioRepository.subscribe(() => {
         void portfolioRepository.refresh().catch(reportBackendError);
-      }, false);
+      }, realtimeIncludesPrivate);
+    } else if (isSupabaseEnabled && realtimeUnsubscribe && typeof window !== "undefined" && realtimeIncludesPrivate !== shouldIncludePrivateData()) {
+      realtimeUnsubscribe();
+      realtimeIncludesPrivate = shouldIncludePrivateData();
+      realtimeUnsubscribe = supabasePortfolioRepository.subscribe(() => {
+        void portfolioRepository.refresh().catch(reportBackendError);
+      }, realtimeIncludesPrivate);
     }
     window.addEventListener(CHANGE_EVENT, callback);
     window.addEventListener("storage", callback);
@@ -311,6 +330,7 @@ export const portfolioRepository = {
     window.addEventListener("focus", refreshOnResume);
     window.addEventListener("online", refreshOnResume);
     document.addEventListener("visibilitychange", refreshOnResume);
+    if (isSupabaseEnabled) void portfolioRepository.refresh().catch(reportBackendError);
     return () => {
       window.removeEventListener(CHANGE_EVENT, callback);
       window.removeEventListener("storage", callback);
@@ -322,10 +342,12 @@ export const portfolioRepository = {
   getSnapshot: getData,
   async refresh() {
     if (!isSupabaseEnabled) return getData();
-    if (!refreshPromise) {
-      refreshPromise = supabasePortfolioRepository.loadPortfolioData(false)
+    const includePrivate = shouldIncludePrivateData();
+    if (!refreshPromise || refreshIncludesPrivate !== includePrivate) {
+      refreshIncludesPrivate = includePrivate;
+      refreshPromise = supabasePortfolioRepository.loadPortfolioData(includePrivate)
         .then((data) => {
-          setCachedData(data);
+          setCachedData(data, includePrivate);
           return data;
         })
         .finally(() => {
@@ -463,12 +485,12 @@ export const portfolioRepository = {
   getArticleBySlug: (slug: string) => getData().articles.find((article) => article.slug === slug),
   createArticle(item: Partial<Article>) {
     const now = new Date().toISOString();
-    const title = item.title || "Artikel Baru";
+    const title = item.title || "New Article";
     const created: Article = {
       id: uuid(),
       slug: item.slug || slugify(title),
       title,
-      excerpt: item.excerpt || "Ringkasan artikel.",
+      excerpt: item.excerpt || "Article summary.",
       category: item.category || "Web Development",
       tags: item.tags || [],
       coverImage: item.coverImage || "",
@@ -481,7 +503,7 @@ export const portfolioRepository = {
       readingTime: item.readingTime || 1,
       seoTitle: item.seoTitle || title,
       seoDescription: item.seoDescription || item.excerpt || "",
-      blocks: item.blocks || [{ id: uuid(), type: "paragraph", text: "Mulai menulis artikel di sini." }],
+      blocks: item.blocks || [{ id: uuid(), type: "paragraph", text: "Start writing the article here." }],
       displayOrder: item.displayOrder ?? getData().articles.length + 1,
     };
     updateData((data) => data.articles.unshift(created));

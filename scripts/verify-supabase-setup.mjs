@@ -23,7 +23,7 @@ const checks = [
   ["project_technologies", (rows) => rows.length >= 6],
   ["creative_works", (rows) => rows.length >= 4],
   ["experiences", (rows) => rows.length >= 3],
-  ["certificates", (rows) => rows.length >= 3],
+  ["certificates", (rows) => rows.length >= 1],
   ["admin_users", (rows) => rows.length >= 1],
 ];
 

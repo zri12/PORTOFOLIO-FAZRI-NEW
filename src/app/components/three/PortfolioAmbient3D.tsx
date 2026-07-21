@@ -149,9 +149,14 @@ export function PortfolioAmbient3D() {
     resizeObserver.observe(mount);
 
     const clock = new THREE.Clock();
+    const minFrameMs = window.innerWidth < 768 ? 50 : window.innerWidth < 1024 ? 33 : 16;
+    let lastRenderAt = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
       if (!running) return;
+      const now = performance.now();
+      if (now - lastRenderAt < minFrameMs) return;
+      lastRenderAt = now;
       const elapsed = clock.getElapsedTime();
       const targetPalette = modeRef.current === "spider" ? spider : pro;
       current.glass.lerp(targetPalette.glass, 0.045);

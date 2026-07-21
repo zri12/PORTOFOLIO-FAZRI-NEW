@@ -579,6 +579,22 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["Liked", "Disukai"],
   ["Read article", "Baca artikel"],
   ["Featured", "Unggulan"],
+  ["Send inquiry", "Kirim inquiry"],
+  ["Building Responsive Web Interfaces That Stay Fast", "Membangun Interface Web Responsif yang Tetap Cepat"],
+  ["Practical notes on structuring components, media, and animation so web experiences stay comfortable on desktop and mobile devices.", "Catatan praktis tentang menyusun komponen, media, dan animasi agar pengalaman web tetap nyaman di desktop maupun perangkat mobile."],
+  ["Responsive web interface displayed on a desktop screen", "Tampilan antarmuka web responsif pada layar desktop"],
+  ["How to Build Responsive and Fast Web Interfaces", "Cara Membangun Interface Web Responsif dan Cepat"],
+  ["A practical approach to building responsive, stable, and lightweight React interfaces across devices.", "Pendekatan praktis membangun interface React yang responsif, stabil, dan ringan di berbagai perangkat."],
+  ["A responsive interface is not just a layout that shrinks neatly. Component structure, media size, and animation cost need to be planned together so every interaction still feels stable.", "Interface yang responsif bukan hanya tampilan yang mengecil dengan rapi. Struktur komponen, ukuran media, dan biaya animasi perlu direncanakan bersama agar interaksi tetap terasa stabil."],
+  ["Start with predictable structure", "Mulai dari struktur yang dapat diprediksi"],
+  ["Use clear width limits, measurable grid changes, and stable media dimensions. Browsers can arrange a page faster when each element already has predictable space.", "Gunakan batas lebar yang jelas, grid yang berubah secara terukur, dan dimensi media yang stabil. Browser dapat menata halaman lebih cepat ketika setiap elemen memiliki ruang yang sudah dapat diperkirakan."],
+  ["A design that feels fast comes from visual and technical decisions supporting each other.", "Desain yang terasa cepat lahir dari keputusan visual dan teknis yang saling mendukung."],
+  ["Test on real devices", "Uji pada perangkat yang nyata"],
+  ["Check layouts on narrow and wide screens.", "Periksa layout pada layar sempit dan lebar."],
+  ["Use images sized for the actual display need.", "Gunakan gambar dengan ukuran yang sesuai kebutuhan tampilan."],
+  ["Reduce heavy effects when the device prefers reduced motion.", "Kurangi efek berat ketika perangkat memilih reduced motion."],
+  ["Watch layout shift and interaction response time.", "Pantau pergeseran layout dan waktu respons interaksi."],
+  ["Repeated testing helps reveal parts that look good on desktop but feel heavy or clipped on mobile. The final goal is a consistent experience, not only a page that can be opened.", "Pengujian berulang membantu menemukan bagian yang terlihat baik di desktop tetapi terasa berat atau terpotong di mobile. Hasil akhirnya adalah pengalaman yang konsisten, bukan sekadar halaman yang dapat dibuka."],
 ];
 
 export const enToId = new Map([...enToIdEntries, ...extraEnToIdEntries]);

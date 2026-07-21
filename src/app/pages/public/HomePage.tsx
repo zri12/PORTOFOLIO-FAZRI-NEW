@@ -155,7 +155,6 @@ export default function HomePage() {
     logoUrl: "",
     level: index < 3 ? "Main Stack" : index < 6 ? "Frequently Used" : "Familiar",
   }));
-  const [sent, setSent] = useState(false);
   const [heroImageHover, setHeroImageHover] = useState(false);
   const [spiderSceneReady, setSpiderSceneReady] = useState(false);
   const [compactViewport, setCompactViewport] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
@@ -167,6 +166,7 @@ export default function HomePage() {
   const heroImageRef = useRef<HTMLDivElement>(null);
   const heroBaseImageRef = useRef<HTMLImageElement>(null);
   const heroRevealImageRef = useRef<HTMLImageElement>(null);
+  const heroImageHoverRef = useRef(false);
   const homeCertificates = certificates
     .filter((certificate) => certificate.published)
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
@@ -190,7 +190,10 @@ export default function HomePage() {
       event.clientY >= visibleTop &&
       event.clientY <= visibleBottom;
 
-    setHeroImageHover(isInsideImage);
+    if (heroImageHoverRef.current !== isInsideImage) {
+      heroImageHoverRef.current = isInsideImage;
+      setHeroImageHover(isInsideImage);
+    }
     stage.style.setProperty("--hero-reveal-x", `${event.clientX - stageRect.left}px`);
     stage.style.setProperty("--hero-reveal-y", `${event.clientY - stageRect.top}px`);
     stage.style.setProperty("--hero-base-reveal-x", `${event.clientX - imageRect.left}px`);
@@ -296,7 +299,10 @@ export default function HomePage() {
             transition={{ delay: .18, duration: .85, ease: [0.22, 1, .36, 1] }}
             onPointerMove={updateHeroReveal}
             onPointerEnter={updateHeroReveal}
-            onPointerLeave={() => setHeroImageHover(false)}
+            onPointerLeave={() => {
+              heroImageHoverRef.current = false;
+              setHeroImageHover(false);
+            }}
             className="hero-image-stage relative min-h-[330px] w-full lg:min-h-[560px]"
             aria-label={isSpiderMode ? "Spider mode hero portrait" : "Professional hero portrait"}
           >
@@ -392,7 +398,7 @@ export default function HomePage() {
 
     <section className="px-6 py-24"><div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-2"><Reveal className="border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-8 relative overflow-hidden">
       {mode === "spider" && <div className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-red-500/10 to-transparent pointer-events-none" />}
-      <Eyebrow>10 / Start a conversation</Eyebrow><h2 className="font-manrope text-3xl font-bold">Have a thoughtful project in mind?</h2><p className="mt-4 max-w-md leading-7 text-[var(--color-text-secondary)]">I'm available for selected web development projects, implementation support, and creative digital collaborations.</p><div className="mt-7 space-y-3 text-sm text-[var(--color-text-secondary)]"><a href={`mailto:${profile.email}`} className="flex items-center gap-3 hover:text-[var(--color-accent-main)]"><Mail size={16} />{profile.email}</a><a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-[var(--color-accent-main)]"><MessageCircle size={16} />WhatsApp for a quick introduction</a><div className="flex gap-3 pt-2"><a href={profile.github} target="_blank" rel="noreferrer" aria-label="GitHub"><Github size={17} /></a><a href={profile.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin size={17} /></a><a href={profile.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={17} /></a></div></div><form onSubmit={(e) => { e.preventDefault(); setSent(true); }} className="mt-8 grid gap-3"><input required placeholder="Your name" className="border border-[var(--color-border)] bg-transparent px-3 py-3 text-sm outline-none focus:border-[var(--color-accent-main)]" /><input required type="email" placeholder="Email address" className="border border-[var(--color-border)] bg-transparent px-3 py-3 text-sm outline-none focus:border-[var(--color-accent-main)]" /><button className="inline-flex w-max items-center gap-2 bg-[var(--color-text-main)] px-4 py-3 text-sm font-bold text-[var(--color-bg-primary)]">{sent ? "Message queued locally" : "Send inquiry"} <Send size={14} /></button></form></Reveal><Reveal className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-8"><div className="flex items-start justify-between"><div><Eyebrow>Guestbook / {comments.length} notes</Eyebrow><h2 className="font-manrope text-3xl font-bold">Recent visitor comments</h2></div><MessageCircle className="text-[var(--color-accent-main)]" /></div><div className="mt-8 space-y-5">{comments.filter((item) => item.status === "approved").slice(0, 3).map((item) => <div key={item.id} className="border-b border-[var(--color-border)] pb-5 last:border-0"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-accent-main)]/15 text-xs font-bold text-[var(--color-accent-main)]">{item.avatar}</span><p className="text-sm font-semibold">{item.name}</p></div><p className="mt-2 pl-9 text-sm leading-6 text-[var(--color-text-secondary)]">"{item.message}"</p></div>)}</div><Link to="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent-main)]">Visit Contact & Guestbook <ArrowRight size={15} /></Link></Reveal></div></section>
+      <Eyebrow>10 / Start a conversation</Eyebrow><h2 className="font-manrope text-3xl font-bold">Have a thoughtful project in mind?</h2><p className="mt-4 max-w-md leading-7 text-[var(--color-text-secondary)]">I'm available for selected web development projects, implementation support, and creative digital collaborations.</p><div className="mt-7 space-y-3 text-sm text-[var(--color-text-secondary)]"><a href={`mailto:${profile.email}`} className="flex items-center gap-3 hover:text-[var(--color-accent-main)]"><Mail size={16} />{profile.email}</a><a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-[var(--color-accent-main)]"><MessageCircle size={16} />WhatsApp for a quick introduction</a><div className="flex gap-3 pt-2"><a href={profile.github} target="_blank" rel="noreferrer" aria-label="GitHub"><Github size={17} /></a><a href={profile.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin size={17} /></a><a href={profile.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={17} /></a></div></div><Link to="/contact" className="mt-8 inline-flex w-max items-center gap-2 bg-[var(--color-text-main)] px-4 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Send inquiry <Send size={14} /></Link></Reveal><Reveal className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-8"><div className="flex items-start justify-between"><div><Eyebrow>Guestbook / {comments.length} notes</Eyebrow><h2 className="font-manrope text-3xl font-bold">Recent visitor comments</h2></div><MessageCircle className="text-[var(--color-accent-main)]" /></div><div className="mt-8 space-y-5">{comments.filter((item) => item.status === "approved").slice(0, 3).map((item) => <div key={item.id} className="border-b border-[var(--color-border)] pb-5 last:border-0"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-accent-main)]/15 text-xs font-bold text-[var(--color-accent-main)]">{item.avatar}</span><p className="text-sm font-semibold">{item.name}</p></div><p className="mt-2 pl-9 text-sm leading-6 text-[var(--color-text-secondary)]">"{item.message}"</p></div>)}</div><Link to="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent-main)]">Visit Contact & Guestbook <ArrowRight size={15} /></Link></Reveal></div></section>
 
     <section className="final-cta relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-6 py-28">
       <div className="final-ambient absolute inset-0" />
