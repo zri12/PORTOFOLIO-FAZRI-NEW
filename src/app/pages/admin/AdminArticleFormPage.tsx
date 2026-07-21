@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Heading2, ImagePlus, List, Pilcrow, Plus, Quote, Trash } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Heading2, ImagePlus, List, Pilcrow, Plus, Quote, Save, Trash } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
@@ -52,7 +52,7 @@ export default function AdminArticleFormPage() {
     set("blocks", [...draft.blocks, block]);
   };
 
-  const save = async () => {
+  const save = async (status: Article["status"]) => {
     const title = draft.title.trim();
     const slug = (draft.slug || slugify(title)).trim();
     if (!title || !slug || !draft.excerpt.trim()) {
@@ -70,7 +70,7 @@ export default function AdminArticleFormPage() {
     setSaving(true);
     setError("");
     try {
-      portfolioRepository.updateArticle({ ...draft, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
+      portfolioRepository.updateArticle({ ...draft, status, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
       await portfolioRepository.flushPendingWrites();
       navigate("/admin/articles");
     } catch (saveError) {
@@ -89,7 +89,7 @@ export default function AdminArticleFormPage() {
           <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
           <AdminInput label="Excerpt" value={draft.excerpt} onChange={(value) => set("excerpt", value)} textarea />
           <div className="grid gap-4 md:grid-cols-2"><AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} /><AdminInput label="Tags (comma separated)" value={draft.tags.join(", ")} onChange={(value) => set("tags", value.split(",").map((tag) => tag.trim()).filter(Boolean))} /><AdminInput label="Author" value={draft.author} onChange={(value) => set("author", value)} /><AdminInput label="Reading Time (minutes)" value={String(draft.readingTime)} onChange={(value) => set("readingTime", Math.max(1, Number(value) || 1))} /></div>
-          <div className="flex flex-wrap gap-5"><label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)]"><input type="checkbox" checked={draft.status === "published"} onChange={(event) => set("status", event.target.checked ? "published" : "draft")} /> Published</label><label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)]"><input type="checkbox" checked={draft.featured} onChange={(event) => set("featured", event.target.checked)} /> Featured</label></div>
+          <div className="flex flex-wrap gap-5"><p className="text-sm font-semibold text-[var(--color-text-secondary)]">Current status: <span className={draft.status === "published" ? "text-emerald-300" : "text-amber-200"}>{draft.status}</span></p><label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)]"><input type="checkbox" checked={draft.featured} onChange={(event) => set("featured", event.target.checked)} /> Featured</label></div>
         </FormSection>
 
         <FormSection title="Cover Image">
@@ -111,7 +111,7 @@ export default function AdminArticleFormPage() {
         </FormSection>
 
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
-        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save()} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Save Article"}</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
       </div>
     </div>
   );

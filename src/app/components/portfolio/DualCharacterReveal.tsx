@@ -18,7 +18,7 @@ const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal
   desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
   laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
   tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
-  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 0.98, scaleY: 1, x: 0, y: 0 } },
+  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.16, scaleY: 1, x: 0, y: 0 } },
 };
 
 interface Cal {
@@ -29,7 +29,7 @@ interface Cal {
 }
 
 // Small "discovery lens" — deliberately far smaller than a body-sized portal.
-const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 58 };
+const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 68 };
 const FEATHER = 5;
 const LERP = 0.32; // fast, precise pointer follow
 
@@ -116,6 +116,12 @@ export function DualCharacterReveal({ className = "" }: Props) {
     target.current.x = e.clientX - rect.left;
     target.current.y = e.clientY - rect.top;
     target.current.r = HOVER_RADIUS[bp];
+    if (coarsePointer) {
+      el.style.setProperty("--reveal-x", `${target.current.x}px`);
+      el.style.setProperty("--reveal-y", `${target.current.y}px`);
+      el.style.setProperty("--reveal-r", `${target.current.r}px`);
+      el.style.setProperty("--reveal-feather", `${target.current.r + FEATHER}px`);
+    }
     setHovering(true);
   };
 
@@ -137,6 +143,9 @@ export function DualCharacterReveal({ className = "" }: Props) {
       setHovering(false);
       setTapPreview(false);
       target.current.r = 0;
+      const el = frameRef.current;
+      el?.style.setProperty("--reveal-r", "0px");
+      el?.style.setProperty("--reveal-feather", `${FEATHER}px`);
       touchHideTimerRef.current = null;
     };
     if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
@@ -157,8 +166,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
     toggleMode();
   };
 
-  const revealVisibleCrossfade = tapPreview;
-  const useRadialMask = !reduce && !coarsePointer;
+  const useRadialMask = !reduce;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -203,7 +211,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
             maskImage: spiderActive ? maskValue : "none",
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
-            opacity: spiderActive && !useRadialMask ? (revealVisibleCrossfade ? 1 : 0) : 1,
+            opacity: spiderActive && !useRadialMask ? 0 : 1,
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
@@ -232,7 +240,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
             backgroundColor: "transparent",
-            opacity: !spiderActive && !useRadialMask ? (revealVisibleCrossfade ? 1 : 0) : 1,
+            opacity: !spiderActive && !useRadialMask ? 0 : 1,
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
         >
@@ -274,7 +282,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
         )}
 
         {/* Touch affordance. */}
-        {coarsePointer && (
+        {coarsePointer && !reduce && (
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
             {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>

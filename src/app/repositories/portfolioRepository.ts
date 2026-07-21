@@ -17,7 +17,9 @@ import type {
 } from "../types/portfolio";
 
 const STORAGE_KEY = "fazri-portfolio-demo-v3";
-const CACHE_KEY = "fazri-portfolio-supabase-cache-v2";
+const CACHE_KEY = "fazri-portfolio-supabase-cache-v4";
+const CACHE_SCHEMA_VERSION = 4;
+const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const CHANGE_EVENT = "portfolio-data-change";
 let cachedData: PortfolioData | null = null;
 let cachedRaw: string | null = null;
@@ -142,7 +144,7 @@ function reportBackendError(error: unknown) {
 
 function persistCache(data: PortfolioData) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CACHE_KEY, JSON.stringify({ stale: true, savedAt: new Date().toISOString(), data }));
+  window.localStorage.setItem(CACHE_KEY, JSON.stringify({ schemaVersion: CACHE_SCHEMA_VERSION, savedAt: new Date().toISOString(), data }));
 }
 
 function readCache(): PortfolioData | null {
@@ -150,7 +152,13 @@ function readCache(): PortfolioData | null {
   const raw = window.localStorage.getItem(CACHE_KEY);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as { data?: PortfolioData };
+    const parsed = JSON.parse(raw) as { schemaVersion?: number; savedAt?: string; data?: PortfolioData };
+    const savedAt = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
+    const cacheIsCurrent = parsed.schemaVersion === CACHE_SCHEMA_VERSION && Date.now() - savedAt < CACHE_MAX_AGE_MS;
+    if (!cacheIsCurrent) {
+      window.localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
     return parsed.data ? normalizeData(parsed.data) : null;
   } catch {
     window.localStorage.removeItem(CACHE_KEY);
@@ -250,9 +258,18 @@ export const portfolioRepository = {
     }
     window.addEventListener(CHANGE_EVENT, callback);
     window.addEventListener("storage", callback);
+    const refreshOnResume = () => {
+      if (document.visibilityState === "visible") void portfolioRepository.refresh().catch(reportBackendError);
+    };
+    window.addEventListener("focus", refreshOnResume);
+    window.addEventListener("online", refreshOnResume);
+    document.addEventListener("visibilitychange", refreshOnResume);
     return () => {
       window.removeEventListener(CHANGE_EVENT, callback);
       window.removeEventListener("storage", callback);
+      window.removeEventListener("focus", refreshOnResume);
+      window.removeEventListener("online", refreshOnResume);
+      document.removeEventListener("visibilitychange", refreshOnResume);
     };
   },
   getSnapshot: getData,
