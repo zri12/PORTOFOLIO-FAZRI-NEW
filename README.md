@@ -1,127 +1,170 @@
-# Portfolio Fazri
+# Fazri Lukman Nurrohman Portfolio
 
-Personal portfolio and frontend CMS prototype for Fazri Lukman Nurrohman, a Creative Web Developer focused on web applications, interface design, and visual storytelling.
+<p align="center">
+  <strong>Creative Web Developer portfolio with a public website, admin CMS, Supabase-backed content, blog, guestbook, and dual visual modes.</strong>
+</p>
 
-The application is a React + TypeScript + Vite frontend. Public portfolio pages and the admin CMS prototype share one typed data source through a repository layer. Current persistence is frontend-only through `localStorage`.
+<p align="center">
+  <a href="https://fazrilukman.id">Live Website</a>
+  &nbsp;|&nbsp;
+  <a href="#quick-start">Quick Start</a>
+  &nbsp;|&nbsp;
+  <a href="#deployment">Deployment</a>
+  &nbsp;|&nbsp;
+  <a href="#project-map">Project Map</a>
+</p>
 
-## Project Status
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react&logoColor=111827">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=for-the-badge&logo=typescript&logoColor=ffffff">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-6.3-646cff?style=for-the-badge&logo=vite&logoColor=ffffff">
+  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Connected-3ecf8e?style=for-the-badge&logo=supabase&logoColor=0b1220">
+</p>
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Public portfolio | In progress | Main public routes exist and render portfolio content. |
-| Professional Mode | Prototype | Default visual baseline with dark graphite/navy surfaces and cyan/teal accents. |
-| Spider Mode | Prototype | Alternate original visual mode with crimson styling and web geometry. |
-| Character reveal | Prototype | Professional and Spider character assets are layered in the hero. |
-| Project pages | Complete frontend route | Dedicated `/projects/:slug` detail route exists for current demo data. |
-| Creative Works | Complete frontend route | Listing and `/creative-works/:slug` detail route exist. |
-| Certificates | Prototype | Certificate gallery exists; no dedicated certificate detail route. |
-| Contact and Guestbook | Prototype | Contact messages and comments are stored locally. |
-| Admin login | Demo only | Simulated auth using local/session storage. |
-| Admin dashboard | Prototype | Frontend dashboard exists. |
-| Admin CRUD | Prototype | CRUD screens use local repository persistence. |
-| Local persistence | Implemented | Versioned `localStorage` key with seed fallback and normalization. |
-| Backend integration | Not connected | No production auth, database, media storage, or email delivery yet. |
-| Deployment readiness | Buildable | Vite build works; production backend features remain planned. |
+## Overview
 
-## Main Features
+This repository powers the personal portfolio of **Fazri Lukman Nurrohman**, positioned as a Creative Web Developer with a primary focus on web development and supporting strengths in UI design, photography, videography, and visual editing.
 
-- Dual visual modes: Professional Mode and Spider Mode.
-- Public portfolio with home, about, projects, creative works, certificates, and contact routes.
-- Dedicated project case-study pages.
-- Creative work archive with detail pages.
-- Contact form and guestbook/comment flow backed by local demo persistence.
-- Animated UI using GSAP, Motion, and Lenis.
-- Three.js hero scene for interactive portfolio atmosphere.
-- Frontend admin CMS prototype for profile, hero, projects, tech stack, creative works, experience, certificates, comments, messages, media, and settings.
-- Import, export, and reset behavior through the local repository layer.
+The app is a React + TypeScript + Vite frontend with a shared public/admin data layer. Production content is connected to Supabase through repository adapters, storage URLs, and Edge Functions, while the UI remains deployable as a static frontend bundle for Vercel or cPanel-style hosting.
 
-## Technology Stack
+## Highlights
 
-| Area | Current packages |
+| Area | What it does |
 | --- | --- |
-| Core | React 19.2.1, React DOM 19.2.1, TypeScript 5.9.3, Vite 6.3.5 |
-| Styling | Tailwind CSS 4.1.12, `@tailwindcss/vite`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tw-animate-css` |
-| Animation | GSAP, Motion, Lenis |
-| 3D | Three.js, `@types/three` |
-| Routing | React Router 7.13.0 |
-| Forms and UI | Radix UI primitives, React Hook Form, Lucide React, Sonner, Vaul, CMDK |
-| Data visualization | Recharts |
-| Local persistence | Browser `localStorage` and `sessionStorage` through repository abstractions |
-| Tooling | Vite, TypeScript, `@vitejs/plugin-react` |
+| Public portfolio | Home, about, projects, creative works, certificates, blog, contact, and detail pages. |
+| Admin CMS | Manage profile, hero, projects, stack, creative works, certificates, articles, comments, and messages. |
+| Supabase content | Stores portfolio content, media URLs, contact messages, guestbook comments, replies, and likes. |
+| Guestbook | Public comments, one-like-per-device behavior, replies, moderation, pinning, and admin reply support. |
+| Visual modes | Professional Mode as the default baseline and Spider Mode as an original alternate identity. |
+| Blog and SEO | Admin-managed articles with public blog routes and metadata helpers for search visibility. |
+| Performance | Reduced heavy scroll work, motion-safe behavior, and responsive layouts for desktop, tablet, and mobile. |
 
-## Installation
+## Tech Stack
+
+| Layer | Tools |
+| --- | --- |
+| App | React 19, TypeScript 5.9, Vite 6 |
+| Routing | React Router |
+| Styling | Tailwind CSS, project CSS tokens, Radix UI primitives |
+| Motion | Motion, GSAP, Lenis |
+| 3D | Three.js with static fallback behavior |
+| Backend | Supabase database, storage, auth, Edge Functions |
+| Icons/UI | Lucide React, Sonner, Vaul, CMDK |
+
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-The dev server defaults to Vite's local URL, usually `http://localhost:5173`.
+The Vite dev server usually runs at:
 
-## Available Scripts
+```text
+http://localhost:5173
+```
 
-| Script | Command | Purpose |
-| --- | --- | --- |
-| `dev` | `vite` | Start the development server. |
-| `build` | `tsc --noEmit && vite build` | Type-check and build the production bundle. |
-| `preview` | `vite preview` | Preview the production build locally. |
-| `typecheck` | `tsc --noEmit` | Run TypeScript validation. |
-| `lint` | `tsc --noEmit` | Current lint placeholder; it performs the TypeScript check. |
+## Environment
 
-## Project Structure
+Create `.env.local` or configure these values in the hosting dashboard:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_SUPABASE_PUBLIC_BUCKET=portfolio-public
+VITE_ADMIN_AUTH_DOMAIN=portfolio-admin.example
+VITE_ENABLE_SUPABASE=true
+VITE_ENABLE_REALTIME=true
+```
+
+For admin scripts and Edge Functions, keep service-role secrets outside browser-exposed `VITE_*` variables.
+
+```env
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
+ADMIN_AUTH_EMAIL=
+```
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development. |
+| `npm run typecheck` | Run TypeScript validation. |
+| `npm run lint` | Current lint alias, also runs TypeScript validation. |
+| `npm run build` | Type-check and build production output into `dist/`. |
+| `npm run preview` | Preview the production build locally. |
+| `npm run supabase:verify` | Check Supabase connectivity and required tables/features. |
+| `npm run supabase:create-admin` | Create the initial Supabase admin user. |
+| `npm run supabase:upload-assets` | Upload seed/static assets to Supabase Storage. |
+| `npm run supabase:types` | Generate Supabase TypeScript types. |
+
+## Supabase Note
+
+The SQL setup files and local seed/test SQL assets are intentionally not kept in this repository after being applied to the Supabase project. Runtime code now depends on:
+
+- Supabase environment variables
+- generated database types in `src/app/lib/supabase/database.types.ts`
+- repository adapters in `src/app/repositories`
+- Edge Functions in `supabase/functions`
+- verification and admin scripts in `scripts`
+
+If a fresh Supabase project is created later, export the current schema from Supabase or regenerate migrations from the live database before applying it to the new project.
+
+## Project Map
 
 ```text
 src/
   app/
-    components/      Shared UI, layout, admin, portfolio, and shadcn-style components
-    context/         Theme mode and admin auth providers
-    data/seed/       Typed seed content for the frontend demo
-    hooks/           Portfolio data and document metadata hooks
-    lib/             Storage helpers
-    pages/admin/     Admin CMS prototype pages
-    pages/public/    Public portfolio pages
-    repositories/    Local auth and portfolio data repositories
-    types/           Portfolio TypeScript models
-  imports/           Character image assets
-  styles/            Global and theme CSS
+    components/       Shared UI, portfolio, admin, layout, and utility components
+    context/          Theme mode and admin auth providers
+    data/seed/        Typed fallback content
+    hooks/            Public/admin data and metadata hooks
+    lib/              Supabase client, helpers, and generated types
+    pages/            Public and admin route pages
+    repositories/     Shared data access layer
+    types/            Portfolio TypeScript models
+  imports/            Character and visual assets
+  styles/             Global CSS, theme tokens, and responsive styles
+
+supabase/
+  functions/          Public Edge Functions for contact, comments, and likes
+
+scripts/
+  *.mjs               Admin setup, Supabase verification, imports, and asset upload
 ```
-
-## Public Routes
-
-The public route reference is maintained in [docs/ROUTES.md](docs/ROUTES.md).
-
-## Admin Routes
-
-The admin CMS reference is maintained in [docs/ADMIN_CMS.md](docs/ADMIN_CMS.md).
-
-## Demo Data and Local Storage
-
-Seed data is loaded from `src/app/data/seed/portfolioSeed.ts`. Runtime data is read and written through `src/app/repositories/portfolioRepository.ts` using the key `fazri-portfolio-demo-v3`.
-
-The repository normalizes stored data against the current seed shape, exports JSON, imports JSON, and resets demo data. This is frontend-only persistence; clearing browser storage removes local changes.
-
-Admin authentication is simulated through `src/app/repositories/authRepository.ts` with the key `fazri-admin-session`.
-
-## Character Assets
-
-The hero uses separate Professional and Spider character images. These assets must remain visually aligned so the reveal effect can switch between modes without shifting the head, shoulders, torso, or arms. Do not replace them with unrelated textures or franchise assets.
-
-## Animation and 3D
-
-Animation and 3D expectations are documented in [docs/ANIMATION_3D.md](docs/ANIMATION_3D.md).
-
-## Accessibility
-
-The target is keyboard-accessible navigation, visible focus states, labeled forms, dialog focus management, reduced-motion support, and touch alternatives for hover-driven interactions. Use [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md) before marking UI work complete.
 
 ## Deployment
 
-The build output is generated by Vite in `dist/`. It can be hosted on static frontend platforms once the desired deployment target is chosen. Backend-dependent features such as real authentication, permanent media upload, database storage, and email delivery are not connected yet.
+Build locally before deploying:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
+
+For Vercel, add the `VITE_*` environment variables to Production and Preview. For cPanel or static hosting, upload the generated `dist/` output and keep the same frontend environment values available during build time.
+
+Supabase Edge Functions are deployed separately:
+
+```bash
+supabase functions deploy submit-contact
+supabase functions deploy submit-comment
+supabase functions deploy like-comment
+```
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md) and [AGENTS.md](AGENTS.md) before changing implementation details.
+The working documentation remains in `docs/` because it is referenced by the repository instructions and future maintenance workflow. Start with:
 
-## License or Usage
+- [AGENTS.md](AGENTS.md)
+- [docs/README.md](docs/README.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/BACKEND_INTEGRATION.md](docs/BACKEND_INTEGRATION.md)
 
-No public license has been specified in this repository.
+## License
+
+No public license has been specified. All project content belongs to Fazri Lukman Nurrohman unless stated otherwise.

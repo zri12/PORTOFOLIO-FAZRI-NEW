@@ -1,6 +1,20 @@
 # Supabase Backend Integration
 
-The portfolio now supports Supabase as the authoritative production backend while keeping the approved frontend UI intact.
+The portfolio uses Supabase as the production backend for public content, admin-managed data, storage URLs, contact messages, guestbook comments, replies, and likes.
+
+## Current Repository Boundary
+
+SQL setup, seed, migration, and local SQL test files have already been applied to the live Supabase project and are no longer kept in this repository. This keeps the deploy package lean and avoids accidentally re-running old setup files.
+
+The repository still keeps the runtime pieces that are required by the web app:
+
+- `src/app/lib/supabase/client.ts`
+- `src/app/lib/supabase/database.types.ts`
+- Supabase repository adapters under `src/app/repositories`
+- Edge Functions under `supabase/functions`
+- admin and verification scripts under `scripts`
+
+If a fresh Supabase project is needed later, export the current schema from the live project or regenerate migrations from the live database before applying it to the new project.
 
 ## Environment Files
 
@@ -15,54 +29,15 @@ VITE_ENABLE_SUPABASE=true
 VITE_ENABLE_REALTIME=true
 ```
 
-Keep service-role credentials only in your shell or `.env.admin.local`. Never expose them through `VITE_*`.
+Keep service-role credentials only in the local shell, CI secrets, hosting secrets, or `.env.admin.local`. Never expose service-role credentials through `VITE_*`.
 
-## Key Difference
+## Admin and Service Secrets
 
 The publishable key is safe for browser use and is limited by Row Level Security.
 
-The service-role key bypasses RLS and is only for trusted local scripts, CI secrets, and Edge Functions.
+The service-role key bypasses RLS and is only for trusted scripts, CI, and Edge Functions.
 
-## CLI Setup
-
-1. Create a Supabase project.
-2. Copy the Project URL and Publishable key into `.env.local`.
-3. Link the CLI project:
-
-```bash
-supabase link --project-ref YOUR_PROJECT_REF
-```
-
-4. Apply migrations:
-
-```bash
-npm run supabase:push
-```
-
-5. Seed production content:
-
-```bash
-supabase db execute --file supabase/seed/production_seed.sql
-```
-
-6. Deploy Edge Functions:
-
-```bash
-supabase functions deploy submit-contact
-supabase functions deploy submit-comment
-supabase functions deploy like-comment
-```
-
-7. Set Edge Function secrets:
-
-```bash
-supabase secrets set SUPABASE_URL="YOUR_PROJECT_URL"
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
-```
-
-8. Create the initial admin user.
-
-PowerShell:
+PowerShell example:
 
 ```powershell
 $env:SUPABASE_URL="YOUR_PROJECT_URL"
@@ -73,7 +48,7 @@ $env:ADMIN_AUTH_EMAIL="fazrilukman@portfolio-admin.example"
 npm run supabase:create-admin
 ```
 
-Bash:
+Bash example:
 
 ```bash
 SUPABASE_URL="YOUR_PROJECT_URL" \
@@ -86,89 +61,50 @@ npm run supabase:create-admin
 
 Use a real email later if password recovery by email is required.
 
-9. Upload seed assets:
+## Edge Functions
+
+Deploy the public Edge Functions separately from the static frontend build:
 
 ```bash
-npm run supabase:upload-assets
+supabase functions deploy submit-contact
+supabase functions deploy submit-comment
+supabase functions deploy like-comment
 ```
 
-10. Generate database types:
+Then set secrets:
 
 ```bash
-npm run supabase:types
+supabase secrets set SUPABASE_URL="YOUR_PROJECT_URL"
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
 ```
 
-11. Verify setup:
+## Verification
+
+After changing Supabase settings or hosting environment variables, run:
 
 ```bash
 npm run supabase:verify
 ```
 
-## Manual SQL Editor Setup
+Regenerate types after database schema changes:
 
-Use files under `supabase/manual` in this order:
-
-Step 1:
-Run `combined_setup.sql`.
-
-Step 2:
-Run `production_seed.sql`.
-
-Step 3:
-Create Edge Function secrets.
-
-Step 4:
-Deploy:
-
-- `submit-contact`
-- `submit-comment`
-- `like-comment`
-
-Step 5:
-Run the local admin creation script with username `Fazrilukman`, the initial password supplied through `ADMIN_PASSWORD`, and internal email alias `fazrilukman@portfolio-admin.example`.
-
-Step 6:
-Run the asset upload script.
-
-Step 7:
-Regenerate database types.
-
-Step 8:
-Configure frontend `.env.local`.
-
-Step 9:
-Run verification script.
-
-Step 10:
-Log in and change the initial password when practical.
-
-## Backend Pieces
-
-- Migrations: `supabase/migrations`
-- Production seed: `supabase/seed/production_seed.sql`
-- Demo seed: `supabase/seed/demo_seed.sql`
-- Edge Functions: `supabase/functions`
-- Admin provisioning: `scripts/create-supabase-admin.mjs`
-- Asset upload: `scripts/upload-supabase-assets.mjs`
-- Verification: `scripts/verify-supabase-setup.mjs`
-
-## Auth
-
-The login form accepts `Fazrilukman` and maps it to:
-
-```text
-fazrilukman@portfolio-admin.example
+```bash
+npm run supabase:types
 ```
 
-The password is never committed. It is supplied only when running the one-time provisioning script.
+Upload static/seed assets when needed:
+
+```bash
+npm run supabase:upload-assets
+```
 
 ## Public Forms
 
-The Contact form calls `submit-contact`.
+The contact form calls `submit-contact`.
 
-The Guestbook form calls `submit-comment`, stores the visitor email in `visitor_comment_contacts`, and leaves the comment pending until admin approval.
+The guestbook form calls `submit-comment`, stores visitor email privately, and leaves comments pending until admin approval.
 
-Likes call `like-comment`; the server controls unique likes and recalculates `likes_count`.
+Likes call `like-comment`; the server controls one-like-per-device behavior and recalculates `likes_count`.
 
 ## Realtime
 
@@ -178,4 +114,4 @@ Realtime subscriptions are centralized in the repository layer and can be disabl
 VITE_ENABLE_REALTIME=false
 ```
 
-Public subscriptions do not include private visitor email records or rate-limit tables.
+Public subscriptions must not expose private visitor email records or rate-limit tables.
