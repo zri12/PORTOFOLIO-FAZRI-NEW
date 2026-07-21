@@ -16,6 +16,8 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeModeProvider } from "./context/ThemeModeContext";
 
 const AdminCertificatesPage = lazy(() => import("./pages/admin/AdminCertificatesPage"));
+const AdminArticlesPage = lazy(() => import("./pages/admin/AdminArticlesPage"));
+const AdminArticleFormPage = lazy(() => import("./pages/admin/AdminArticleFormPage"));
 const AdminCertificateFormPage = lazy(() => import("./pages/admin/AdminCertificateFormPage"));
 const AdminCommentsPage = lazy(() => import("./pages/admin/AdminCommentsPage"));
 const AdminCreativeWorkFormPage = lazy(() => import("./pages/admin/AdminCreativeWorkFormPage"));
@@ -33,6 +35,8 @@ const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminTechnologyFormPage = lazy(() => import("./pages/admin/AdminTechnologyFormPage"));
 const AdminTechStackPage = lazy(() => import("./pages/admin/AdminTechStackPage"));
 const AboutPage = lazy(() => import("./pages/public/AboutPage"));
+const BlogPage = lazy(() => import("./pages/public/BlogPage"));
+const ArticleDetailPage = lazy(() => import("./pages/public/ArticleDetailPage"));
 const CertificatesPage = lazy(() => import("./pages/public/CertificatesPage"));
 const ContactPage = lazy(() => import("./pages/public/ContactPage"));
 const CreativeWorkDetailPage = lazy(() => import("./pages/public/CreativeWorkDetailPage"));
@@ -107,6 +111,9 @@ export function AppRouter() {
             <Route path="certificates" element={<AdminCertificatesPage />} />
             <Route path="certificates/new" element={<AdminCertificateFormPage />} />
             <Route path="certificates/:id/edit" element={<AdminCertificateFormPage />} />
+            <Route path="articles" element={<AdminArticlesPage />} />
+            <Route path="articles/new" element={<AdminArticleFormPage />} />
+            <Route path="articles/:id/edit" element={<AdminArticleFormPage />} />
             <Route path="comments" element={<AdminCommentsPage />} />
             <Route path="messages" element={<AdminMessagesPage />} />
             <Route path="media" element={<AdminMediaPage />} />
@@ -121,6 +128,8 @@ export function AppRouter() {
             <Route path="/creative-works" element={<CreativeWorksPage />} />
             <Route path="/creative-works/:slug" element={<CreativeWorkDetailPage />} />
             <Route path="/certificates" element={<CertificatesPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<ArticleDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

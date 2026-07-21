@@ -3,6 +3,7 @@ import { slugify, uid, writeJson } from "../lib/storage";
 import { isSupabaseEnabled } from "../lib/supabase/client";
 import { supabasePortfolioRepository } from "./supabasePortfolioRepository";
 import type {
+  Article,
   Certificate,
   ContactMessage,
   CreativeWork,
@@ -41,6 +42,7 @@ function emptySupabaseData(): PortfolioData {
     creativeWorks: [],
     experiences: [],
     certificates: [],
+    articles: [],
     comments: [],
     messages: [],
     media: [],
@@ -112,6 +114,15 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       ...seed.certificates[index % seed.certificates.length],
       ...item,
       id: item.id || uid("cert"),
+      displayOrder: item.displayOrder ?? index + 1,
+    })),
+    articles: asArray(value.articles, seed.articles).map((item, index) => ({
+      ...seed.articles[index % Math.max(seed.articles.length, 1)],
+      ...item,
+      id: item.id || uid("article"),
+      slug: item.slug || slugify(item.title || "article"),
+      tags: asArray(item.tags, []),
+      blocks: asArray(item.blocks, []),
       displayOrder: item.displayOrder ?? index + 1,
     })),
     comments: asArray(value.comments, seed.comments).map((item) => ({ ...item, status: item.status || "approved", likes: item.likes ?? 0, pinned: item.pinned ?? false })),
@@ -382,6 +393,45 @@ export const portfolioRepository = {
   deleteCertificate(id: string) {
     updateData((data) => { data.certificates = data.certificates.filter((item) => item.id !== id); });
     syncToBackend(() => supabasePortfolioRepository.deleteCertificate(id));
+  },
+  getArticles: () => byOrder(getData().articles),
+  getArticleById: (id: string) => getData().articles.find((article) => article.id === id),
+  getArticleBySlug: (slug: string) => getData().articles.find((article) => article.slug === slug),
+  createArticle(item: Partial<Article>) {
+    const now = new Date().toISOString();
+    const title = item.title || "Artikel Baru";
+    const created: Article = {
+      id: uuid(),
+      slug: item.slug || slugify(title),
+      title,
+      excerpt: item.excerpt || "Ringkasan artikel.",
+      category: item.category || "Web Development",
+      tags: item.tags || [],
+      coverImage: item.coverImage || "",
+      coverAlt: item.coverAlt || title,
+      author: item.author || getData().profile.fullName,
+      status: item.status || "draft",
+      featured: item.featured ?? false,
+      publishedAt: item.publishedAt || now,
+      updatedAt: now,
+      readingTime: item.readingTime || 1,
+      seoTitle: item.seoTitle || title,
+      seoDescription: item.seoDescription || item.excerpt || "",
+      blocks: item.blocks || [{ id: uuid(), type: "paragraph", text: "Mulai menulis artikel di sini." }],
+      displayOrder: item.displayOrder ?? getData().articles.length + 1,
+    };
+    updateData((data) => data.articles.unshift(created));
+    syncToBackend(() => supabasePortfolioRepository.upsertArticle(created));
+    return created;
+  },
+  updateArticle(item: Article) {
+    const next = { ...item, updatedAt: new Date().toISOString() };
+    updateData((data) => upsert(data.articles, next));
+    syncToBackend(() => supabasePortfolioRepository.upsertArticle(next));
+  },
+  deleteArticle(id: string) {
+    updateData((data) => { data.articles = data.articles.filter((item) => item.id !== id); });
+    syncToBackend(() => supabasePortfolioRepository.deleteArticle(id));
   },
   getComments: () => [...getData().comments].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date)),
   createComment(item: Omit<VisitorComment, "id" | "date" | "likes" | "pinned" | "status">) {

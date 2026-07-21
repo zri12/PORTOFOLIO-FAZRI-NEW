@@ -1,11 +1,13 @@
 import { portfolioSeed } from "../data/seed/portfolioSeed";
 import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../lib/supabase/client";
 import {
+  articleToRow,
   certificateToRow,
   commentToRow,
   creativeWorkToRow,
   experienceToRow,
   mapCertificate,
+  mapArticle,
   mapComment,
   mapCreativeWork,
   mapExperience,
@@ -22,6 +24,7 @@ import {
   technologyToRow,
 } from "../lib/supabase/mappers";
 import type {
+  Article,
   Certificate,
   ContactMessage,
   CreativeWork,
@@ -106,6 +109,7 @@ export const supabasePortfolioRepository = {
       creativeWorksResult,
       experiencesResult,
       certificatesResult,
+      articlesResult,
       commentsResult,
       messagesResult,
       mediaResult,
@@ -118,12 +122,13 @@ export const supabasePortfolioRepository = {
       supabase.from("creative_works").select("*").order("display_order"),
       supabase.from("experiences").select("*, projects(slug)").order("display_order"),
       supabase.from("certificates").select("*").order("display_order"),
+      supabase.from("articles").select("*").order("display_order").order("published_at", { ascending: false }),
       supabase.from("visitor_comments").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }),
       includePrivate ? supabase.from("contact_messages").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
       supabase.from("media_assets").select("*").order("created_at", { ascending: false }),
     ]);
 
-    const results = [profileResult, settingsResult, projectsResult, technologiesResult, projectTechnologiesResult, creativeWorksResult, experiencesResult, certificatesResult, commentsResult, messagesResult, mediaResult];
+    const results = [profileResult, settingsResult, projectsResult, technologiesResult, projectTechnologiesResult, creativeWorksResult, experiencesResult, certificatesResult, articlesResult, commentsResult, messagesResult, mediaResult];
     const failure = results.find((result) => "error" in result && result.error);
     if (failure && "error" in failure) throw failure.error;
 
@@ -152,6 +157,7 @@ export const supabasePortfolioRepository = {
       creativeWorks: asRows(creativeWorksResult.data).map(mapCreativeWork),
       experiences: asRows(experiencesResult.data).map((row) => mapExperience(row, projectSlugById.get(String(row.related_project_id || "")))),
       certificates: asRows(certificatesResult.data).map(mapCertificate),
+      articles: asRows(articlesResult.data).map(mapArticle),
       comments: asRows(commentsResult.data).map((row) => mapComment(row)),
       messages: asRows(messagesResult.data).map(mapMessage),
       media: asRows(mediaResult.data).map(toMediaItem),
@@ -174,6 +180,7 @@ export const supabasePortfolioRepository = {
       "creative_works",
       "experiences",
       "certificates",
+      "articles",
       "visitor_comments",
       "site_profiles",
       "site_settings",
@@ -283,6 +290,20 @@ export const supabasePortfolioRepository = {
     const supabase = getSupabaseClient();
     if (!supabase) return;
     const { error } = await supabase.from("certificates").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  async upsertArticle(item: Article) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("articles").upsert({ id: item.id, ...articleToRow(item) }, { onConflict: "id" });
+    if (error) throw error;
+  },
+
+  async deleteArticle(id: string) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("articles").delete().eq("id", id);
     if (error) throw error;
   },
 

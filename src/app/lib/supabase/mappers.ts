@@ -1,4 +1,6 @@
 import type {
+  Article,
+  ArticleBlock,
   Certificate,
   ContactMessage,
   CreativeWork,
@@ -19,6 +21,10 @@ const asString = (value: unknown, fallback = "") => typeof value === "string" ? 
 const asBool = (value: unknown, fallback = false) => typeof value === "boolean" ? value : fallback;
 const asNumber = (value: unknown, fallback = 0) => typeof value === "number" ? value : fallback;
 const asDate = (value: unknown) => asString(value).slice(0, 10);
+
+const asArticleBlocks = (value: unknown): ArticleBlock[] => Array.isArray(value)
+  ? value.filter((block): block is ArticleBlock => Boolean(block) && typeof block === "object" && typeof (block as { type?: unknown }).type === "string")
+  : [];
 
 function publicAssetUrl(value: unknown) {
   const source = asString(value);
@@ -119,6 +125,9 @@ export function mapSettings(row: Row | null | undefined, fallback: SiteSettings)
     seoTitle: asString(row.seo_title, fallback.seoTitle),
     seoDescription: asString(row.seo_description, fallback.seoDescription),
     keywords: asString(row.keywords, fallback.keywords),
+    siteUrl: asString(row.site_url, fallback.siteUrl),
+    seoImage: publicAssetUrl(row.seo_image_path) || fallback.seoImage,
+    googleSiteVerification: asString(row.google_site_verification, fallback.googleSiteVerification),
   };
 }
 
@@ -138,6 +147,9 @@ export function settingsToRow(settings: SiteSettings): Row {
     seo_title: settings.seoTitle,
     seo_description: settings.seoDescription,
     keywords: settings.keywords,
+    site_url: settings.siteUrl,
+    seo_image_path: toStoredAsset(settings.seoImage),
+    google_site_verification: settings.googleSiteVerification || null,
   };
 }
 
@@ -352,6 +364,48 @@ export const certificateToRow = (item: Certificate): Row => ({
   display_order: item.displayOrder,
 });
 
+export function mapArticle(row: Row): Article {
+  return {
+    id: asString(row.id),
+    slug: asString(row.slug),
+    title: asString(row.title),
+    excerpt: asString(row.excerpt),
+    category: asString(row.category, "Web Development"),
+    tags: asStringArray(row.tags),
+    coverImage: publicAssetUrl(row.cover_path),
+    coverAlt: asString(row.cover_alt),
+    author: asString(row.author),
+    status: asString(row.status, "draft") as Article["status"],
+    featured: asBool(row.featured),
+    publishedAt: asString(row.published_at),
+    updatedAt: asString(row.updated_at),
+    readingTime: asNumber(row.reading_time, 1),
+    seoTitle: asString(row.seo_title),
+    seoDescription: asString(row.seo_description),
+    blocks: asArticleBlocks(row.content),
+    displayOrder: asNumber(row.display_order),
+  };
+}
+
+export const articleToRow = (item: Article): Row => ({
+  slug: item.slug,
+  title: item.title,
+  excerpt: item.excerpt,
+  category: item.category,
+  tags: item.tags,
+  cover_path: toStoredAsset(item.coverImage),
+  cover_alt: item.coverAlt,
+  author: item.author,
+  status: item.status,
+  featured: item.featured,
+  published_at: item.publishedAt || null,
+  reading_time: item.readingTime,
+  seo_title: item.seoTitle,
+  seo_description: item.seoDescription,
+  content: item.blocks,
+  display_order: item.displayOrder,
+});
+
 export function mapComment(row: Row, email = ""): VisitorComment {
   return {
     id: asString(row.id),
@@ -412,6 +466,7 @@ export function mergeWithFallback(data: Partial<PortfolioData>, fallback: Portfo
     creativeWorks: data.creativeWorks ?? fallback.creativeWorks,
     experiences: data.experiences ?? fallback.experiences,
     certificates: data.certificates ?? fallback.certificates,
+    articles: data.articles ?? fallback.articles,
     comments: data.comments || [],
     messages: data.messages || [],
     media: data.media || [],

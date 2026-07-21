@@ -1,4 +1,5 @@
 import type {
+  Article,
   Certificate,
   ContactMessage,
   CreativeWork,
@@ -41,6 +42,12 @@ export interface PortfolioRepository {
   createCertificate(item: Partial<Certificate>): Certificate;
   updateCertificate(item: Certificate): void;
   deleteCertificate(id: string): void;
+  getArticles(): Article[];
+  getArticleById(id: string): Article | undefined;
+  getArticleBySlug(slug: string): Article | undefined;
+  createArticle(item: Partial<Article>): Article;
+  updateArticle(item: Article): void;
+  deleteArticle(id: string): void;
   getComments(): VisitorComment[];
   createComment(item: Omit<VisitorComment, "id" | "date" | "likes" | "pinned" | "status">): VisitorComment;
   updateComment(item: VisitorComment): void;

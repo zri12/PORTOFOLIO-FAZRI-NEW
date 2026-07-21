@@ -15,6 +15,8 @@ Routes are currently defined in `src/app/App.tsx`.
 | `/creative-works` | `CreativeWorksPage` | Implemented | Creative work archive. |
 | `/creative-works/:slug` | `CreativeWorkDetailPage` | Implemented | Dedicated creative work detail page; unknown slugs should fall back gracefully. |
 | `/certificates` | `CertificatesPage` | Prototype | Certificate gallery/listing. |
+| `/blog` | `BlogPage` | Implemented | Published article archive sourced from the shared repository. |
+| `/blog/:slug` | `ArticleDetailPage` | Implemented | SEO-ready article detail with structured content blocks. |
 | `/contact` | `ContactPage` | Prototype | Contact form and guestbook/comment area. |
 | `*` | `NotFoundPage` | Implemented | Public not-found state. |
 
@@ -50,6 +52,9 @@ Routes are currently defined in `src/app/App.tsx`.
 | `/admin/creative-works` | `AdminCreativeWorksPage` | Prototype | Manage creative work items. |
 | `/admin/experience` | `AdminExperiencePage` | Prototype | Manage experience entries. |
 | `/admin/certificates` | `AdminCertificatesPage` | Prototype | Manage certificates. |
+| `/admin/articles` | `AdminArticlesPage` | Implemented | Search, publish, edit, preview, and delete articles. |
+| `/admin/articles/new` | `AdminArticleFormPage` | Implemented | Create an article with structured content blocks. |
+| `/admin/articles/:id/edit` | `AdminArticleFormPage` | Implemented | Edit an article by ID. |
 | `/admin/comments` | `AdminCommentsPage` | Prototype | Moderate comments. |
 | `/admin/messages` | `AdminMessagesPage` | Prototype | Manage contact messages. |
 | `/admin/media` | `AdminMediaPage` | Prototype | Local media library. |
@@ -68,4 +73,4 @@ Routes are currently defined in `src/app/App.tsx`.
 
 ## Metadata
 
-Route metadata is expected to be controlled through `useDocumentMeta` where implemented. Target behavior is for each major route to set a meaningful page title and description.
+Route metadata is controlled through `useDocumentMeta` where implemented. Blog routes set canonical URLs, robots directives, Open Graph/Twitter metadata, and JSON-LD schemas.

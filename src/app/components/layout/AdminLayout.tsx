@@ -1,6 +1,6 @@
-import { ReactNode, useContext, useState } from "react";
+import { ReactNode, useContext, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, User, Image as ImageIcon, Briefcase, Code2, PenTool, Award, MessageSquare, Mail, Settings, LogOut, ExternalLink, Menu } from "lucide-react";
+import { LayoutDashboard, User, Image as ImageIcon, Briefcase, Code2, PenTool, Award, MessageSquare, Mail, Settings, LogOut, ExternalLink, Menu, Newspaper } from "lucide-react";
 import { AdminAuthContext } from "../../context/AdminAuthContext";
 import { BrandMark } from "../common/BrandMark";
 
@@ -8,6 +8,17 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useContext(AdminAuthContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Portfolio CMS";
+    let robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.name = "robots";
+      document.head.appendChild(robots);
+    }
+    robots.content = "noindex, nofollow";
+  }, []);
 
   const signOut = () => {
     void logout();
@@ -91,6 +102,7 @@ function Sidebar({ signOut, onNavigate, className = "" }: { signOut: () => void;
         <AdminNavLink to="/admin/creative-works" icon={PenTool}>Creative Works</AdminNavLink>
         <AdminNavLink to="/admin/experience" icon={LayoutDashboard}>Experience</AdminNavLink>
         <AdminNavLink to="/admin/certificates" icon={Award}>Certificates</AdminNavLink>
+        <AdminNavLink to="/admin/articles" icon={Newspaper}>Articles</AdminNavLink>
         <p className="px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 mt-6">Engagement</p>
         <AdminNavLink to="/admin/comments" icon={MessageSquare}>Comments</AdminNavLink>
         <AdminNavLink to="/admin/messages" icon={Mail}>Messages</AdminNavLink>

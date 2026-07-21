@@ -128,6 +128,34 @@ export interface Certificate {
   displayOrder: number;
 }
 
+export type ArticleBlock =
+  | { id: string; type: "paragraph"; text: string }
+  | { id: string; type: "heading"; text: string; level: 2 | 3 }
+  | { id: string; type: "image"; url: string; alt: string; caption: string }
+  | { id: string; type: "quote"; text: string; attribution: string }
+  | { id: string; type: "list"; items: string[]; ordered: boolean };
+
+export interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  coverImage: string;
+  coverAlt: string;
+  author: string;
+  status: PublishStatus;
+  featured: boolean;
+  publishedAt: string;
+  updatedAt: string;
+  readingTime: number;
+  seoTitle: string;
+  seoDescription: string;
+  blocks: ArticleBlock[];
+  displayOrder: number;
+}
+
 export interface VisitorComment {
   id: string;
   name: string;
@@ -179,6 +207,9 @@ export interface SiteSettings {
   seoTitle: string;
   seoDescription: string;
   keywords: string;
+  siteUrl: string;
+  seoImage: string;
+  googleSiteVerification: string;
 }
 
 export interface PortfolioData {
@@ -188,6 +219,7 @@ export interface PortfolioData {
   creativeWorks: CreativeWork[];
   experiences: Experience[];
   certificates: Certificate[];
+  articles: Article[];
   comments: VisitorComment[];
   messages: ContactMessage[];
   media: MediaItem[];

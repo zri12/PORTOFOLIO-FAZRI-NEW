@@ -16,6 +16,8 @@ Current TypeScript models live in `src/app/types/portfolio.ts`.
 | `ContactMessage` | Contact form submission stored locally. |
 | `MediaItem` | Local media metadata and object URL. |
 | `SiteSettings` | Site-level toggles, SEO values, default mode, and feature visibility settings. |
+| `Article` | Blog metadata, publication state, SEO fields, cover media, and structured content blocks. |
+| `ArticleBlock` | Safe paragraph, heading, image, quote, or list content rendered without raw HTML. |
 | `PortfolioData` | Root aggregate for all portfolio content. |
 
 Current enum-like unions:
@@ -246,6 +248,8 @@ export interface SiteSettings {
 ```
 
 ## Media Persistence
+
+Article cover and content images use the same Supabase Storage upload path as other admin media. Article records store storage paths through the mapper and expose public URLs to the UI.
 
 Current media records may store metadata and temporary object URLs. Object URLs are session-limited and are not permanent uploads. The UI must not claim that local uploads are safely stored on a server.
 

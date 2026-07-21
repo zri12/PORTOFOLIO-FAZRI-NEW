@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
@@ -47,6 +48,9 @@ export default function AdminSettingsPage() {
           <AdminInput label="SEO Title" value={draft.seoTitle} onChange={(value) => set("seoTitle", value)} />
           <AdminInput label="SEO Description" value={draft.seoDescription} onChange={(value) => set("seoDescription", value)} textarea />
           <AdminInput label="Keywords" value={draft.keywords} onChange={(value) => set("keywords", value)} />
+          <AdminInput label="Canonical Site URL" value={draft.siteUrl} onChange={(value) => set("siteUrl", value)} />
+          <AdminInput label="Google Search Console Verification Code" value={draft.googleSiteVerification} onChange={(value) => set("googleSiteVerification", value)} />
+          <AdminImageField label="Social and SEO Preview Image" value={draft.seoImage} folder="site/seo" hint="Landscape image used when a page has no specific cover image." aspect="aspect-[1200/630]" onChange={(value) => set("seoImage", value)} />
         </FormSection>
         <FormSection title="Feature Toggles">
           {(["smoothScroll", "splashEnabled", "threeEnabled", "commentsEnabled", "contactEnabled"] as const).map((key) => (

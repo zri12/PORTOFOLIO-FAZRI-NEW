@@ -34,6 +34,7 @@ Required dashboard metrics and widgets:
 - creative works
 - technologies
 - certificates
+- articles and structured article blocks
 - comments
 - unread messages
 - category chart

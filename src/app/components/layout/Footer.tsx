@@ -32,7 +32,7 @@ export const Footer = () => {
               <span className="border border-[var(--color-border)] px-3 py-2 capitalize">{mode === "professional" ? t("Professional Mode") : t("Spider Mode")}</span>
             </div>
           </div>
-          <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Contact", "/contact"]]} t={t} />
+          <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Blog", "/blog"], ["Contact", "/contact"]]} t={t} />
           <FooterList title={t("Featured Projects")} items={projects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} />
           <div className="sm:col-span-2 lg:col-span-3">
             <h4 className="mb-5 font-manrope font-bold">{t("Connect")}</h4>
