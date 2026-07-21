@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   ArrowUpRight,
@@ -86,6 +86,7 @@ export default function ContactPage() {
 
   useDocumentMeta({ title: "Contact - Fazri Lukman Nurrohman", description: "Start a web development, interface, or creative collaboration with Fazri Lukman Nurrohman." });
 
+  const resolvedCommentKeys = useMemo(() => new Set(comments.filter((comment) => comment.status !== "pending").map(commentMatchKey)), [comments]);
   const visibleComments = useMemo(() => {
     const pendingKeys = new Set(pendingComments.map(commentMatchKey));
     const visible = comments.filter((comment) => comment.status === "approved" || (comment.status === "pending" && !pendingKeys.has(commentMatchKey(comment))));
@@ -97,23 +98,13 @@ export default function ContactPage() {
     grouped[comment.replyToId] = [...(grouped[comment.replyToId] || []), comment];
     return grouped;
   }, {}), [visibleComments]);
-  const standalonePendingComments = useMemo(() => pendingComments.filter((comment) => !comment.replyToId), [pendingComments]);
+  const standalonePendingComments = useMemo(() => pendingComments.filter((comment) => !comment.replyToId && !resolvedCommentKeys.has(commentMatchKey(comment))), [pendingComments, resolvedCommentKeys]);
   const pendingRepliesByParent = useMemo(() => pendingComments.reduce<Record<string, LocalVisitorComment[]>>((grouped, comment) => {
+    if (resolvedCommentKeys.has(commentMatchKey(comment))) return grouped;
     if (!comment.replyToId) return grouped;
     grouped[comment.replyToId] = [...(grouped[comment.replyToId] || []), comment];
     return grouped;
-  }, {}), [pendingComments]);
-
-  useEffect(() => {
-    const backendKeys = new Set(comments.filter((comment) => comment.status === "approved").map(commentMatchKey));
-    if (backendKeys.size === 0) return;
-    setPendingComments((items) => {
-      const next = items.filter((comment) => !backendKeys.has(commentMatchKey(comment)));
-      if (next.length === items.length) return items;
-      writePendingComments(next);
-      return next;
-    });
-  }, [comments]);
+  }, {}), [pendingComments, resolvedCommentKeys]);
 
   const contactChannels = [
     { icon: Mail, label: "Email", value: profile.email, href: `mailto:${profile.email}`, meta: "Direct project inquiry" },

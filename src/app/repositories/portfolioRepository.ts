@@ -77,9 +77,22 @@ function writePendingComments(comments: VisitorComment[]) {
   window.localStorage.setItem(PENDING_COMMENTS_KEY, JSON.stringify(comments.slice(0, 20)));
 }
 
-function removePendingComment(comment: Pick<VisitorComment, "name" | "message">) {
+function upsertPendingComment(comment: VisitorComment) {
   const key = commentMatchKey(comment);
-  const next = readPendingComments().filter((item) => commentMatchKey(item) !== key);
+  const items = readPendingComments();
+  const existingIndex = items.findIndex((item) => item.id === comment.id || commentMatchKey(item) === key);
+  if (existingIndex === -1) {
+    writePendingComments([comment, ...items]);
+    return;
+  }
+  const next = [...items];
+  next[existingIndex] = { ...next[existingIndex], ...comment };
+  writePendingComments(next);
+}
+
+function deletePendingComment(comment: Pick<VisitorComment, "id" | "name" | "message">) {
+  const key = commentMatchKey(comment);
+  const next = readPendingComments().filter((item) => item.id !== comment.id && commentMatchKey(item) !== key);
   writePendingComments(next);
 }
 
@@ -487,18 +500,20 @@ export const portfolioRepository = {
   getComments: () => [...getData().comments].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date)),
   createComment(item: Omit<VisitorComment, "id" | "date" | "likes" | "pinned" | "status">) {
     const comment: VisitorComment = { ...item, id: uuid(), date: new Date().toISOString().slice(0, 10), likes: 0, pinned: false, status: "pending" };
-    const pending = readPendingComments();
-    if (!pending.some((entry) => commentMatchKey(entry) === commentMatchKey(comment))) writePendingComments([comment, ...pending]);
+    upsertPendingComment(comment);
     updateData((data) => data.comments.unshift(comment));
     syncToBackend(() => supabasePortfolioRepository.submitComment(item));
     return comment;
   },
   updateComment(item: VisitorComment) {
-    if (item.status === "approved" || item.status === "hidden") removePendingComment(item);
+    const pending = readPendingComments();
+    if (pending.some((entry) => entry.id === item.id || commentMatchKey(entry) === commentMatchKey(item))) upsertPendingComment(item);
     updateData((data) => upsert(data.comments, item));
     syncToBackend(() => supabasePortfolioRepository.upsertComment(item));
   },
   deleteComment(id: string) {
+    const existing = getData().comments.find((item) => item.id === id);
+    if (existing) deletePendingComment(existing);
     updateData((data) => { data.comments = data.comments.filter((item) => item.id !== id); });
     syncToBackend(() => supabasePortfolioRepository.deleteComment(id));
   },
