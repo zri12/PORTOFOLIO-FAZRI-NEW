@@ -29,6 +29,23 @@ import type { VisitorComment } from "../../types/portfolio";
 
 const projectTypes = ["Website", "Web Application", "Dashboard", "UI Implementation", "Website Maintenance", "UI Design", "Graphic Design", "Photography", "Videography", "Editing", "Other"];
 const budgets = ["Under Rp1 million", "Rp1-3 million", "Rp3-5 million", "Rp5-10 million", "More than Rp10 million", "Discuss first"];
+const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v1";
+
+function readLikedComments() {
+  if (typeof window === "undefined") return new Set<string>();
+  try {
+    const value = JSON.parse(window.localStorage.getItem(LIKED_COMMENTS_KEY) || "[]") as unknown;
+    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
+  } catch {
+    window.localStorage.removeItem(LIKED_COMMENTS_KEY);
+    return new Set<string>();
+  }
+}
+
+function writeLikedComments(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...ids]));
+}
 
 export default function ContactPage() {
   const { profile, comments, settings } = usePortfolioData();
@@ -39,7 +56,7 @@ export default function ContactPage() {
   const [commentDraft, setCommentDraft] = useState({ name: "", email: "", message: "" });
   const [commentStatus, setCommentStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [pendingComments, setPendingComments] = useState<VisitorComment[]>([]);
-  const [likedIds, setLikedIds] = useState<Set<string>>(() => new Set());
+  const [likedIds, setLikedIds] = useState<Set<string>>(readLikedComments);
   const [localLikeBoosts, setLocalLikeBoosts] = useState<Record<string, number>>({});
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const commentMessageRef = useRef<HTMLTextAreaElement>(null);
@@ -97,8 +114,7 @@ export default function ContactPage() {
     const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${encodeURIComponent(template)}`;
 
     try {
-      const opened = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      if (!opened) window.location.href = whatsappUrl;
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
       if (isSupabaseEnabled) {
         void supabasePortfolioRepository.submitContact(payload)
           .then(() => portfolioRepository.refresh())
@@ -125,6 +141,7 @@ export default function ContactPage() {
       email: commentDraft.email.trim(),
       message: commentDraft.message.trim(),
       avatar: commentDraft.name.trim().slice(0, 2).toUpperCase(),
+      reply: replyTo ? `Reply to ${replyTo.name}` : undefined,
     };
     const pendingComment: VisitorComment = {
       ...payload,
@@ -153,25 +170,35 @@ export default function ContactPage() {
 
   const likeComment = (comment: VisitorComment) => {
     if (comment.status !== "approved" || likedIds.has(comment.id)) return;
-    setLikedIds((items) => new Set(items).add(comment.id));
-    setLocalLikeBoosts((items) => ({ ...items, [comment.id]: (items[comment.id] || 0) + 1 }));
-    void Promise.resolve(portfolioRepository.likeComment(comment)).catch((error) => {
-      console.error("Comment like failed", error);
-      setLikedIds((items) => {
-        const next = new Set(items);
-        next.delete(comment.id);
-        return next;
-      });
-      setLocalLikeBoosts((items) => ({ ...items, [comment.id]: Math.max((items[comment.id] || 1) - 1, 0) }));
+    setLikedIds((items) => {
+      const next = new Set(items);
+      next.add(comment.id);
+      writeLikedComments(next);
+      return next;
     });
+    if (!isSupabaseEnabled) {
+      portfolioRepository.likeComment(comment);
+      return;
+    }
+    setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 1 }));
+    void supabasePortfolioRepository.likeComment(comment.id)
+      .then(() => portfolioRepository.refresh())
+      .then(() => setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 0 })))
+      .catch((error) => {
+        console.error("Comment like failed", error);
+        setLikedIds((items) => {
+          const next = new Set(items);
+          next.delete(comment.id);
+          writeLikedComments(next);
+          return next;
+        });
+        setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 0 }));
+      });
   };
 
   const replyToComment = (comment: VisitorComment) => {
     setReplyTo({ id: comment.id, name: comment.name });
-    setCommentDraft((draft) => ({
-      ...draft,
-      message: draft.message.trim() ? draft.message : `@${comment.name} `,
-    }));
+    setCommentStatus("idle");
     window.setTimeout(() => commentMessageRef.current?.focus(), 0);
   };
 
@@ -253,10 +280,10 @@ export default function ContactPage() {
                     </div>
                   )}
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <input value={commentDraft.name} onChange={(event) => setCommentDraft({ ...commentDraft, name: event.target.value })} placeholder={t("Name")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
-                    <input value={commentDraft.email} onChange={(event) => setCommentDraft({ ...commentDraft, email: event.target.value })} placeholder={t("Email (hidden)")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
+                    <input value={commentDraft.name} onChange={(event) => { setCommentStatus("idle"); setCommentDraft({ ...commentDraft, name: event.target.value }); }} placeholder={t("Name")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
+                    <input value={commentDraft.email} onChange={(event) => { setCommentStatus("idle"); setCommentDraft({ ...commentDraft, email: event.target.value }); }} placeholder={t("Email (hidden)")} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
                   </div>
-                  <textarea ref={commentMessageRef} value={commentDraft.message} onChange={(event) => setCommentDraft({ ...commentDraft, message: event.target.value })} placeholder={t("Leave a comment...")} rows={3} maxLength={500} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
+                  <textarea ref={commentMessageRef} value={commentDraft.message} onChange={(event) => { setCommentStatus("idle"); setCommentDraft({ ...commentDraft, message: event.target.value }); }} placeholder={replyTo ? t("Write your reply...") : t("Leave a comment...")} rows={3} maxLength={500} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" />
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[var(--color-text-muted)]">{commentDraft.message.length}/500</span>
                     <button disabled={commentStatus === "submitting"} className="bg-[var(--color-text-main)] px-4 py-2 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{commentStatus === "submitting" ? t("Sending...") : t("Post")}</button>
@@ -279,6 +306,7 @@ export default function ContactPage() {
                             {comment.pinned && <span className="ml-auto border border-[var(--color-accent-main)]/30 px-2 py-0.5 text-[10px] text-[var(--color-accent-main)]">{t("Pinned")}</span>}
                             {comment.status === "pending" && <span className="ml-auto border border-amber-300/30 px-2 py-0.5 text-[10px] text-amber-200">{t("Pending review")}</span>}
                           </div>
+                          {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{t(comment.reply)}</p>}
                           <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{comment.message}</p>
                           {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
                           <div className="mt-4 flex flex-wrap gap-2">

@@ -575,6 +575,7 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["Reply", "Balas"],
   ["Replying to", "Membalas"],
   ["Cancel reply", "Batal balas"],
+  ["Write your reply...", "Tulis balasan Anda..."],
   ["Liked", "Disukai"],
   ["Read article", "Baca artikel"],
   ["Featured", "Unggulan"],
