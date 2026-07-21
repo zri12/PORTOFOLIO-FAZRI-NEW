@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router";
 import { lazy, Suspense, useState } from "react";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
@@ -51,6 +51,7 @@ function RouteFallback() {
 }
 
 function PublicLayout() {
+  const location = useLocation();
   const [publicReady, setPublicReady] = useState(() => Boolean((window as Window & { __fazri_portfolio_boot_splash_seen__?: boolean }).__fazri_portfolio_boot_splash_seen__));
 
   return (
@@ -62,7 +63,7 @@ function PublicLayout() {
             <Navbar />
             <SpiderModeEffects />
             <div className="flex flex-1 flex-col">
-              <ErrorBoundary>
+              <ErrorBoundary resetKey={location.pathname} fallback={<main className="min-h-[60vh] bg-[var(--color-bg-primary)]" />}>
                 <RouteTransition>
                   <Outlet />
                 </RouteTransition>

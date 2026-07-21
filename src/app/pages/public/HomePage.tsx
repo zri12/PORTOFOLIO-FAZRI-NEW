@@ -31,7 +31,7 @@ const techGroups = {
 };
 
 function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[.22em] text-[var(--color-accent-main)]">{children}</p>; }
-function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); const animate = !reduce && window.innerWidth >= 1024; return <motion.div initial={animate ? { opacity: 0, y: 24 } : false} whileInView={animate ? { opacity: 1, y: 0 } : {}} viewport={{ once: true, amount: 0.12 }} transition={{ duration: .55, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
+function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); const animate = !reduce && typeof window !== "undefined" && window.innerWidth >= 1024; return <motion.div initial={animate ? { opacity: 0, y: 24 } : false} whileInView={animate ? { opacity: 1, y: 0 } : {}} viewport={{ once: true, amount: 0.12 }} transition={{ duration: .55, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
 
 function HomeCertificateCard({ certificate, index, onView }: { certificate: Certificate; index: number; onView: (id: string) => void }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -133,7 +133,14 @@ function CertificatePreviewModal({ certificate, onClose }: { certificate: Certif
 
 export default function HomePage() {
   const { mode, toggleMode } = useContext(ThemeModeContext);
-  const { projects: projectsData, profile, techStack, creativeWorks, certificates, experiences, comments } = usePortfolioData();
+  const data = usePortfolioData();
+  const projectsData = Array.isArray(data.projects) ? data.projects : [];
+  const profile = data.profile;
+  const techStack = Array.isArray(data.techStack) ? data.techStack : [];
+  const creativeWorks = Array.isArray(data.creativeWorks) ? data.creativeWorks : [];
+  const certificates = Array.isArray(data.certificates) ? data.certificates : [];
+  const experiences = Array.isArray(data.experiences) ? data.experiences : [];
+  const comments = Array.isArray(data.comments) ? data.comments : [];
   const aboutImage = profile.aboutImageUrl || portrait;
   const [techTab, setTechTab] = useState<keyof typeof techGroups>("Frontend");
   const [activeCertificateId, setActiveCertificateId] = useState<string | null>(null);
