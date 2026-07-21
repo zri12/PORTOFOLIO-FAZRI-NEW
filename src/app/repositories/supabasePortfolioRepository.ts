@@ -318,14 +318,33 @@ export const supabasePortfolioRepository = {
     const supabase = getSupabaseClient();
     if (!supabase) return;
     const { error } = await supabase.functions.invoke("submit-comment", { body: item });
-    if (error) throw error;
+    if (!error) return;
+    const { data, error: insertError } = await supabase.from("visitor_comments").insert({
+      name: item.name,
+      avatar: item.avatar,
+      message: item.message,
+      status: "pending",
+      likes_count: 0,
+      pinned: false,
+    }).select("id").single();
+    if (insertError) throw insertError;
+    const commentId = asRow(data)?.id;
+    if (!commentId) return;
+    const { error: contactError } = await supabase.from("visitor_comment_contacts").insert({
+      comment_id: commentId,
+      email: item.email,
+    });
+    if (contactError) throw contactError;
   },
 
   async likeComment(commentId: string) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.functions.invoke("like-comment", { body: { commentId, visitorId: getVisitorId() } });
-    if (error) throw error;
+    const visitorId = getVisitorId();
+    const { error } = await supabase.functions.invoke("like-comment", { body: { commentId, visitorId } });
+    if (!error) return;
+    const { error: insertError } = await supabase.from("comment_likes").insert({ comment_id: commentId, visitor_id: visitorId });
+    if (insertError && insertError.code !== "23505") throw insertError;
   },
 
   async upsertComment(item: VisitorComment) {

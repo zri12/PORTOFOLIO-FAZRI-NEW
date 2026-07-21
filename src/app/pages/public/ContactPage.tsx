@@ -29,22 +29,42 @@ import type { VisitorComment } from "../../types/portfolio";
 
 const projectTypes = ["Website", "Web Application", "Dashboard", "UI Implementation", "Website Maintenance", "UI Design", "Graphic Design", "Photography", "Videography", "Editing", "Other"];
 const budgets = ["Under Rp1 million", "Rp1-3 million", "Rp3-5 million", "Rp5-10 million", "More than Rp10 million", "Discuss first"];
-const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v2";
+const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v3";
+const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 
-function readLikedComments() {
-  if (typeof window === "undefined") return new Set<string>();
+type LocalVisitorComment = VisitorComment & { replyToId?: string; replyToName?: string };
+
+function readLikedCommentBases() {
+  if (typeof window === "undefined") return {};
   try {
-    const value = JSON.parse(window.localStorage.getItem(LIKED_COMMENTS_KEY) || "[]") as unknown;
-    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
+    const value = JSON.parse(window.localStorage.getItem(LIKED_COMMENTS_KEY) || "{}") as unknown;
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, number] => typeof entry[1] === "number"));
   } catch {
     window.localStorage.removeItem(LIKED_COMMENTS_KEY);
-    return new Set<string>();
+    return {};
   }
 }
 
-function writeLikedComments(ids: Set<string>) {
+function writeLikedCommentBases(values: Record<string, number>) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...ids]));
+  window.localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify(values));
+}
+
+function readPendingComments() {
+  if (typeof window === "undefined") return [];
+  try {
+    const value = JSON.parse(window.localStorage.getItem(PENDING_COMMENTS_KEY) || "[]") as unknown;
+    return Array.isArray(value) ? value.filter((item): item is LocalVisitorComment => Boolean(item && typeof item === "object" && "id" in item && "message" in item)) : [];
+  } catch {
+    window.localStorage.removeItem(PENDING_COMMENTS_KEY);
+    return [];
+  }
+}
+
+function writePendingComments(comments: LocalVisitorComment[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PENDING_COMMENTS_KEY, JSON.stringify(comments.slice(0, 20)));
 }
 
 export default function ContactPage() {
@@ -55,8 +75,8 @@ export default function ContactPage() {
   const [commentSort, setCommentSort] = useState("Newest");
   const [commentDraft, setCommentDraft] = useState({ name: "", email: "", message: "" });
   const [commentStatus, setCommentStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [pendingComments, setPendingComments] = useState<VisitorComment[]>([]);
-  const [likedIds, setLikedIds] = useState<Set<string>>(readLikedComments);
+  const [pendingComments, setPendingComments] = useState<LocalVisitorComment[]>(readPendingComments);
+  const [likedCommentBases, setLikedCommentBases] = useState<Record<string, number>>(readLikedCommentBases);
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const commentMessageRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,7 +86,12 @@ export default function ContactPage() {
     const approved = comments.filter((comment) => comment.status === "approved");
     return [...approved].sort((a, b) => commentSort === "Most liked" ? b.likes - a.likes : b.date.localeCompare(a.date));
   }, [commentSort, comments]);
-  const displayedComments = useMemo(() => [...pendingComments, ...visibleComments], [pendingComments, visibleComments]);
+  const standalonePendingComments = useMemo(() => pendingComments.filter((comment) => !comment.replyToId), [pendingComments]);
+  const pendingRepliesByParent = useMemo(() => pendingComments.reduce<Record<string, LocalVisitorComment[]>>((grouped, comment) => {
+    if (!comment.replyToId) return grouped;
+    grouped[comment.replyToId] = [...(grouped[comment.replyToId] || []), comment];
+    return grouped;
+  }, {}), [pendingComments]);
 
   const contactChannels = [
     { icon: Mail, label: "Email", value: profile.email, href: `mailto:${profile.email}`, meta: "Direct project inquiry" },
@@ -141,41 +166,75 @@ export default function ContactPage() {
       message: commentDraft.message.trim(),
       avatar: commentDraft.name.trim().slice(0, 2).toUpperCase(),
     };
-    const pendingComment: VisitorComment = {
+    const pendingComment: LocalVisitorComment = {
       ...payload,
       reply: replyTo ? `Reply to ${replyTo.name}` : undefined,
+      replyToId: replyTo?.id,
+      replyToName: replyTo?.name,
       id: `pending-${Date.now()}`,
       date: new Date().toISOString().slice(0, 10),
       likes: 0,
       pinned: false,
       status: "pending",
     };
-    setPendingComments((items) => [pendingComment, ...items]);
+    setPendingComments((items) => {
+      const next = [pendingComment, ...items];
+      writePendingComments(next);
+      return next;
+    });
     setCommentDraft({ name: "", email: "", message: "" });
     setReplyTo(null);
     setCommentStatus("success");
-    if (isSupabaseEnabled) {
-      void supabasePortfolioRepository.submitComment(payload)
-        .then(() => portfolioRepository.refresh())
-        .catch((error) => console.error("Comment submission failed", error));
-    } else {
-      try {
-        portfolioRepository.createComment(payload);
-      } catch (error) {
-        console.error("Local comment save failed", error);
-      }
+    try {
+      portfolioRepository.createComment(payload);
+    } catch (error) {
+      console.error("Comment save failed", error);
     }
   };
 
   const likeComment = (comment: VisitorComment) => {
-    if (comment.status !== "approved" || likedIds.has(comment.id)) return;
-    setLikedIds((items) => {
-      const next = new Set(items);
-      next.add(comment.id);
-      writeLikedComments(next);
+    if (comment.status !== "approved" || likedCommentBases[comment.id] !== undefined) return;
+    setLikedCommentBases((items) => {
+      const next = { ...items, [comment.id]: comment.likes };
+      writeLikedCommentBases(next);
       return next;
     });
     portfolioRepository.likeComment(comment);
+  };
+
+  const displayedLikeCount = (comment: VisitorComment) => {
+    const base = likedCommentBases[comment.id];
+    return base === undefined ? comment.likes : Math.max(comment.likes, base + 1);
+  };
+
+  const renderComment = (comment: VisitorComment | LocalVisitorComment, nested = false) => {
+    const liked = likedCommentBases[comment.id] !== undefined;
+    return (
+      <article key={comment.id} className={`${nested ? "ml-8 border-l border-[var(--color-accent-main)]/35 pl-4" : "border-b border-[var(--color-border)] pb-5 last:border-0"}`}>
+        <div className="flex gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-main)]/15 text-sm font-bold text-[var(--color-accent-main)]">{comment.avatar}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold">{comment.name}</h3>
+              <span className="text-xs text-[var(--color-text-muted)]">{comment.date}</span>
+              {comment.pinned && <span className="ml-auto border border-[var(--color-accent-main)]/30 px-2 py-0.5 text-[10px] text-[var(--color-accent-main)]">{t("Pinned")}</span>}
+              {comment.status === "pending" && <span className="ml-auto border border-amber-300/30 px-2 py-0.5 text-[10px] text-amber-200">{t("Pending review")}</span>}
+            </div>
+            {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{t(comment.reply)}</p>}
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{comment.message}</p>
+            {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={() => likeComment(comment)} disabled={comment.status !== "approved" || liked} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)] disabled:cursor-not-allowed disabled:opacity-60">
+                <ThumbsUp size={13} /> {liked ? t("Liked") : t("Like")} <span className="text-[var(--color-accent-main)]">{displayedLikeCount(comment)}</span>
+              </button>
+              <button type="button" onClick={() => replyToComment(comment)} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)]">
+                <MessageSquareReply size={13} /> {t("Reply")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    );
   };
 
   const replyToComment = (comment: VisitorComment) => {
@@ -274,34 +333,17 @@ export default function ContactPage() {
                   {commentStatus === "error" && <p className="text-xs text-red-300">{t("Please provide a valid email and a message with at least 5 characters.")}</p>}
                 </form>
                 <div className="space-y-6">
-                  {displayedComments.length === 0 ? <EmptyState title="No visible comments yet" description="Approved comments will appear here." /> : displayedComments.map((comment) => {
-                    const liked = likedIds.has(comment.id);
-                    return (
-                    <article key={comment.id} className="border-b border-[var(--color-border)] pb-5 last:border-0">
-                      <div className="flex gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-main)]/15 text-sm font-bold text-[var(--color-accent-main)]">{comment.avatar}</span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold">{comment.name}</h3>
-                            <span className="text-xs text-[var(--color-text-muted)]">{comment.date}</span>
-                            {comment.pinned && <span className="ml-auto border border-[var(--color-accent-main)]/30 px-2 py-0.5 text-[10px] text-[var(--color-accent-main)]">{t("Pinned")}</span>}
-                            {comment.status === "pending" && <span className="ml-auto border border-amber-300/30 px-2 py-0.5 text-[10px] text-amber-200">{t("Pending review")}</span>}
-                          </div>
-                          {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{t(comment.reply)}</p>}
-                          <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{comment.message}</p>
-                          {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            <button type="button" onClick={() => likeComment(comment)} disabled={comment.status !== "approved" || liked} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)] disabled:cursor-not-allowed disabled:opacity-60">
-                              <ThumbsUp size={13} /> {liked ? t("Liked") : t("Like")} <span className="text-[var(--color-accent-main)]">{comment.likes}</span>
-                            </button>
-                            <button type="button" onClick={() => replyToComment(comment)} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)]">
-                              <MessageSquareReply size={13} /> {t("Reply")}
-                            </button>
-                          </div>
+                  {standalonePendingComments.length === 0 && visibleComments.length === 0 ? <EmptyState title="No visible comments yet" description="Approved comments will appear here." /> : (
+                    <>
+                      {standalonePendingComments.map((comment) => renderComment(comment))}
+                      {visibleComments.map((comment) => (
+                        <div key={comment.id} className="space-y-4">
+                          {renderComment(comment)}
+                          {(pendingRepliesByParent[comment.id] || []).map((reply) => renderComment(reply, true))}
                         </div>
-                      </div>
-                    </article>
-                  );})}
+                      ))}
+                    </>
+                  )}
                 </div>
               </>
             ) : <EmptyState title="Comments are closed" description="The admin settings currently disable visitor comments." />}

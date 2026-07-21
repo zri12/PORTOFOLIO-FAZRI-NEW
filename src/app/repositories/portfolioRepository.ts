@@ -453,7 +453,7 @@ export const portfolioRepository = {
   getComments: () => [...getData().comments].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date)),
   createComment(item: Omit<VisitorComment, "id" | "date" | "likes" | "pinned" | "status">) {
     const comment: VisitorComment = { ...item, id: uuid(), date: new Date().toISOString().slice(0, 10), likes: 0, pinned: false, status: "pending" };
-    if (!isSupabaseEnabled) updateData((data) => data.comments.unshift(comment));
+    updateData((data) => data.comments.unshift(comment));
     syncToBackend(() => supabasePortfolioRepository.submitComment(item));
     return comment;
   },
