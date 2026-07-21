@@ -29,7 +29,7 @@ import type { VisitorComment } from "../../types/portfolio";
 
 const projectTypes = ["Website", "Web Application", "Dashboard", "UI Implementation", "Website Maintenance", "UI Design", "Graphic Design", "Photography", "Videography", "Editing", "Other"];
 const budgets = ["Under Rp1 million", "Rp1-3 million", "Rp3-5 million", "Rp5-10 million", "More than Rp10 million", "Discuss first"];
-const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v1";
+const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v2";
 
 function readLikedComments() {
   if (typeof window === "undefined") return new Set<string>();
@@ -57,7 +57,6 @@ export default function ContactPage() {
   const [commentStatus, setCommentStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [pendingComments, setPendingComments] = useState<VisitorComment[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(readLikedComments);
-  const [localLikeBoosts, setLocalLikeBoosts] = useState<Record<string, number>>({});
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const commentMessageRef = useRef<HTMLTextAreaElement>(null);
 
@@ -141,30 +140,30 @@ export default function ContactPage() {
       email: commentDraft.email.trim(),
       message: commentDraft.message.trim(),
       avatar: commentDraft.name.trim().slice(0, 2).toUpperCase(),
-      reply: replyTo ? `Reply to ${replyTo.name}` : undefined,
     };
     const pendingComment: VisitorComment = {
       ...payload,
+      reply: replyTo ? `Reply to ${replyTo.name}` : undefined,
       id: `pending-${Date.now()}`,
       date: new Date().toISOString().slice(0, 10),
       likes: 0,
       pinned: false,
       status: "pending",
     };
-    try {
-      if (isSupabaseEnabled) {
-        await supabasePortfolioRepository.submitComment(payload);
-        await portfolioRepository.refresh();
-      } else {
+    setPendingComments((items) => [pendingComment, ...items]);
+    setCommentDraft({ name: "", email: "", message: "" });
+    setReplyTo(null);
+    setCommentStatus("success");
+    if (isSupabaseEnabled) {
+      void supabasePortfolioRepository.submitComment(payload)
+        .then(() => portfolioRepository.refresh())
+        .catch((error) => console.error("Comment submission failed", error));
+    } else {
+      try {
         portfolioRepository.createComment(payload);
+      } catch (error) {
+        console.error("Local comment save failed", error);
       }
-      setPendingComments((items) => [pendingComment, ...items]);
-      setCommentDraft({ name: "", email: "", message: "" });
-      setReplyTo(null);
-      setCommentStatus("success");
-    } catch (error) {
-      console.error("Comment submission failed", error);
-      setCommentStatus("error");
     }
   };
 
@@ -176,24 +175,7 @@ export default function ContactPage() {
       writeLikedComments(next);
       return next;
     });
-    if (!isSupabaseEnabled) {
-      portfolioRepository.likeComment(comment);
-      return;
-    }
-    setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 1 }));
-    void supabasePortfolioRepository.likeComment(comment.id)
-      .then(() => portfolioRepository.refresh())
-      .then(() => setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 0 })))
-      .catch((error) => {
-        console.error("Comment like failed", error);
-        setLikedIds((items) => {
-          const next = new Set(items);
-          next.delete(comment.id);
-          writeLikedComments(next);
-          return next;
-        });
-        setLocalLikeBoosts((items) => ({ ...items, [comment.id]: 0 }));
-      });
+    portfolioRepository.likeComment(comment);
   };
 
   const replyToComment = (comment: VisitorComment) => {
@@ -294,7 +276,6 @@ export default function ContactPage() {
                 <div className="space-y-6">
                   {displayedComments.length === 0 ? <EmptyState title="No visible comments yet" description="Approved comments will appear here." /> : displayedComments.map((comment) => {
                     const liked = likedIds.has(comment.id);
-                    const likes = comment.likes + (localLikeBoosts[comment.id] || 0);
                     return (
                     <article key={comment.id} className="border-b border-[var(--color-border)] pb-5 last:border-0">
                       <div className="flex gap-3">
@@ -311,7 +292,7 @@ export default function ContactPage() {
                           {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
                           <div className="mt-4 flex flex-wrap gap-2">
                             <button type="button" onClick={() => likeComment(comment)} disabled={comment.status !== "approved" || liked} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)] disabled:cursor-not-allowed disabled:opacity-60">
-                              <ThumbsUp size={13} /> {liked ? t("Liked") : t("Like")} <span className="text-[var(--color-accent-main)]">{likes}</span>
+                              <ThumbsUp size={13} /> {liked ? t("Liked") : t("Like")} <span className="text-[var(--color-accent-main)]">{comment.likes}</span>
                             </button>
                             <button type="button" onClick={() => replyToComment(comment)} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)]">
                               <MessageSquareReply size={13} /> {t("Reply")}
