@@ -23,6 +23,7 @@ export function validateComment(body: Record<string, unknown>) {
   const email = cleanText(body.email, 254).toLowerCase();
   const avatar = cleanText(body.avatar, 8) || name.slice(0, 2).toUpperCase();
   const message = cleanText(body.message, 500);
+  const replyToId = cleanText(body.replyToId, 80);
   if (!name || !isEmail(email) || message.length < 5) throw new Error("Please provide a valid name, email, and comment.");
-  return { name, email, avatar, message };
+  return { name, email, avatar, message, replyToId };
 }

@@ -165,6 +165,8 @@ export interface VisitorComment {
   date: string;
   likes: number;
   reply?: string;
+  replyToId?: string;
+  replyToName?: string;
   adminReply?: string;
   pinned: boolean;
   status: "pending" | "approved" | "hidden";

@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
       name: payload.name,
       avatar: payload.avatar,
       message: payload.message,
+      parent_comment_id: payload.replyToId || null,
       status: "pending",
       likes_count: 0,
       pinned: false,

@@ -23,6 +23,13 @@ export type Database = {
           created_at: string;
         }>;
       };
+      public_like_comment: {
+        Args: {
+          target_comment_id: string;
+          target_visitor_id: string;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       publish_status: "draft" | "published" | "archived";

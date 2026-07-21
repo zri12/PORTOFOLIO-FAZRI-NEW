@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   ArrowUpRight,
@@ -32,7 +32,7 @@ const budgets = ["Under Rp1 million", "Rp1-3 million", "Rp3-5 million", "Rp5-10 
 const LIKED_COMMENTS_KEY = "fazri-portfolio-liked-comments-v3";
 const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 
-type LocalVisitorComment = VisitorComment & { replyToId?: string; replyToName?: string };
+type LocalVisitorComment = VisitorComment;
 
 function readLikedCommentBases() {
   if (typeof window === "undefined") return {};
@@ -67,6 +67,10 @@ function writePendingComments(comments: LocalVisitorComment[]) {
   window.localStorage.setItem(PENDING_COMMENTS_KEY, JSON.stringify(comments.slice(0, 20)));
 }
 
+function commentMatchKey(comment: Pick<VisitorComment, "name" | "message">) {
+  return `${comment.name.trim().toLowerCase()}::${comment.message.trim().toLowerCase()}`;
+}
+
 export default function ContactPage() {
   const { profile, comments, settings } = usePortfolioData();
   const { t } = useLanguage();
@@ -83,15 +87,33 @@ export default function ContactPage() {
   useDocumentMeta({ title: "Contact - Fazri Lukman Nurrohman", description: "Start a web development, interface, or creative collaboration with Fazri Lukman Nurrohman." });
 
   const visibleComments = useMemo(() => {
-    const approved = comments.filter((comment) => comment.status === "approved");
-    return [...approved].sort((a, b) => commentSort === "Most liked" ? b.likes - a.likes : b.date.localeCompare(a.date));
-  }, [commentSort, comments]);
+    const pendingKeys = new Set(pendingComments.map(commentMatchKey));
+    const visible = comments.filter((comment) => comment.status === "approved" || (comment.status === "pending" && !pendingKeys.has(commentMatchKey(comment))));
+    return [...visible].sort((a, b) => commentSort === "Most liked" ? b.likes - a.likes : b.date.localeCompare(a.date));
+  }, [commentSort, comments, pendingComments]);
+  const visibleTopLevelComments = useMemo(() => visibleComments.filter((comment) => !comment.replyToId), [visibleComments]);
+  const visibleRepliesByParent = useMemo(() => visibleComments.reduce<Record<string, VisitorComment[]>>((grouped, comment) => {
+    if (!comment.replyToId) return grouped;
+    grouped[comment.replyToId] = [...(grouped[comment.replyToId] || []), comment];
+    return grouped;
+  }, {}), [visibleComments]);
   const standalonePendingComments = useMemo(() => pendingComments.filter((comment) => !comment.replyToId), [pendingComments]);
   const pendingRepliesByParent = useMemo(() => pendingComments.reduce<Record<string, LocalVisitorComment[]>>((grouped, comment) => {
     if (!comment.replyToId) return grouped;
     grouped[comment.replyToId] = [...(grouped[comment.replyToId] || []), comment];
     return grouped;
   }, {}), [pendingComments]);
+
+  useEffect(() => {
+    const backendKeys = new Set(comments.filter((comment) => comment.status === "approved").map(commentMatchKey));
+    if (backendKeys.size === 0) return;
+    setPendingComments((items) => {
+      const next = items.filter((comment) => !backendKeys.has(commentMatchKey(comment)));
+      if (next.length === items.length) return items;
+      writePendingComments(next);
+      return next;
+    });
+  }, [comments]);
 
   const contactChannels = [
     { icon: Mail, label: "Email", value: profile.email, href: `mailto:${profile.email}`, meta: "Direct project inquiry" },
@@ -165,6 +187,8 @@ export default function ContactPage() {
       email: commentDraft.email.trim(),
       message: commentDraft.message.trim(),
       avatar: commentDraft.name.trim().slice(0, 2).toUpperCase(),
+      replyToId: replyTo?.id,
+      replyToName: replyTo?.name,
     };
     const pendingComment: LocalVisitorComment = {
       ...payload,
@@ -210,7 +234,7 @@ export default function ContactPage() {
   const renderComment = (comment: VisitorComment | LocalVisitorComment, nested = false) => {
     const liked = likedCommentBases[comment.id] !== undefined;
     return (
-      <article key={comment.id} className={`${nested ? "ml-8 border-l border-[var(--color-accent-main)]/35 pl-4" : "border-b border-[var(--color-border)] pb-5 last:border-0"}`}>
+      <article key={comment.id} className={`${nested ? "border-l border-[var(--color-accent-main)]/35 pl-4" : "border-b border-[var(--color-border)] pb-5 last:border-0"}`}>
         <div className="flex gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-main)]/15 text-sm font-bold text-[var(--color-accent-main)]">{comment.avatar}</span>
           <div className="min-w-0 flex-1">
@@ -223,6 +247,16 @@ export default function ContactPage() {
             {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{t(comment.reply)}</p>}
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{comment.message}</p>
             {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
+            {!nested && [...(visibleRepliesByParent[comment.id] || []), ...(pendingRepliesByParent[comment.id] || [])].map((reply) => (
+              <div key={reply.id} className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="text-[var(--color-text-secondary)]">{reply.name}</strong>
+                  <span>{reply.date}</span>
+                  {reply.status === "pending" && <span className="border border-amber-300/30 px-2 py-0.5 text-[10px] text-amber-200">{t("Pending review")}</span>}
+                </div>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{reply.message}</p>
+              </div>
+            ))}
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" onClick={() => likeComment(comment)} disabled={comment.status !== "approved" || liked} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-accent-main)] hover:text-[var(--color-text-main)] disabled:cursor-not-allowed disabled:opacity-60">
                 <ThumbsUp size={13} /> {liked ? t("Liked") : t("Like")} <span className="text-[var(--color-accent-main)]">{displayedLikeCount(comment)}</span>
@@ -333,13 +367,12 @@ export default function ContactPage() {
                   {commentStatus === "error" && <p className="text-xs text-red-300">{t("Please provide a valid email and a message with at least 5 characters.")}</p>}
                 </form>
                 <div className="space-y-6">
-                  {standalonePendingComments.length === 0 && visibleComments.length === 0 ? <EmptyState title="No visible comments yet" description="Approved comments will appear here." /> : (
+                  {standalonePendingComments.length === 0 && visibleTopLevelComments.length === 0 ? <EmptyState title="No visible comments yet" description="Approved comments will appear here." /> : (
                     <>
                       {standalonePendingComments.map((comment) => renderComment(comment))}
-                      {visibleComments.map((comment) => (
+                      {visibleTopLevelComments.map((comment) => (
                         <div key={comment.id} className="space-y-4">
                           {renderComment(comment)}
-                          {(pendingRepliesByParent[comment.id] || []).map((reply) => renderComment(reply, true))}
                         </div>
                       ))}
                     </>

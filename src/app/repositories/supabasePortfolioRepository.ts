@@ -323,6 +323,7 @@ export const supabasePortfolioRepository = {
       name: item.name,
       avatar: item.avatar,
       message: item.message,
+      parent_comment_id: item.replyToId || null,
       status: "pending",
       likes_count: 0,
       pinned: false,
@@ -343,6 +344,11 @@ export const supabasePortfolioRepository = {
     const visitorId = getVisitorId();
     const { error } = await supabase.functions.invoke("like-comment", { body: { commentId, visitorId } });
     if (!error) return;
+    const { error: rpcError } = await supabase.rpc("public_like_comment", {
+      target_comment_id: commentId,
+      target_visitor_id: visitorId,
+    });
+    if (!rpcError) return;
     const { error: insertError } = await supabase.from("comment_likes").insert({ comment_id: commentId, visitor_id: visitorId });
     if (insertError && insertError.code !== "23505") throw insertError;
   },
