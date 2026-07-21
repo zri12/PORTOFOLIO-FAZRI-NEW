@@ -21,6 +21,7 @@ const CACHE_KEY = "fazri-portfolio-supabase-cache-v4";
 const CACHE_SCHEMA_VERSION = 4;
 const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const CHANGE_EVENT = "portfolio-data-change";
+const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 let cachedData: PortfolioData | null = null;
 let cachedRaw: string | null = null;
 let refreshPromise: Promise<PortfolioData> | null = null;
@@ -54,6 +55,39 @@ function emptySupabaseData(): PortfolioData {
 
 function asArray<T>(value: unknown, fallback: T[]): T[] {
   return Array.isArray(value) ? (value as T[]) : fallback;
+}
+
+function commentMatchKey(comment: Pick<VisitorComment, "name" | "message">) {
+  return `${comment.name.trim().toLowerCase()}::${comment.message.trim().toLowerCase()}`;
+}
+
+function readPendingComments() {
+  if (typeof window === "undefined") return [];
+  try {
+    const value = JSON.parse(window.localStorage.getItem(PENDING_COMMENTS_KEY) || "[]") as unknown;
+    return Array.isArray(value) ? value.filter((item): item is VisitorComment => Boolean(item && typeof item === "object" && "id" in item && "message" in item)) : [];
+  } catch {
+    window.localStorage.removeItem(PENDING_COMMENTS_KEY);
+    return [];
+  }
+}
+
+function writePendingComments(comments: VisitorComment[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PENDING_COMMENTS_KEY, JSON.stringify(comments.slice(0, 20)));
+}
+
+function removePendingComment(comment: Pick<VisitorComment, "name" | "message">) {
+  const key = commentMatchKey(comment);
+  const next = readPendingComments().filter((item) => commentMatchKey(item) !== key);
+  writePendingComments(next);
+}
+
+function mergePendingComments(data: PortfolioData) {
+  const backendKeys = new Set(data.comments.map(commentMatchKey));
+  const pending = readPendingComments().filter((comment) => !backendKeys.has(commentMatchKey(comment)));
+  if (pending.length === 0) return data;
+  return { ...data, comments: [...pending, ...data.comments] };
 }
 
 function normalizeData(value: Partial<PortfolioData> | null | undefined): PortfolioData {
@@ -167,7 +201,7 @@ function readCache(): PortfolioData | null {
 }
 
 function setCachedData(data: PortfolioData) {
-  cachedData = normalizeData(data);
+  cachedData = mergePendingComments(normalizeData(data));
   cachedRaw = JSON.stringify(cachedData);
   if (isSupabaseEnabled) persistCache(cachedData);
   emitChange();
@@ -204,7 +238,7 @@ function save(data: PortfolioData) {
 function getData(): PortfolioData {
   if (isSupabaseEnabled) {
     if (cachedData) return cachedData;
-    cachedData = readCache() || emptySupabaseData();
+    cachedData = mergePendingComments(readCache() || emptySupabaseData());
     cachedRaw = JSON.stringify(cachedData);
     void portfolioRepository.refresh().catch(reportBackendError);
     return cachedData;
@@ -453,11 +487,14 @@ export const portfolioRepository = {
   getComments: () => [...getData().comments].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date)),
   createComment(item: Omit<VisitorComment, "id" | "date" | "likes" | "pinned" | "status">) {
     const comment: VisitorComment = { ...item, id: uuid(), date: new Date().toISOString().slice(0, 10), likes: 0, pinned: false, status: "pending" };
+    const pending = readPendingComments();
+    if (!pending.some((entry) => commentMatchKey(entry) === commentMatchKey(comment))) writePendingComments([comment, ...pending]);
     updateData((data) => data.comments.unshift(comment));
     syncToBackend(() => supabasePortfolioRepository.submitComment(item));
     return comment;
   },
   updateComment(item: VisitorComment) {
+    if (item.status === "approved" || item.status === "hidden") removePendingComment(item);
     updateData((data) => upsert(data.comments, item));
     syncToBackend(() => supabasePortfolioRepository.upsertComment(item));
   },
