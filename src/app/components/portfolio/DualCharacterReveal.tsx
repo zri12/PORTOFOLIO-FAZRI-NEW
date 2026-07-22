@@ -167,7 +167,8 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const useRadialMask = !reduce;
-  const allowRevealMask = useRadialMask;
+  const mobileRevealDisabled = bp === "mobile" || coarsePointer;
+  const allowRevealMask = useRadialMask && !mobileRevealDisabled;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -300,7 +301,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
         )}
 
         {/* Touch affordance. */}
-        {coarsePointer && !reduce && (
+        {coarsePointer && !reduce && allowRevealMask && (
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
             {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>
