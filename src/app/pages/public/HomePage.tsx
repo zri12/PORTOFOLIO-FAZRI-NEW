@@ -32,6 +32,15 @@ const techGroups = {
 
 function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[.22em] text-[var(--color-accent-main)]">{children}</p>; }
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { const reduce = useReducedMotion(); const animate = !reduce && typeof window !== "undefined" && window.innerWidth >= 1024; return <motion.div initial={animate ? { opacity: 0, y: 24 } : false} whileInView={animate ? { opacity: 1, y: 0 } : {}} viewport={{ once: true, amount: 0.12 }} transition={{ duration: .55, ease: [0.22, 1, .36, 1] }} className={className}>{children}</motion.div>; }
+function cvLinkProps(value: string) {
+  const href = value.trim() || "/cv-fazri-lukman.pdf";
+  const isExternal = /^https?:\/\//i.test(href);
+  return {
+    href,
+    target: isExternal ? "_blank" : undefined,
+    rel: isExternal ? "noreferrer" : undefined,
+  };
+}
 
 function HomeCertificateCard({ certificate, index, onView }: { certificate: Certificate; index: number; onView: (id: string) => void }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -136,6 +145,7 @@ export default function HomePage() {
   const data = usePortfolioData();
   const projectsData = Array.isArray(data.projects) ? data.projects : [];
   const profile = data.profile;
+  const cvLink = cvLinkProps(profile.cvUrl);
   const techStack = Array.isArray(data.techStack) ? data.techStack : [];
   const creativeWorks = Array.isArray(data.creativeWorks) ? data.creativeWorks : [];
   const certificates = Array.isArray(data.certificates) ? data.certificates : [];
@@ -260,7 +270,7 @@ export default function HomePage() {
             <div className="hero-actions mt-7 flex flex-wrap gap-3 sm:mt-8">
               <Link to="/projects" className={`inline-flex items-center gap-2 px-5 py-3 text-sm font-bold transition-transform hover:-translate-y-0.5 ${mode === 'spider' ? 'bg-[var(--color-primary)] text-white hover:shadow-[0_0_15px_rgba(227,33,60,0.4)] border border-red-500/50' : 'rounded-lg bg-[var(--color-text-main)] text-[var(--color-bg-primary)]'}`}>Explore Projects <ArrowRight size={16} /></Link>
               <Link to="/contact" className={`inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold hover:bg-white/5 ${mode === 'spider' ? 'border border-[var(--color-border)] text-white' : 'rounded-lg border border-[var(--color-border)]'}`}>Contact Me</Link>
-              <a href="#about" className="inline-flex items-center gap-2 px-3 py-3 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]"><Download size={15} /> Download CV</a>
+              <a {...cvLink} className="inline-flex items-center gap-2 px-3 py-3 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]"><Download size={15} /> Download CV</a>
             </div>
             <div className="hero-meta mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[var(--color-text-muted)] sm:mt-10"><span className="inline-flex items-center gap-1.5"><MapPin size={13} />Based in Indonesia</span><span className="inline-flex items-center gap-1.5"><Check size={13} />Available for selected projects</span><a href="#github" className="hover:text-[var(--color-text-main)]">GitHub</a><a href="#linkedin" className="hover:text-[var(--color-text-main)]">LinkedIn</a></div>
           </motion.div>
