@@ -18,7 +18,7 @@ const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal
   desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
   laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
   tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
-  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.02, scaleY: 1.04, x: 0, y: -1.4 } },
+  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 0.962, scaleY: 1.011, x: 0, y: 0 } },
 };
 
 interface Cal {
