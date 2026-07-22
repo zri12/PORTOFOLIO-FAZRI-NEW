@@ -49,6 +49,10 @@ function asRow(value: unknown): Row | null {
   return value && typeof value === "object" ? value as Row : null;
 }
 
+function isPermissionDenied(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "42501");
+}
+
 function getVisitorId() {
   if (typeof window === "undefined") return crypto.randomUUID();
   const existing = window.localStorage.getItem(VISITOR_ID_KEY);
@@ -128,7 +132,12 @@ export const supabasePortfolioRepository = {
       supabase.from("media_assets").select("*").order("created_at", { ascending: false }),
     ]);
 
-    const results = [profileResult, settingsResult, projectsResult, technologiesResult, projectTechnologiesResult, creativeWorksResult, experiencesResult, certificatesResult, articlesResult, commentsResult, messagesResult, mediaResult];
+    const messagesUnavailable = includePrivate && isPermissionDenied(messagesResult.error);
+    const mediaUnavailable = isPermissionDenied(mediaResult.error);
+    if (messagesUnavailable) console.warn("Contact messages are not readable for the current Supabase role. Admin messages will stay empty until table permissions are granted.");
+    if (mediaUnavailable) console.warn("Media assets are not readable for the current Supabase role. Stored image URLs will still load from their saved fields.");
+
+    const results = [profileResult, settingsResult, projectsResult, technologiesResult, projectTechnologiesResult, creativeWorksResult, experiencesResult, certificatesResult, articlesResult, commentsResult, ...(mediaUnavailable ? [] : [mediaResult]), ...(messagesUnavailable ? [] : [messagesResult])];
     const failure = results.find((result) => "error" in result && result.error);
     if (failure && "error" in failure) throw failure.error;
 
@@ -159,8 +168,8 @@ export const supabasePortfolioRepository = {
       certificates: asRows(certificatesResult.data).map(mapCertificate),
       articles: asRows(articlesResult.data).map(mapArticle),
       comments: asRows(commentsResult.data).map((row) => mapComment(row)),
-      messages: asRows(messagesResult.data).map(mapMessage),
-      media: asRows(mediaResult.data).map(toMediaItem),
+      messages: messagesUnavailable ? [] : asRows(messagesResult.data).map(mapMessage),
+      media: mediaUnavailable ? [] : asRows(mediaResult.data).map(toMediaItem),
     }, portfolioSeed);
   },
 

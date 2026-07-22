@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Move, RotateCcw, Trash, Upload, X } from "lucide-react";
 import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../../lib/supabase/client";
 import { uploadPortfolioFile } from "../../lib/supabase/storage";
@@ -222,7 +222,109 @@ function getPreviewUrl(value: string) {
   return supabase ? supabase.storage.from(publicBucket).getPublicUrl(value).data.publicUrl : value;
 }
 
-async function cropImage(request: CropRequest, zoom: number, offsetX: number, offsetY: number) {
+type CropBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type DragState = {
+  pointerId: number;
+  mode: "move" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+  startX: number;
+  startY: number;
+  origin: CropBox;
+  stageWidth: number;
+  stageHeight: number;
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+function makeInitialCrop(cropAspect: number, imageAspect: number): CropBox {
+  const percentRatio = cropAspect / imageAspect;
+  const width = percentRatio >= 1 ? 82 : 82 * percentRatio;
+  const height = percentRatio >= 1 ? 82 / percentRatio : 82;
+  return {
+    x: (100 - width) / 2,
+    y: (100 - height) / 2,
+    width,
+    height,
+  };
+}
+
+function clampCrop(crop: CropBox): CropBox {
+  const width = clamp(crop.width, 12, 100);
+  const height = clamp(crop.height, 12, 100);
+  return {
+    width,
+    height,
+    x: clamp(crop.x, 0, 100 - width),
+    y: clamp(crop.y, 0, 100 - height),
+  };
+}
+
+function resizeCrop(drag: DragState, event: React.PointerEvent<HTMLElement>, cropAspect: number): CropBox {
+  const dx = event.clientX - drag.startX;
+  const dy = event.clientY - drag.startY;
+  const origin = drag.origin;
+
+  if (drag.mode === "move") {
+    return clampCrop({
+      ...origin,
+      x: origin.x + (dx / drag.stageWidth) * 100,
+      y: origin.y + (dy / drag.stageHeight) * 100,
+    });
+  }
+
+  const originPx = {
+    x: (origin.x / 100) * drag.stageWidth,
+    y: (origin.y / 100) * drag.stageHeight,
+    width: (origin.width / 100) * drag.stageWidth,
+    height: (origin.height / 100) * drag.stageHeight,
+  };
+  const right = originPx.x + originPx.width;
+  const bottom = originPx.y + originPx.height;
+  const usesWest = drag.mode.includes("w");
+  const usesEast = drag.mode.includes("e");
+  const usesNorth = drag.mode.includes("n");
+  const usesSouth = drag.mode.includes("s");
+
+  let nextWidth = originPx.width;
+  if (usesEast) nextWidth = originPx.width + dx;
+  if (usesWest) nextWidth = originPx.width - dx;
+  if (!usesEast && !usesWest) {
+    const nextHeight = usesSouth ? originPx.height + dy : originPx.height - dy;
+    nextWidth = nextHeight * cropAspect;
+  }
+  nextWidth = clamp(nextWidth, 48, drag.stageWidth);
+  const nextHeight = clamp(nextWidth / cropAspect, 48, drag.stageHeight);
+
+  let nextX = usesWest ? right - nextWidth : originPx.x;
+  let nextY = usesNorth ? bottom - nextHeight : originPx.y;
+
+  if (nextX < 0) {
+    nextX = 0;
+    nextWidth = right;
+  }
+  if (nextY < 0) {
+    nextY = 0;
+  }
+  if (nextX + nextWidth > drag.stageWidth) {
+    nextWidth = drag.stageWidth - nextX;
+  }
+  const adjustedHeight = Math.min(nextWidth / cropAspect, drag.stageHeight - nextY);
+  if (usesNorth) nextY = bottom - adjustedHeight;
+
+  return clampCrop({
+    x: (nextX / drag.stageWidth) * 100,
+    y: (nextY / drag.stageHeight) * 100,
+    width: (nextWidth / drag.stageWidth) * 100,
+    height: (adjustedHeight / drag.stageHeight) * 100,
+  });
+}
+
+async function cropImage(request: CropRequest, crop: CropBox) {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const element = new Image();
     element.onload = () => resolve(element);
@@ -232,12 +334,10 @@ async function cropImage(request: CropRequest, zoom: number, offsetX: number, of
 
   const naturalWidth = image.naturalWidth;
   const naturalHeight = image.naturalHeight;
-  const cropWidth = Math.min(naturalWidth, naturalHeight * request.aspectRatio) / zoom;
-  const cropHeight = cropWidth / request.aspectRatio;
-  const freeX = Math.max(0, naturalWidth - cropWidth);
-  const freeY = Math.max(0, naturalHeight - cropHeight);
-  const sourceX = Math.min(freeX, Math.max(0, freeX / 2 - (offsetX / 100) * (freeX / 2)));
-  const sourceY = Math.min(freeY, Math.max(0, freeY / 2 - (offsetY / 100) * (freeY / 2)));
+  const sourceX = Math.round((crop.x / 100) * naturalWidth);
+  const sourceY = Math.round((crop.y / 100) * naturalHeight);
+  const cropWidth = Math.round((crop.width / 100) * naturalWidth);
+  const cropHeight = Math.round((crop.height / 100) * naturalHeight);
   const outputWidth = Math.round(Math.min(1800, Math.max(900, cropWidth)));
   const outputHeight = Math.round(outputWidth / request.aspectRatio);
 
@@ -257,21 +357,33 @@ async function cropImage(request: CropRequest, zoom: number, offsetX: number, of
   return { file, previewUrl: canvas.toDataURL("image/webp", 0.9) };
 }
 
-const clampMove = (value: number) => Math.min(100, Math.max(-100, value));
-
 function CropEditor({ request, onClose }: { request: CropRequest; onClose: () => void }) {
-  const [zoom, setZoom] = useState(1);
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
+  const [imageAspect, setImageAspect] = useState(request.aspectRatio);
+  const [crop, setCrop] = useState(() => makeInitialCrop(request.aspectRatio, request.aspectRatio));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const drag = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const drag = useRef<DragState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (cancelled) return;
+      const nextAspect = image.naturalWidth / Math.max(1, image.naturalHeight);
+      setImageAspect(nextAspect);
+      setCrop(makeInitialCrop(request.aspectRatio, nextAspect));
+    };
+    image.src = request.dataUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [request.aspectRatio, request.dataUrl]);
 
   const apply = async () => {
     setBusy(true);
     setError("");
     try {
-      const cropped = await cropImage(request, zoom, offsetX, offsetY);
+      const cropped = await cropImage(request, crop);
       await request.onApply(cropped.file, cropped.previewUrl);
       onClose();
     } catch (cropError) {
@@ -281,31 +393,36 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
     }
   };
 
-  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+  const startDrag = (event: React.PointerEvent<HTMLElement>, mode: DragState["mode"]) => {
     if (busy) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    event.stopPropagation();
+    const stage = event.currentTarget.closest("[data-crop-stage]");
+    if (!(stage instanceof HTMLDivElement)) return;
+    const rect = stage.getBoundingClientRect();
+    stage.setPointerCapture(event.pointerId);
     drag.current = {
       pointerId: event.pointerId,
+      mode,
       startX: event.clientX,
       startY: event.clientY,
-      originX: offsetX,
-      originY: offsetY,
+      origin: crop,
+      stageWidth: rect.width,
+      stageHeight: rect.height,
     };
   };
 
   const moveDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const current = drag.current;
     if (!current || current.pointerId !== event.pointerId) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const nextX = current.originX + ((event.clientX - current.startX) / Math.max(1, rect.width)) * 220;
-    const nextY = current.originY + ((event.clientY - current.startY) / Math.max(1, rect.height)) * 220;
-    setOffsetX(clampMove(nextX));
-    setOffsetY(clampMove(nextY));
+    setCrop(resizeCrop(current, event, request.aspectRatio));
   };
 
   const stopDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (drag.current?.pointerId === event.pointerId) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
       drag.current = null;
     }
   };
@@ -316,7 +433,7 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] p-4">
           <div>
             <p className="font-manrope text-xl font-bold">Crop image</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - drag the image or use sliders, then apply.</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - move the crop box or pull the handles, then apply.</p>
           </div>
           <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label="Close crop editor">
             <X size={18} />
@@ -326,9 +443,9 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
         <div className="grid gap-5 p-4 lg:grid-cols-[1fr_260px]">
           <div className="flex min-h-[280px] items-center justify-center bg-[var(--color-bg-primary)] p-4">
             <div
-              className="relative w-full max-w-xl cursor-grab touch-none overflow-hidden border border-[var(--color-border)] bg-black active:cursor-grabbing"
-              style={{ aspectRatio: request.aspectRatio }}
-              onPointerDown={startDrag}
+              data-crop-stage
+              className="relative w-full max-w-xl touch-none overflow-hidden border border-[var(--color-border)] bg-black"
+              style={{ aspectRatio: imageAspect }}
               onPointerMove={moveDrag}
               onPointerUp={stopDrag}
               onPointerCancel={stopDrag}
@@ -336,19 +453,46 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
               <img
                 src={request.dataUrl}
                 alt=""
-                className="h-full w-full object-cover"
-                style={{ transform: `translate(${offsetX * 0.32}%, ${offsetY * 0.32}%) scale(${zoom})`, transformOrigin: "50% 50%" }}
+                className="h-full w-full select-none object-fill"
                 draggable={false}
               />
-              <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/35" />
+              <div
+                className="absolute cursor-grab border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,.48)] active:cursor-grabbing"
+                style={{
+                  left: `${crop.x}%`,
+                  top: `${crop.y}%`,
+                  width: `${crop.width}%`,
+                  height: `${crop.height}%`,
+                }}
+                onPointerDown={(event) => startDrag(event, "move")}
+              >
+                <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
+                  {Array.from({ length: 9 }).map((_, index) => (
+                    <span key={index} className="border border-white/35" />
+                  ))}
+                </div>
+                {(["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((handle) => (
+                  <button
+                    key={handle}
+                    type="button"
+                    aria-label={`Resize crop ${handle}`}
+                    className={`absolute h-3 w-3 border border-white bg-[var(--color-accent-main)] ${
+                      handle.includes("n") ? "top-0 -translate-y-1/2" : handle.includes("s") ? "bottom-0 translate-y-1/2" : "top-1/2 -translate-y-1/2"
+                    } ${
+                      handle.includes("w") ? "left-0 -translate-x-1/2" : handle.includes("e") ? "right-0 translate-x-1/2" : "left-1/2 -translate-x-1/2"
+                    }`}
+                    onPointerDown={(event) => startDrag(event, handle)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <Slider label="Zoom" value={zoom} min={1} max={2.4} step={0.05} onChange={setZoom} />
-            <Slider label="Move X" value={offsetX} min={-100} max={100} step={1} onChange={setOffsetX} />
-            <Slider label="Move Y" value={offsetY} min={-100} max={100} step={1} onChange={setOffsetY} />
-            <button type="button" onClick={() => { setZoom(1); setOffsetX(0); setOffsetY(0); }} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold">
+            <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-xs leading-5 text-[var(--color-text-muted)]">
+              Drag the selected area to reposition it. Pull any edge or corner handle to resize the crop manually.
+            </div>
+            <button type="button" onClick={() => setCrop(makeInitialCrop(request.aspectRatio, imageAspect))} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold">
               <RotateCcw size={14} /> Reset
             </button>
             <div className="flex gap-2 pt-2">
@@ -362,17 +506,5 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
         </div>
       </div>
     </div>
-  );
-}
-
-function Slider({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) {
-  return (
-    <label className="block">
-      <span className="mb-2 flex items-center justify-between text-xs font-bold text-[var(--color-text-secondary)]">
-        {label}
-        <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{value.toFixed(step < 1 ? 2 : 0)}</span>
-      </span>
-      <input type="range" value={value} min={min} max={max} step={step} onChange={(event) => onChange(Number(event.target.value))} className="w-full accent-[var(--color-accent-main)]" />
-    </label>
   );
 }

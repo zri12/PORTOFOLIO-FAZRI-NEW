@@ -24,8 +24,7 @@ export async function uploadPortfolioFile(file: File, folder = "uploads") {
   };
   const { data: row, error: insertError } = await supabase.from("media_assets").insert(asset).select("*").single();
   if (insertError) {
-    await supabase.storage.from(publicBucket).remove([path]);
-    throw insertError;
+    console.warn("Image uploaded, but media_assets could not be updated.", insertError);
   }
   return { row, url: data.publicUrl, path };
 }
