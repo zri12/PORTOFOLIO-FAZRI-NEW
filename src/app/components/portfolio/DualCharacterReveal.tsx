@@ -155,6 +155,10 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
   const handlePointerDown = (event: React.PointerEvent) => {
     if (reduce || event.pointerType === "mouse") return;
+    if (spiderActive) {
+      hideTouchReveal(true);
+      return;
+    }
     if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
     handlePointerMove(event);
     setTapPreview(true);
@@ -167,6 +171,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const useRadialMask = !reduce;
+  const allowRevealMask = useRadialMask && !(coarsePointer && spiderActive);
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -206,13 +211,13 @@ export function DualCharacterReveal({ className = "" }: Props) {
         <div
           className="absolute inset-0"
           style={{
-            zIndex: spiderActive ? 2 : 1,
-            WebkitMaskImage: spiderActive ? maskValue : "none",
-            maskImage: spiderActive ? maskValue : "none",
+            zIndex: spiderActive ? 3 : 1,
+            WebkitMaskImage: spiderActive && allowRevealMask ? maskValue : "none",
+            maskImage: spiderActive && allowRevealMask ? maskValue : "none",
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
-            opacity: spiderActive && !useRadialMask ? 0 : 1,
-            transition: useRadialMask ? "none" : "opacity 320ms ease",
+            opacity: spiderActive ? (allowRevealMask ? 1 : 0) : 1,
+            transition: allowRevealMask ? "none" : "opacity 320ms ease",
           }}
         >
           <div
@@ -229,7 +234,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
           </div>
         </div>
 
-        {!spiderActive && useRadialMask && (
+        {allowRevealMask && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
@@ -239,8 +244,9 @@ export function DualCharacterReveal({ className = "" }: Props) {
               maskImage: maskValue,
               WebkitMaskRepeat: "no-repeat",
               maskRepeat: "no-repeat",
-              background:
-                "radial-gradient(circle at var(--reveal-x, 50%) var(--reveal-y, 50%), color-mix(in srgb, var(--color-bg-primary) 72%, #050608 28%) 0%, color-mix(in srgb, var(--color-bg-secondary) 84%, #070709 16%) 68%, var(--color-bg-primary) 100%)",
+              background: spiderActive
+                ? "radial-gradient(circle at var(--reveal-x, 50%) var(--reveal-y, 50%), color-mix(in srgb, var(--color-bg-primary) 84%, #101820 16%) 0%, color-mix(in srgb, var(--color-bg-secondary) 88%, #111827 12%) 68%, var(--color-bg-primary) 100%)"
+                : "radial-gradient(circle at var(--reveal-x, 50%) var(--reveal-y, 50%), color-mix(in srgb, var(--color-bg-primary) 72%, #050608 28%) 0%, color-mix(in srgb, var(--color-bg-secondary) 84%, #070709 16%) 68%, var(--color-bg-primary) 100%)",
             }}
           />
         )}
@@ -251,13 +257,13 @@ export function DualCharacterReveal({ className = "" }: Props) {
           className="absolute inset-0"
           style={{
             zIndex: spiderActive ? 1 : 3,
-            WebkitMaskImage: spiderActive ? "none" : maskValue,
-            maskImage: spiderActive ? "none" : maskValue,
+            WebkitMaskImage: spiderActive || allowRevealMask ? (spiderActive ? "none" : maskValue) : "none",
+            maskImage: spiderActive || allowRevealMask ? (spiderActive ? "none" : maskValue) : "none",
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
             backgroundColor: "transparent",
-            opacity: !spiderActive && !useRadialMask ? 0 : 1,
-            transition: useRadialMask ? "none" : "opacity 320ms ease",
+            opacity: !spiderActive && !allowRevealMask ? 0 : 1,
+            transition: allowRevealMask ? "none" : "opacity 320ms ease",
           }}
         >
           <div
@@ -276,7 +282,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
         {/* CursorRevealBoundary — a thin (~1.5px), low-opacity crimson line that
             traces the reveal edge. No thick ring, no glowing portal. */}
-        {useRadialMask && (
+        {allowRevealMask && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 transition-opacity duration-300"
@@ -298,7 +304,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
         )}
 
         {/* Touch affordance. */}
-        {coarsePointer && !reduce && (
+        {coarsePointer && !reduce && !spiderActive && (
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
             {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>
