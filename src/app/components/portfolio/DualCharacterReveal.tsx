@@ -18,7 +18,7 @@ const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal
   desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
   laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
   tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
-  mobile: { professional: { scaleX: 1.12, scaleY: 1.12, x: 0, y: 0 }, spider: { scaleX: 1.077, scaleY: 1.132, x: 0, y: 0 } },
+  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.055, scaleY: 1.025, x: 0, y: 0 } },
 };
 
 interface Cal {
@@ -29,7 +29,7 @@ interface Cal {
 }
 
 // Small "discovery lens" — deliberately far smaller than a body-sized portal.
-const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 46 };
+const HOVER_RADIUS: Record<Breakpoint, number> = { desktop: 76, laptop: 68, tablet: 64, mobile: 62 };
 const FEATHER = 5;
 const LERP = 0.32; // fast, precise pointer follow
 
@@ -155,10 +155,6 @@ export function DualCharacterReveal({ className = "" }: Props) {
 
   const handlePointerDown = (event: React.PointerEvent) => {
     if (reduce || event.pointerType === "mouse") return;
-    if (spiderActive) {
-      hideTouchReveal(true);
-      return;
-    }
     if (touchHideTimerRef.current) window.clearTimeout(touchHideTimerRef.current);
     handlePointerMove(event);
     setTapPreview(true);
@@ -171,8 +167,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const useRadialMask = !reduce;
-  const compactReverseReveal = spiderActive && (bp === "mobile" || bp === "tablet" || coarsePointer);
-  const allowRevealMask = useRadialMask && !compactReverseReveal;
+  const allowRevealMask = useRadialMask;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
@@ -305,7 +300,7 @@ export function DualCharacterReveal({ className = "" }: Props) {
         )}
 
         {/* Touch affordance. */}
-        {coarsePointer && !reduce && !spiderActive && (
+        {coarsePointer && !reduce && (
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[8px] uppercase tracking-[.14em] text-white/70 backdrop-blur">
             {tapPreview ? "Drag to explore" : "Tap or drag to reveal"}
           </span>
