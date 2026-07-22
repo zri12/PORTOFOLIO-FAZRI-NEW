@@ -440,6 +440,8 @@ main > section:not(:first-child) {
   }
   .hero-meta {
     gap-x: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
   }
   .hero-image-stage {
     display: none;
