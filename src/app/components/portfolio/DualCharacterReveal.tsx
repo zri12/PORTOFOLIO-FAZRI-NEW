@@ -171,7 +171,8 @@ export function DualCharacterReveal({ className = "" }: Props) {
   };
 
   const useRadialMask = !reduce;
-  const allowRevealMask = useRadialMask && !(coarsePointer && spiderActive);
+  const compactReverseReveal = spiderActive && (bp === "mobile" || bp === "tablet" || coarsePointer);
+  const allowRevealMask = useRadialMask && !compactReverseReveal;
 
   // Soft organic radial mask: solid core to --reveal-r, then a short feather.
   const maskValue = useRadialMask
