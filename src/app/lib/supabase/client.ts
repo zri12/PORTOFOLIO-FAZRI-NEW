@@ -3,9 +3,11 @@ import type { Database } from "./database.types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
-const enableSupabase = import.meta.env.VITE_ENABLE_SUPABASE === "true";
+const supabaseDisabled = import.meta.env.VITE_ENABLE_SUPABASE?.trim().toLowerCase() === "false";
 
-export const isSupabaseEnabled = Boolean(enableSupabase && supabaseUrl && supabaseKey);
+// Credentials are the source of truth. The optional flag can explicitly
+// disable Supabase, but is not required when URL and key are already present.
+export const isSupabaseEnabled = Boolean(!supabaseDisabled && supabaseUrl && supabaseKey);
 
 export const publicBucket = import.meta.env.VITE_SUPABASE_PUBLIC_BUCKET || "portfolio-public";
 

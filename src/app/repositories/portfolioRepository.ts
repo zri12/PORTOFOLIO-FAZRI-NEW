@@ -20,7 +20,6 @@ const STORAGE_KEY = "fazri-portfolio-demo-v3";
 const CACHE_KEY = "fazri-portfolio-supabase-cache-v4";
 const PRIVATE_CACHE_KEY = "fazri-portfolio-supabase-admin-cache-v4";
 const CACHE_SCHEMA_VERSION = 4;
-const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const CHANGE_EVENT = "portfolio-data-change";
 const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 let cachedData: PortfolioData | null = null;
@@ -30,6 +29,7 @@ let refreshIncludesPrivate = false;
 let backendSyncPromise: Promise<void> | null = null;
 let realtimeUnsubscribe: (() => void) | null = null;
 let realtimeIncludesPrivate = false;
+let hasBackendSnapshot = false;
 
 function cloneSeed(): PortfolioData {
   return JSON.parse(JSON.stringify(portfolioSeed)) as PortfolioData;
@@ -212,8 +212,7 @@ function readCache(includePrivate = shouldIncludePrivateData()): PortfolioData |
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as { schemaVersion?: number; savedAt?: string; data?: PortfolioData };
-    const savedAt = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
-    const cacheIsCurrent = parsed.schemaVersion === CACHE_SCHEMA_VERSION && Date.now() - savedAt < CACHE_MAX_AGE_MS;
+    const cacheIsCurrent = parsed.schemaVersion === CACHE_SCHEMA_VERSION;
     if (!cacheIsCurrent) {
       window.localStorage.removeItem(key);
       return null;
@@ -226,6 +225,7 @@ function readCache(includePrivate = shouldIncludePrivateData()): PortfolioData |
 }
 
 function setCachedData(data: PortfolioData, includePrivate = shouldIncludePrivateData()) {
+  hasBackendSnapshot = true;
   cachedData = mergePendingComments(normalizeData(data));
   cachedRaw = JSON.stringify(cachedData);
   if (isSupabaseEnabled) persistCache(cachedData, includePrivate);
@@ -263,7 +263,9 @@ function save(data: PortfolioData) {
 function getData(): PortfolioData {
   if (isSupabaseEnabled) {
     if (cachedData) return cachedData;
-    cachedData = mergePendingComments(readCache(shouldIncludePrivateData()) || emptySupabaseData());
+    const cached = readCache(shouldIncludePrivateData());
+    hasBackendSnapshot = Boolean(cached);
+    cachedData = mergePendingComments(cached || emptySupabaseData());
     cachedRaw = JSON.stringify(cachedData);
     void portfolioRepository.refresh().catch(reportBackendError);
     return cachedData;
@@ -296,6 +298,9 @@ function getData(): PortfolioData {
 }
 
 function updateData(mutator: (data: PortfolioData) => void) {
+  if (isSupabaseEnabled && shouldIncludePrivateData() && !hasBackendSnapshot) {
+    throw new Error("Saved Supabase data is still loading. Please wait for the admin data to load, then try saving again.");
+  }
   const data = cloneData(getData());
   mutator(data);
   save(data);
