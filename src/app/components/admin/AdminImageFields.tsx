@@ -241,10 +241,9 @@ type DragState = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-function makeInitialCrop(cropAspect: number, imageAspect: number): CropBox {
-  const percentRatio = cropAspect / imageAspect;
-  const width = percentRatio >= 1 ? 82 : 82 * percentRatio;
-  const height = percentRatio >= 1 ? 82 / percentRatio : 82;
+function makeInitialCrop(): CropBox {
+  const width = 82;
+  const height = 82;
   return {
     x: (100 - width) / 2,
     y: (100 - height) / 2,
@@ -264,7 +263,7 @@ function clampCrop(crop: CropBox): CropBox {
   };
 }
 
-function resizeCrop(drag: DragState, event: React.PointerEvent<HTMLElement>, cropAspect: number): CropBox {
+function resizeCrop(drag: DragState, event: React.PointerEvent<HTMLElement>): CropBox {
   const dx = event.clientX - drag.startX;
   const dy = event.clientY - drag.startY;
   const origin = drag.origin;
@@ -285,42 +284,32 @@ function resizeCrop(drag: DragState, event: React.PointerEvent<HTMLElement>, cro
   };
   const right = originPx.x + originPx.width;
   const bottom = originPx.y + originPx.height;
-  const usesWest = drag.mode.includes("w");
-  const usesEast = drag.mode.includes("e");
-  const usesNorth = drag.mode.includes("n");
-  const usesSouth = drag.mode.includes("s");
-
+  const minSize = 48;
+  let nextX = originPx.x;
+  let nextY = originPx.y;
   let nextWidth = originPx.width;
-  if (usesEast) nextWidth = originPx.width + dx;
-  if (usesWest) nextWidth = originPx.width - dx;
-  if (!usesEast && !usesWest) {
-    const nextHeight = usesSouth ? originPx.height + dy : originPx.height - dy;
-    nextWidth = nextHeight * cropAspect;
-  }
-  nextWidth = clamp(nextWidth, 48, drag.stageWidth);
-  const nextHeight = clamp(nextWidth / cropAspect, 48, drag.stageHeight);
+  let nextHeight = originPx.height;
 
-  let nextX = usesWest ? right - nextWidth : originPx.x;
-  let nextY = usesNorth ? bottom - nextHeight : originPx.y;
-
-  if (nextX < 0) {
-    nextX = 0;
-    nextWidth = right;
+  if (drag.mode.includes("w")) {
+    nextX = clamp(originPx.x + dx, 0, right - minSize);
+    nextWidth = right - nextX;
   }
-  if (nextY < 0) {
-    nextY = 0;
+  if (drag.mode.includes("e")) {
+    nextWidth = clamp(originPx.width + dx, minSize, drag.stageWidth - originPx.x);
   }
-  if (nextX + nextWidth > drag.stageWidth) {
-    nextWidth = drag.stageWidth - nextX;
+  if (drag.mode.includes("n")) {
+    nextY = clamp(originPx.y + dy, 0, bottom - minSize);
+    nextHeight = bottom - nextY;
   }
-  const adjustedHeight = Math.min(nextWidth / cropAspect, drag.stageHeight - nextY);
-  if (usesNorth) nextY = bottom - adjustedHeight;
+  if (drag.mode.includes("s")) {
+    nextHeight = clamp(originPx.height + dy, minSize, drag.stageHeight - originPx.y);
+  }
 
   return clampCrop({
     x: (nextX / drag.stageWidth) * 100,
     y: (nextY / drag.stageHeight) * 100,
     width: (nextWidth / drag.stageWidth) * 100,
-    height: (adjustedHeight / drag.stageHeight) * 100,
+    height: (nextHeight / drag.stageHeight) * 100,
   });
 }
 
@@ -338,8 +327,9 @@ async function cropImage(request: CropRequest, crop: CropBox) {
   const sourceY = Math.round((crop.y / 100) * naturalHeight);
   const cropWidth = Math.round((crop.width / 100) * naturalWidth);
   const cropHeight = Math.round((crop.height / 100) * naturalHeight);
-  const outputWidth = Math.round(Math.min(1800, Math.max(900, cropWidth)));
-  const outputHeight = Math.round(outputWidth / request.aspectRatio);
+  const scale = Math.min(3, 1800 / Math.max(cropWidth, cropHeight));
+  const outputWidth = Math.max(1, Math.round(cropWidth * scale));
+  const outputHeight = Math.max(1, Math.round(cropHeight * scale));
 
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
@@ -359,7 +349,7 @@ async function cropImage(request: CropRequest, crop: CropBox) {
 
 function CropEditor({ request, onClose }: { request: CropRequest; onClose: () => void }) {
   const [imageAspect, setImageAspect] = useState(request.aspectRatio);
-  const [crop, setCrop] = useState(() => makeInitialCrop(request.aspectRatio, request.aspectRatio));
+  const [crop, setCrop] = useState(() => makeInitialCrop());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const drag = useRef<DragState | null>(null);
@@ -371,7 +361,7 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
       if (cancelled) return;
       const nextAspect = image.naturalWidth / Math.max(1, image.naturalHeight);
       setImageAspect(nextAspect);
-      setCrop(makeInitialCrop(request.aspectRatio, nextAspect));
+      setCrop(makeInitialCrop());
     };
     image.src = request.dataUrl;
     return () => {
@@ -415,7 +405,7 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
   const moveDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const current = drag.current;
     if (!current || current.pointerId !== event.pointerId) return;
-    setCrop(resizeCrop(current, event, request.aspectRatio));
+    setCrop(resizeCrop(current, event));
   };
 
   const stopDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -433,7 +423,7 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] p-4">
           <div>
             <p className="font-manrope text-xl font-bold">Crop image</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - move the crop box or pull the handles, then apply.</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">{request.title} - move the crop box or pull any side/corner handle, then apply.</p>
           </div>
           <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label="Close crop editor">
             <X size={18} />
@@ -490,9 +480,9 @@ function CropEditor({ request, onClose }: { request: CropRequest; onClose: () =>
 
           <div className="space-y-4">
             <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-xs leading-5 text-[var(--color-text-muted)]">
-              Drag the selected area to reposition it. Pull any edge or corner handle to resize the crop manually.
+              Drag the selected area to reposition it. Pull the bottom, top, left, right, or corner handles freely to crop exactly what you need.
             </div>
-            <button type="button" onClick={() => setCrop(makeInitialCrop(request.aspectRatio, imageAspect))} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold">
+            <button type="button" onClick={() => setCrop(makeInitialCrop())} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold">
               <RotateCcw size={14} /> Reset
             </button>
             <div className="flex gap-2 pt-2">
