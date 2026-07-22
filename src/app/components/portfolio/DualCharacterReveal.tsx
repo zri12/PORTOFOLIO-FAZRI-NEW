@@ -18,7 +18,7 @@ const CHARACTER_CALIBRATION: Record<Breakpoint, { professional: Cal; spider: Cal
   desktop: { professional: { scaleX: 1.2, scaleY: 1.2, x: 0, y: 0 }, spider: { scaleX: 1.154, scaleY: 1.213, x: 0, y: 0 } },
   laptop: { professional: { scaleX: 1.18, scaleY: 1.18, x: 0, y: 0 }, spider: { scaleX: 1.135, scaleY: 1.192, x: 0, y: 0 } },
   tablet: { professional: { scaleX: 1.14, scaleY: 1.14, x: 0, y: 0 }, spider: { scaleX: 1.096, scaleY: 1.152, x: 0, y: 0 } },
-  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.035, scaleY: 1.011, x: 0, y: 0 } },
+  mobile: { professional: { scaleX: 1, scaleY: 1, x: 0, y: 0 }, spider: { scaleX: 1.075, scaleY: 1.011, x: 0, y: 0 } },
 };
 
 interface Cal {
@@ -229,17 +229,33 @@ export function DualCharacterReveal({ className = "" }: Props) {
           </div>
         </div>
 
+        {!spiderActive && useRadialMask && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              zIndex: 2,
+              WebkitMaskImage: maskValue,
+              maskImage: maskValue,
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              background:
+                "radial-gradient(circle at var(--reveal-x, 50%) var(--reveal-y, 50%), color-mix(in srgb, var(--color-bg-primary) 72%, #050608 28%) 0%, color-mix(in srgb, var(--color-bg-secondary) 84%, #070709 16%) 68%, var(--color-bg-primary) 100%)",
+            }}
+          />
+        )}
+
         {/* SpiderLayer — revealed through the pointer mask (desktop/laptop) or a
             crossfade (touch / reduced-motion). */}
         <div
           className="absolute inset-0"
           style={{
-            zIndex: spiderActive ? 1 : 2,
+            zIndex: spiderActive ? 1 : 3,
             WebkitMaskImage: spiderActive ? "none" : maskValue,
             maskImage: spiderActive ? "none" : maskValue,
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
-            backgroundColor: spiderActive ? "transparent" : "var(--color-bg-primary)",
+            backgroundColor: "transparent",
             opacity: !spiderActive && !useRadialMask ? 0 : 1,
             transition: useRadialMask ? "none" : "opacity 320ms ease",
           }}
