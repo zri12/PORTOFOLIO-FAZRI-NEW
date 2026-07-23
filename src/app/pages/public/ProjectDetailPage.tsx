@@ -46,7 +46,7 @@ export default function ProjectDetailPage() {
   const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+    <main className="min-h-screen overflow-x-hidden bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
       <section className="px-5 pb-16 sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 flex flex-wrap items-center gap-3 text-sm text-[var(--color-text-muted)]">
@@ -88,23 +88,23 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-5 py-16 sm:px-6 sm:py-20">
-        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[320px_1fr]">
-          <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
+      <section className="overflow-hidden border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-10 xl:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] xl:gap-12">
+          <aside className="min-w-0 space-y-8 xl:sticky xl:top-32 xl:self-start">
             <div>
               <h2 className="font-manrope text-xl font-bold">{t("Tech Stack")}</h2>
               <div className="mt-4 flex flex-wrap gap-2">
-                {projectTech.map((tech) => <span key={tech.id} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm">{tech.name}</span>)}
+                {projectTech.map((tech) => <span key={tech.id} className="max-w-full break-words border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm">{tech.name}</span>)}
               </div>
             </div>
             <div>
               <h2 className="font-manrope text-xl font-bold">{t("Main Features")}</h2>
               <ul className="mt-4 space-y-3">
-                {project.features.map((feature) => <li key={feature} className="flex gap-3 text-sm text-[var(--color-text-secondary)]"><ShieldCheck size={16} className="mt-1 shrink-0 text-[var(--color-accent-main)]" />{t(feature)}</li>)}
+                {project.features.map((feature) => <li key={feature} className="flex min-w-0 gap-3 text-sm text-[var(--color-text-secondary)]"><ShieldCheck size={16} className="mt-1 shrink-0 text-[var(--color-accent-main)]" /><span className="min-w-0 break-words">{t(feature)}</span></li>)}
               </ul>
             </div>
           </aside>
-          <article>
+          <article className="min-w-0">
             <DetailBlock title={t("Overview")}><p>{t(project.overview)}</p></DetailBlock>
             <DetailBlock title={t("Background and Problem")}><p>{t(project.background)}</p></DetailBlock>
             <DetailBlock title={t("Objectives")}><List items={project.objectives.map(t)} /></DetailBlock>
@@ -151,15 +151,15 @@ function Meta({ label, value }: { label: string; value: string }) {
 }
 
 function List({ items }: { items: string[] }) {
-  return <ul className="grid gap-3 md:grid-cols-2">{items.map((item) => <li key={item} className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4">{item}</li>)}</ul>;
+  return <ul className="grid min-w-0 gap-3 md:grid-cols-2">{items.map((item) => <li key={item} className="min-w-0 break-words border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4">{item}</li>)}</ul>;
 }
 
 function Process({ items }: { items: string[] }) {
-  return <div className="grid gap-px border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-4">{items.map((item, index) => <div key={item} className="bg-[var(--color-bg-primary)] p-5"><span className="font-mono text-[10px] text-[var(--color-accent-main)]">{String(index + 1).padStart(2, "0")}</span><p className="mt-8 font-semibold text-[var(--color-text-main)]">{item}</p></div>)}</div>;
+  return <div className="grid min-w-0 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 xl:grid-cols-4">{items.map((item, index) => <div key={item} className="min-w-0 bg-[var(--color-bg-primary)] p-5"><span className="font-mono text-[10px] text-[var(--color-accent-main)]">{String(index + 1).padStart(2, "0")}</span><p className="mt-8 break-words font-semibold text-[var(--color-text-main)]">{item}</p></div>)}</div>;
 }
 
 function IconBlock({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return <div className="flex gap-4 border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-5 text-[var(--color-text-secondary)]"><span className="text-[var(--color-accent-main)]">{icon}</span><p>{text}</p></div>;
+  return <div className="flex min-w-0 gap-4 border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-5 text-[var(--color-text-secondary)]"><span className="shrink-0 text-[var(--color-accent-main)]">{icon}</span><p className="min-w-0 break-words">{text}</p></div>;
 }
 
 function ProjectNav({ label, project, align = "left" }: { label: string; project: { slug: string; title: string; shortDescription: string }; align?: "left" | "right" }) {
