@@ -42,18 +42,34 @@ export default function AdminProjectFormPage() {
   const { projects, techStack } = usePortfolioData();
   const navigate = useNavigate();
   const source = id ? projects.find((project) => project.id === id) : undefined;
+  const formKey = id || "new";
   const [draft, setDraft] = useState<Project>(() => source || createDraftProject(projects));
+  const [loadedFormKey, setLoadedFormKey] = useState(formKey);
+  const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (loadedFormKey !== formKey) {
+      setDraft(source || createDraftProject(projects));
+      setLoadedFormKey(formKey);
+      setIsDirty(false);
+      return;
+    }
+
+    if (isDirty) return;
     if (source) setDraft(source);
     else if (!id) setDraft(createDraftProject(projects));
-  }, [id, projects, source]);
+  }, [formKey, id, isDirty, loadedFormKey, projects, source]);
+
+  const updateDraft = (updater: (current: Project) => Project) => {
+    setError("");
+    setIsDirty(true);
+    setDraft(updater);
+  };
 
   const set = <K extends keyof Project>(key: K, value: Project[K]) => {
-    setError("");
-    setDraft((current) => ({ ...current, [key]: value }));
+    updateDraft((current) => ({ ...current, [key]: value }));
   };
   const save = async (status: Project["status"]) => {
     const next = { ...draft, status, slug: draft.slug || slugify(draft.title) };
@@ -62,6 +78,7 @@ export default function AdminProjectFormPage() {
     try {
       portfolioRepository.updateProject(next);
       await portfolioRepository.flushPendingWrites();
+      setIsDirty(false);
       navigate("/admin/projects");
     } catch (saveError) {
       setError(formatAdminSaveError(saveError, "Project could not be saved to Supabase."));
@@ -78,7 +95,7 @@ export default function AdminProjectFormPage() {
       <div className="grid gap-6">
         <FormSection title="Project Identity">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminInput label="Title" value={draft.title} onChange={(value) => setDraft({ ...draft, title: value, slug: slugify(value) })} />
+            <AdminInput label="Title" value={draft.title} onChange={(value) => updateDraft((current) => ({ ...current, title: value, slug: slugify(value) }))} />
             <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
             <AdminInput label="Full Name" value={draft.fullName} onChange={(value) => set("fullName", value)} />
             <AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} />
