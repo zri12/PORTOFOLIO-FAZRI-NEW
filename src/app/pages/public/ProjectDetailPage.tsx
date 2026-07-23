@@ -46,7 +46,7 @@ export default function ProjectDetailPage() {
   const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
+    <main className="min-h-screen overflow-x-clip bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
       <section className="px-5 pb-16 sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 flex flex-wrap items-center gap-3 text-sm text-[var(--color-text-muted)]">
@@ -88,7 +88,7 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-14 sm:px-6 sm:py-20">
+      <section className="overflow-x-clip border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-10 xl:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] xl:gap-12">
           <aside className="min-w-0 space-y-8 xl:sticky xl:top-32 xl:self-start">
             <div>
