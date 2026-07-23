@@ -393,7 +393,12 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["A customer relationship management prototype tailored for a travel marketing pipeline.", "Prototipe manajemen hubungan pelanggan yang disesuaikan untuk pipeline marketing travel."],
   ["A focused employee leave management system replacing paper-based request workflows.", "Sistem manajemen cuti karyawan yang menggantikan alur permintaan berbasis kertas."],
   ["SINDEN focuses on academic visibility: turning scattered student records into structured, accessible dashboards.", "SINDEN berfokus pada visibilitas akademik: mengubah data siswa yang tersebar menjadi dashboard yang terstruktur dan mudah diakses."],
+  ["SINDEN is a responsive school information system built for SMP Negeri 1 Jakenan to centralize grade evaluation, assignment management, and academic monitoring.", "SINDEN adalah sistem informasi sekolah responsif yang dibangun untuk SMP Negeri 1 Jakenan guna memusatkan evaluasi nilai, manajemen tugas, dan monitoring akademik."],
+  ["The application separates access into administrator, teacher, and student roles, allowing each user to work through a dashboard and features that match their responsibilities.", "Aplikasi ini memisahkan akses menjadi peran administrator, guru, dan siswa, sehingga setiap pengguna dapat bekerja melalui dashboard dan fitur yang sesuai dengan tanggung jawabnya."],
   ["Evaluation data was difficult to review when stored across manual sheets and separate communication channels.", "Data evaluasi sulit ditinjau ketika tersimpan di lembar manual dan kanal komunikasi terpisah."],
+  ["The first SINDEN concept was created using Canva AI, but its source structure, role logic, and data workflows could not be edited or developed further.", "Konsep awal SINDEN dibuat menggunakan Canva AI, tetapi struktur sumber, logika peran, dan alur datanya tidak dapat diedit atau dikembangkan lebih lanjut."],
+  ["The school also managed important academic records through separate files and spreadsheets, making student data, grades, teacher assignments, and task submissions difficult to monitor from one place.", "Sekolah juga mengelola catatan akademik penting melalui file dan spreadsheet terpisah, sehingga data siswa, nilai, penugasan guru, dan pengumpulan tugas sulit dipantau dari satu tempat."],
+  ["A maintainable web application was therefore needed to replace the static prototype and connect the interface to real school data.", "Karena itu dibutuhkan aplikasi web yang mudah dikelola untuk menggantikan prototipe statis dan menghubungkan antarmuka dengan data sekolah nyata."],
   ["The interface centralizes student data, role-based views, reporting modules, and clear review workflows.", "Antarmuka memusatkan data siswa, tampilan berbasis peran, modul laporan, dan alur review yang jelas."],
   ["Single-page frontend, authenticated dashboard shell, service layer prepared for Supabase data access.", "Frontend single-page, shell dashboard terautentikasi, dan service layer yang disiapkan untuk akses data Supabase."],
   ["Students, classes, evaluations, attendance records, behavior notes, and user roles.", "Siswa, kelas, evaluasi, catatan kehadiran, catatan perilaku, dan peran pengguna."],
@@ -601,6 +606,68 @@ export const enToId = new Map([...enToIdEntries, ...extraEnToIdEntries]);
 export const idToEn = new Map([...enToIdEntries, ...extraEnToIdEntries].map(([en, id]) => [id, en]));
 
 const autoPhraseEntries: Array<[string, string]> = [
+  ["school information system", "sistem informasi sekolah"],
+  ["student evaluation and monitoring system", "sistem evaluasi dan monitoring siswa"],
+  ["responsive school information system", "sistem informasi sekolah yang responsif"],
+  ["grade evaluation", "evaluasi nilai"],
+  ["assignment management", "manajemen tugas"],
+  ["academic monitoring", "monitoring akademik"],
+  ["administrator", "administrator"],
+  ["administrators", "administrator"],
+  ["teacher", "guru"],
+  ["teachers", "guru"],
+  ["student", "siswa"],
+  ["students", "siswa"],
+  ["student roles", "peran siswa"],
+  ["user roles", "peran pengguna"],
+  ["each user", "setiap pengguna"],
+  ["their responsibilities", "tanggung jawabnya"],
+  ["centralize", "memusatkan"],
+  ["separates access", "memisahkan akses"],
+  ["role-based dashboards", "dashboard berbasis peran"],
+  ["role-based dashboard", "dashboard berbasis peran"],
+  ["source structure", "struktur sumber"],
+  ["role logic", "logika peran"],
+  ["data workflows", "alur data"],
+  ["important academic records", "catatan akademik penting"],
+  ["separate files", "file terpisah"],
+  ["spreadsheets", "spreadsheet"],
+  ["student data", "data siswa"],
+  ["teacher assignments", "penugasan guru"],
+  ["task submissions", "pengumpulan tugas"],
+  ["one place", "satu tempat"],
+  ["maintainable web application", "aplikasi web yang mudah dikelola"],
+  ["static prototype", "prototipe statis"],
+  ["real school data", "data sekolah nyata"],
+  ["created using", "dibuat menggunakan"],
+  ["developed further", "dikembangkan lebih lanjut"],
+  ["could not be edited", "tidak dapat diedit"],
+  ["dashboard and features", "dashboard dan fitur"],
+  ["features that match", "fitur yang sesuai dengan"],
+  ["built for", "dibangun untuk"],
+  ["to work through", "untuk bekerja melalui"],
+  ["information system", "sistem informasi"],
+  ["therefore needed", "karena itu dibutuhkan"],
+  ["to replace", "untuk menggantikan"],
+  ["connect the interface", "menghubungkan antarmuka"],
+  ["managed", "mengelola"],
+  ["monitor", "memantau"],
+  ["from one place", "dari satu tempat"],
+  ["grades", "nilai"],
+  ["access", "akses"],
+  ["roles", "peran"],
+  ["using", "menggunakan"],
+  ["allowing", "sehingga"],
+  ["into", "menjadi"],
+  ["with", "dengan"],
+  ["and", "dan"],
+  ["for", "untuk"],
+  ["the", "ini"],
+  ["is a", "adalah"],
+  ["was", "telah"],
+  ["academic", "akademik"],
+  ["application", "aplikasi"],
+  ["applications", "aplikasi"],
   ["web development", "pengembangan web"],
   ["web application", "aplikasi web"],
   ["web applications", "aplikasi web"],
@@ -658,8 +725,6 @@ function preserveCase(source: string, translated: string) {
 
 function autoTranslateByPhrases(value: string, language: Language) {
   if (value.length < 24) return value;
-  const wordCount = value.trim().split(/\s+/).filter(Boolean).length;
-  if (wordCount > 5) return value;
   const entries = language === "id" ? autoPhraseEntries : Array.from(autoPhraseIdToEn.entries());
   let changed = false;
   let result = value;
@@ -677,6 +742,24 @@ function autoTranslateByPhrases(value: string, language: Language) {
   return changed ? result : value;
 }
 
+function translateBySentence(value: string, dictionary: Map<string, string>) {
+  const parts = value.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g);
+  if (!parts || parts.length < 2) return value;
+  let changed = false;
+
+  const translated = parts.map((part) => {
+    const leading = part.match(/^\s*/)?.[0] || "";
+    const trailing = part.match(/\s*$/)?.[0] || "";
+    const core = part.trim();
+    const match = dictionary.get(core);
+    if (!match) return part;
+    changed = true;
+    return `${leading}${match}${trailing}`;
+  }).join("");
+
+  return changed ? translated : value;
+}
+
 export function getInitialLanguage(): Language {
   if (typeof window === "undefined") return "en";
   const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -685,6 +768,10 @@ export function getInitialLanguage(): Language {
 }
 
 export function translateText(value: string, language: Language) {
-  if (language === "en") return idToEn.get(value) || autoTranslateByPhrases(value, language);
-  return enToId.get(value) || autoTranslateByPhrases(value, language);
+  const dictionary = language === "en" ? idToEn : enToId;
+  const direct = dictionary.get(value);
+  if (direct) return direct;
+  const sentenceTranslated = translateBySentence(value, dictionary);
+  if (sentenceTranslated !== value) return sentenceTranslated;
+  return autoTranslateByPhrases(value, language);
 }
