@@ -90,7 +90,7 @@ export default function ProjectDetailPage() {
 
       <section className="overflow-x-clip border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-10 xl:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] xl:gap-12">
-          <aside className="min-w-0 space-y-8 xl:sticky xl:top-32 xl:max-h-[calc(100svh-9rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain xl:pr-3">
+          <aside className="min-w-0 space-y-8 xl:sticky xl:top-32 xl:self-start">
             <div>
               <h2 className="font-manrope text-xl font-bold">{t("Tech Stack")}</h2>
               <div className="mt-4 flex flex-wrap gap-2">
