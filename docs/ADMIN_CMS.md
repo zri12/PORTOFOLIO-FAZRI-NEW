@@ -125,6 +125,18 @@ Experience management should include role, organization, type, period or dates, 
 
 Certificate management should include title, issuer, category, issue date, credential ID, credential URL, image, featured flag, published flag, and order.
 
+## Article Editor
+
+Article content uses a linear Markdown-style editor instead of separate controls for every paragraph, heading, quote, and list. Admin users can paste or type normal text with:
+
+- `##` for a section heading
+- `###` for a subheading
+- `>` for a quote and `> -- Name` for its attribution
+- `-` or `*` for an unordered list
+- `1.` for an ordered list
+
+An image can be inserted after any text section. Inserting an image automatically creates the next Markdown text section so writing can continue below it. Markdown is parsed into safe React content; raw HTML must not be rendered.
+
 ## Comments
 
 Comment moderation should support:

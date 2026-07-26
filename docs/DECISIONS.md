@@ -174,6 +174,18 @@ Decision: Keep the full splash as a boot-only public overlay and mount one share
 
 Consequences: Admin remains unchanged, route content remains unchanged, and WebGL cleanup/reduced-motion fallback is required for every renderer.
 
+## ADR-016 - Article Text Uses Safe Markdown Sections
+
+Status: Accepted
+
+Date: 2026-07-27
+
+Context: Creating blog content with separate paragraph, heading, quote, and list controls makes pasting and editing a continuous article unnecessarily slow.
+
+Decision: Article text is authored in Markdown-style sections separated only when an image is inserted. The application parses a limited safe syntax into React elements and never renders raw HTML.
+
+Consequences: Existing structured article blocks are normalized when opened in the admin editor, text can be pasted as one continuous source, and images remain explicit structured blocks with upload metadata.
+
 ## Future ADR Template
 
 ```markdown

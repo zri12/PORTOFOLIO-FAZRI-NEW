@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, CheckCircle2, Heading2, ImagePlus, List, Pilcrow, Plus, Quote, Save, Trash } from "lucide-react";
+import { CheckCircle2, Code2, ImagePlus, Save, Trash } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { normalizeArticleEditorBlocks } from "../../lib/articleMarkdown";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { slugify } from "../../lib/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
@@ -13,8 +14,13 @@ import type { Article, ArticleBlock } from "../../types/portfolio";
 const blockId = () => crypto.randomUUID();
 
 function newDraft(): Article {
-  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "", tags: [], coverImage: "", coverAlt: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "paragraph", text: "" }], displayOrder: 0 };
+  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "", tags: [], coverImage: "", coverAlt: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "markdown", source: "" }], displayOrder: 0 };
 }
+
+const prepareArticleForEditor = (article: Article): Article => ({
+  ...article,
+  blocks: normalizeArticleEditorBlocks(article.blocks),
+});
 
 export default function AdminArticleFormPage() {
   const { id } = useParams();
@@ -22,7 +28,7 @@ export default function AdminArticleFormPage() {
   const { articles } = usePortfolioData();
   const source = id ? articles.find((item) => item.id === id) : undefined;
   const formKey = id || "new";
-  const [draft, setDraft] = useState<Article>(() => source || newDraft());
+  const [draft, setDraft] = useState<Article>(() => source ? prepareArticleForEditor(source) : newDraft());
   const [loadedFormKey, setLoadedFormKey] = useState(formKey);
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,14 +36,14 @@ export default function AdminArticleFormPage() {
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
-      setDraft(source || newDraft());
+      setDraft(source ? prepareArticleForEditor(source) : newDraft());
       setLoadedFormKey(formKey);
       setIsDirty(false);
       return;
     }
 
     if (isDirty) return;
-    if (source) setDraft(source);
+    if (source) setDraft(prepareArticleForEditor(source));
   }, [formKey, isDirty, loadedFormKey, source]);
 
   const set = <K extends keyof Article>(key: K, value: Article[K]) => {
@@ -46,22 +52,17 @@ export default function AdminArticleFormPage() {
     setDraft((current) => ({ ...current, [key]: value }));
   };
   const updateBlock = (index: number, block: ArticleBlock) => set("blocks", draft.blocks.map((item, itemIndex) => itemIndex === index ? block : item));
-  const removeBlock = (index: number) => set("blocks", draft.blocks.filter((_, itemIndex) => itemIndex !== index));
-  const moveBlock = (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= draft.blocks.length) return;
+  const addImageAfter = (index: number) => {
     const next = [...draft.blocks];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    next.splice(
+      index + 1,
+      0,
+      { id: blockId(), type: "image", url: "", alt: "", caption: "" },
+      { id: blockId(), type: "markdown", source: "" },
+    );
     set("blocks", next);
   };
-  const addBlock = (type: ArticleBlock["type"]) => {
-    const block: ArticleBlock = type === "heading" ? { id: blockId(), type, text: "", level: 2 }
-      : type === "image" ? { id: blockId(), type, url: "", alt: "", caption: "" }
-      : type === "quote" ? { id: blockId(), type, text: "", attribution: "" }
-      : type === "list" ? { id: blockId(), type, items: [""], ordered: false }
-      : { id: blockId(), type, text: "" };
-    set("blocks", [...draft.blocks, block]);
-  };
+  const removeImage = (index: number) => set("blocks", normalizeArticleEditorBlocks(draft.blocks.filter((_, itemIndex) => itemIndex !== index)));
 
   const save = async (status: Article["status"]) => {
     const title = draft.title.trim();
@@ -74,14 +75,15 @@ export default function AdminArticleFormPage() {
       setError("Slug is already used by another article.");
       return;
     }
-    if (!draft.blocks.length) {
-      setError("Add at least one content block.");
+    const editorBlocks = normalizeArticleEditorBlocks(draft.blocks);
+    if (!editorBlocks.some((block) => block.type === "markdown" && block.source.trim())) {
+      setError("Write article content before saving.");
       return;
     }
     setSaving(true);
     setError("");
     try {
-      portfolioRepository.updateArticle({ ...draft, status, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
+      portfolioRepository.updateArticle({ ...draft, blocks: editorBlocks, status, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/articles");
@@ -94,7 +96,7 @@ export default function AdminArticleFormPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <AdminPageHeader title={id ? "Edit Article" : "New Article"} description="Build an article with structured content blocks, images, publication controls, and search metadata." />
+      <AdminPageHeader title={id ? "Edit Article" : "New Article"} description="Write continuous Markdown-style content, insert images between text sections, and manage publication metadata." />
       <div className="grid gap-6">
         <FormSection title="Article Details">
           <AdminInput label="Title" value={draft.title} onChange={(value) => { set("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
@@ -111,9 +113,16 @@ export default function AdminArticleFormPage() {
 
         <FormSection title="Article Content">
           <div className="space-y-4">
-            {draft.blocks.map((block, index) => <BlockEditor key={block.id} block={block} index={index} total={draft.blocks.length} articleSlug={draft.slug || draft.id} onChange={(next) => updateBlock(index, next)} onRemove={() => removeBlock(index)} onMove={moveBlock} />)}
+            {draft.blocks.map((block, index) => {
+              if (block.type === "markdown") {
+                return <MarkdownBlockEditor key={block.id} block={block} sectionNumber={draft.blocks.slice(0, index + 1).filter((item) => item.type === "markdown").length} onChange={(next) => updateBlock(index, next)} onAddImage={() => addImageAfter(index)} />;
+              }
+              if (block.type === "image") {
+                return <ImageBlockEditor key={block.id} block={block} imageNumber={draft.blocks.slice(0, index + 1).filter((item) => item.type === "image").length} articleSlug={draft.slug || draft.id} onChange={(next) => updateBlock(index, next)} onRemove={() => removeImage(index)} />;
+              }
+              return null;
+            })}
           </div>
-          <div className="flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-5"><AddBlockButton icon={Pilcrow} label="Paragraph" onClick={() => addBlock("paragraph")} /><AddBlockButton icon={Heading2} label="Heading" onClick={() => addBlock("heading")} /><AddBlockButton icon={ImagePlus} label="Image" onClick={() => addBlock("image")} /><AddBlockButton icon={Quote} label="Quote" onClick={() => addBlock("quote")} /><AddBlockButton icon={List} label="List" onClick={() => addBlock("list")} /></div>
         </FormSection>
 
         <FormSection title="Google Preview">
@@ -129,10 +138,50 @@ export default function AdminArticleFormPage() {
   );
 }
 
-function BlockEditor({ block, index, total, articleSlug, onChange, onRemove, onMove }: { block: ArticleBlock; index: number; total: number; articleSlug: string; onChange: (block: ArticleBlock) => void; onRemove: () => void; onMove: (index: number, direction: -1 | 1) => void }) {
-  return <section className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4"><div className="mb-4 flex items-center justify-between gap-3"><span className="font-mono text-[10px] font-bold uppercase tracking-[.16em] text-[var(--color-accent-main)]">{String(index + 1).padStart(2, "0")} / {block.type}</span><div className="flex gap-1"><button type="button" disabled={index === 0} onClick={() => onMove(index, -1)} title="Move up" className="p-2 disabled:opacity-30"><ArrowUp size={15} /></button><button type="button" disabled={index === total - 1} onClick={() => onMove(index, 1)} title="Move down" className="p-2 disabled:opacity-30"><ArrowDown size={15} /></button><button type="button" onClick={onRemove} title="Remove block" className="p-2 text-red-300"><Trash size={15} /></button></div></div>{block.type === "paragraph" && <textarea rows={6} value={block.text} onChange={(event) => onChange({ ...block, text: event.target.value })} className="w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm leading-6 outline-none" />}{block.type === "heading" && <div className="grid gap-3 sm:grid-cols-[8rem_1fr]"><select value={block.level} onChange={(event) => onChange({ ...block, level: Number(event.target.value) as 2 | 3 })} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm"><option value={2}>Heading 2</option><option value={3}>Heading 3</option></select><input value={block.text} onChange={(event) => onChange({ ...block, text: event.target.value })} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /></div>}{block.type === "quote" && <div className="grid gap-3"><textarea rows={4} value={block.text} onChange={(event) => onChange({ ...block, text: event.target.value })} className="w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /><input value={block.attribution} onChange={(event) => onChange({ ...block, attribution: event.target.value })} placeholder="Attribution" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /></div>}{block.type === "list" && <div className="grid gap-3"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.ordered} onChange={(event) => onChange({ ...block, ordered: event.target.checked })} /> Numbered list</label><textarea rows={6} value={block.items.join("\n")} onChange={(event) => onChange({ ...block, items: event.target.value.split("\n") })} placeholder="One item per line" className="w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /></div>}{block.type === "image" && <div className="grid gap-3"><AdminImageField label="Content Image" value={block.url} folder={`articles/${articleSlug}/content`} hint="Upload an image at its original ratio for this article block." cropMode="original" onChange={(value) => onChange({ ...block, url: value })} /><input value={block.alt} onChange={(event) => onChange({ ...block, alt: event.target.value })} placeholder="Alt text" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /><input value={block.caption} onChange={(event) => onChange({ ...block, caption: event.target.value })} placeholder="Caption (optional)" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" /></div>}</section>;
+type MarkdownBlock = Extract<ArticleBlock, { type: "markdown" }>;
+type ImageBlock = Extract<ArticleBlock, { type: "image" }>;
+
+function MarkdownBlockEditor({ block, sectionNumber, onChange, onAddImage }: { block: MarkdownBlock; sectionNumber: number; onChange: (block: MarkdownBlock) => void; onAddImage: () => void }) {
+  return (
+    <section className="overflow-hidden border border-[var(--color-border)] bg-[#080d13]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3">
+        <div className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[.14em] text-[var(--color-accent-main)]">
+          <Code2 size={15} /> Content {String(sectionNumber).padStart(2, "0")}.md
+        </div>
+        <button type="button" onClick={onAddImage} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold hover:border-[var(--color-accent-main)]">
+          <ImagePlus size={15} /> Add image after this text
+        </button>
+      </div>
+      <div className="grid gap-2 border-b border-[var(--color-border)] px-4 py-3 font-mono text-[11px] leading-5 text-[var(--color-text-muted)] sm:grid-cols-2 lg:grid-cols-5">
+        <span><b className="text-[var(--color-text-secondary)]">##</b> Heading</span>
+        <span><b className="text-[var(--color-text-secondary)]">###</b> Subheading</span>
+        <span><b className="text-[var(--color-text-secondary)]">&gt;</b> Quote</span>
+        <span><b className="text-[var(--color-text-secondary)]">-</b> Bullet list</span>
+        <span><b className="text-[var(--color-text-secondary)]">1.</b> Numbered list</span>
+      </div>
+      <textarea
+        rows={18}
+        value={block.source}
+        onChange={(event) => onChange({ ...block, source: event.target.value })}
+        placeholder={"Paste or write the article here...\n\n## Section heading\n\nNormal paragraph text.\n\n> A meaningful quote\n> -- Attribution\n\n- First point\n- Second point"}
+        className="min-h-[360px] w-full resize-y bg-transparent p-5 font-mono text-sm leading-7 text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:bg-white/[.015]"
+      />
+    </section>
+  );
 }
 
-function AddBlockButton({ icon: Icon, label, onClick }: { icon: typeof Plus; label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold hover:border-[var(--color-accent-main)]"><Icon size={15} /> {label}</button>;
+function ImageBlockEditor({ block, imageNumber, articleSlug, onChange, onRemove }: { block: ImageBlock; imageNumber: number; articleSlug: string; onChange: (block: ImageBlock) => void; onRemove: () => void }) {
+  return (
+    <section className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[.14em] text-[var(--color-accent-main)]"><ImagePlus size={15} /> Image {String(imageNumber).padStart(2, "0")}</span>
+        <button type="button" onClick={onRemove} className="inline-flex items-center gap-2 px-2 py-1 text-xs font-bold text-red-300"><Trash size={14} /> Remove image</button>
+      </div>
+      <div className="grid gap-3">
+        <AdminImageField label="Content Image" value={block.url} folder={`articles/${articleSlug}/content`} hint="Upload the image at its original ratio. A new text editor is automatically available below this image." cropMode="original" onChange={(value) => onChange({ ...block, url: value })} />
+        <input value={block.alt} onChange={(event) => onChange({ ...block, alt: event.target.value })} placeholder="Alt text" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" />
+        <input value={block.caption} onChange={(event) => onChange({ ...block, caption: event.target.value })} placeholder="Caption (optional)" className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-sm outline-none" />
+      </div>
+    </section>
+  );
 }

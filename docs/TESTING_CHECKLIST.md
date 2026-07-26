@@ -84,6 +84,14 @@ Tech stack, creative works, experience, certificates, comments, messages, media,
 - [ ] success/error feedback
 - [ ] mobile layout
 
+Article editor:
+
+- [ ] existing legacy text blocks open as one Markdown section
+- [ ] headings, quotes, paragraphs, and lists render from Markdown syntax
+- [ ] inserting an image preserves text before it and creates text after it
+- [ ] repeated text-image-text sequences save and reload in the same order
+- [ ] raw HTML is displayed as text and is never executed
+
 ## Local Persistence
 
 - [ ] Save data and refresh.

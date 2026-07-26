@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useLanguage } from "../../context/LanguageContext";
+import { parseArticleMarkdown } from "../../lib/articleMarkdown";
 import type { ArticleBlock } from "../../types/portfolio";
 
 export default function ArticleDetailPage() {
@@ -65,6 +66,9 @@ export default function ArticleDetailPage() {
 }
 
 function ArticleBlockView({ block }: { block: ArticleBlock }) {
+  if (block.type === "markdown") {
+    return <>{parseArticleMarkdown(block.source, block.id).map((parsedBlock) => <ArticleBlockView key={parsedBlock.id} block={parsedBlock} />)}</>;
+  }
   if (block.type === "heading") return block.level === 3 ? <h3 className="mb-4 mt-9 font-manrope text-2xl font-bold">{block.text}</h3> : <h2 className="mb-5 mt-12 font-manrope text-3xl font-bold">{block.text}</h2>;
   if (block.type === "paragraph") return <p className="my-6 text-[1.05rem] leading-8 text-[var(--color-text-secondary)]">{block.text}</p>;
   if (block.type === "quote") return <blockquote className="my-10 border-l-2 border-[var(--color-accent-main)] bg-[var(--color-surface-elevated)] px-6 py-7"><p className="font-manrope text-xl font-semibold leading-8">“{block.text}”</p>{block.attribution && <cite className="mt-4 block text-sm not-italic text-[var(--color-text-muted)]">{block.attribution}</cite>}</blockquote>;

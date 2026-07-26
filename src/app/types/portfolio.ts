@@ -129,6 +129,7 @@ export interface Certificate {
 }
 
 export type ArticleBlock =
+  | { id: string; type: "markdown"; source: string }
   | { id: string; type: "paragraph"; text: string }
   | { id: string; type: "heading"; text: string; level: 2 | 3 }
   | { id: string; type: "image"; url: string; alt: string; caption: string }
