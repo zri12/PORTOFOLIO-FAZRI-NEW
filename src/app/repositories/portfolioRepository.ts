@@ -1,4 +1,5 @@
 import { portfolioSeed } from "../data/seed/portfolioSeed";
+import { ensureArticleTranslations, ensureProjectTranslations } from "../lib/localizedContent";
 import { slugify, uid, writeJson } from "../lib/storage";
 import { isSupabaseEnabled } from "../lib/supabase/client";
 import { supabasePortfolioRepository } from "./supabasePortfolioRepository";
@@ -19,7 +20,7 @@ import type {
 const STORAGE_KEY = "fazri-portfolio-demo-v3";
 const CACHE_KEY = "fazri-portfolio-supabase-cache-v4";
 const PRIVATE_CACHE_KEY = "fazri-portfolio-supabase-admin-cache-v4";
-const CACHE_SCHEMA_VERSION = 4;
+const CACHE_SCHEMA_VERSION = 5;
 const CHANGE_EVENT = "portfolio-data-change";
 const PENDING_COMMENTS_KEY = "fazri-portfolio-pending-comments-v1";
 let cachedData: PortfolioData | null = null;
@@ -113,7 +114,7 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
   const seedProjectsBySlug = new Map(seed.projects.map((project) => [project.slug, project]));
   const projects = asArray(value.projects, seed.projects).map((project, index) => {
     const fallback = seedProjectsBySlug.get(project.slug) || seed.projects[index] || seed.projects[0];
-    return {
+    const normalized: Project = {
       ...fallback,
       ...project,
       id: project.id || fallback.id || uid("project"),
@@ -132,8 +133,15 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       mobilePreviewImage: project.mobilePreviewImage ?? fallback.mobilePreviewImage ?? "",
       relatedProjectSlug: project.relatedProjectSlug ?? fallback.relatedProjectSlug,
       displayOrder: project.displayOrder ?? fallback.displayOrder ?? index + 1,
+      translations: {
+        ...(fallback.translations ?? {}),
+        ...(project.translations ?? {}),
+      },
     };
+    return { ...normalized, translations: ensureProjectTranslations(normalized) };
   });
+
+  const seedArticlesBySlug = new Map(seed.articles.map((article) => [article.slug, article]));
 
   return {
     profile: { ...seed.profile, ...(value.profile || {}) },
@@ -168,15 +176,23 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       id: item.id || uid("cert"),
       displayOrder: item.displayOrder ?? index + 1,
     })),
-    articles: asArray(value.articles, seed.articles).map((item, index) => ({
-      ...seed.articles[index % Math.max(seed.articles.length, 1)],
-      ...item,
-      id: item.id || uid("article"),
-      slug: item.slug || slugify(item.title || "article"),
-      tags: asArray(item.tags, []),
-      blocks: asArray(item.blocks, []),
-      displayOrder: item.displayOrder ?? index + 1,
-    })),
+    articles: asArray(value.articles, seed.articles).map((item, index) => {
+      const fallback = seedArticlesBySlug.get(item.slug);
+      const normalized: Article = {
+        ...(fallback ?? item),
+        ...item,
+        id: item.id || uid("article"),
+        slug: item.slug || slugify(item.title || "article"),
+        tags: asArray(item.tags, []),
+        blocks: asArray(item.blocks, []),
+        displayOrder: item.displayOrder ?? index + 1,
+        translations: {
+          ...(fallback?.translations ?? {}),
+          ...(item.translations ?? {}),
+        },
+      };
+      return { ...normalized, translations: ensureArticleTranslations(normalized) };
+    }),
     comments: asArray(value.comments, seed.comments).map((item) => ({ ...item, status: item.status || "approved", likes: item.likes ?? 0, pinned: item.pinned ?? false })),
     messages: asArray(value.messages, seed.messages).map((item) => ({ ...item, status: item.status || "New" })),
     media: asArray(value.media, seed.media),

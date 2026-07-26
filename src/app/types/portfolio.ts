@@ -1,5 +1,6 @@
 export type PublishStatus = "draft" | "published" | "archived";
 export type LevelLabel = "Main Stack" | "Frequently Used" | "Familiar" | "Currently Learning";
+export type ContentLanguage = "en" | "id";
 
 export interface Profile {
   fullName: string;
@@ -25,7 +26,32 @@ export interface Profile {
   aboutImageUrl: string;
 }
 
-export interface Project {
+export interface ProjectTranslation {
+  title: string;
+  fullName: string;
+  category: string;
+  type: string;
+  role: string;
+  shortDescription: string;
+  fullDescription: string;
+  overview: string;
+  background: string;
+  objectives: string[];
+  targetUsers: string[];
+  responsibilities: string[];
+  solution: string;
+  features: string[];
+  architecture: string;
+  dataStructure: string;
+  process: string[];
+  challenges: string[];
+  decisions: string[];
+  testing: string;
+  deployment: string;
+  result: string;
+}
+
+export interface Project extends ProjectTranslation {
   id: string;
   slug: string;
   title: string;
@@ -63,6 +89,7 @@ export interface Project {
   mobilePreviewImage: string;
   relatedProjectSlug?: string;
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, ProjectTranslation>>;
 }
 
 export interface Technology {
@@ -136,7 +163,18 @@ export type ArticleBlock =
   | { id: string; type: "quote"; text: string; attribution: string }
   | { id: string; type: "list"; items: string[]; ordered: boolean };
 
-export interface Article {
+export interface ArticleTranslation {
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  coverAlt: string;
+  seoTitle: string;
+  seoDescription: string;
+  blocks: ArticleBlock[];
+}
+
+export interface Article extends ArticleTranslation {
   id: string;
   slug: string;
   title: string;
@@ -155,6 +193,7 @@ export interface Article {
   seoDescription: string;
   blocks: ArticleBlock[];
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, ArticleTranslation>>;
 }
 
 export interface VisitorComment {

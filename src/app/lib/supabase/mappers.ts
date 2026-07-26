@@ -1,6 +1,7 @@
 import type {
   Article,
   ArticleBlock,
+  ArticleTranslation,
   Certificate,
   ContactMessage,
   CreativeWork,
@@ -8,6 +9,7 @@ import type {
   PortfolioData,
   Profile,
   Project,
+  ProjectTranslation,
   SiteSettings,
   Technology,
   VisitorComment,
@@ -21,10 +23,66 @@ const asString = (value: unknown, fallback = "") => typeof value === "string" ? 
 const asBool = (value: unknown, fallback = false) => typeof value === "boolean" ? value : fallback;
 const asNumber = (value: unknown, fallback = 0) => typeof value === "number" ? value : fallback;
 const asDate = (value: unknown) => asString(value).slice(0, 10);
+const asRecord = (value: unknown): Row | null => Boolean(value) && typeof value === "object" && !Array.isArray(value) ? value as Row : null;
 
 const asArticleBlocks = (value: unknown): ArticleBlock[] => Array.isArray(value)
   ? value.filter((block): block is ArticleBlock => Boolean(block) && typeof block === "object" && typeof (block as { type?: unknown }).type === "string")
   : [];
+
+function asProjectTranslation(value: unknown): ProjectTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return {
+    title: asString(row.title),
+    fullName: asString(row.fullName),
+    category: asString(row.category),
+    type: asString(row.type),
+    role: asString(row.role),
+    shortDescription: asString(row.shortDescription),
+    fullDescription: asString(row.fullDescription),
+    overview: asString(row.overview),
+    background: asString(row.background),
+    objectives: asStringArray(row.objectives),
+    targetUsers: asStringArray(row.targetUsers),
+    responsibilities: asStringArray(row.responsibilities),
+    solution: asString(row.solution),
+    features: asStringArray(row.features),
+    architecture: asString(row.architecture),
+    dataStructure: asString(row.dataStructure),
+    process: asStringArray(row.process),
+    challenges: asStringArray(row.challenges),
+    decisions: asStringArray(row.decisions),
+    testing: asString(row.testing),
+    deployment: asString(row.deployment),
+    result: asString(row.result),
+  };
+}
+
+function asArticleTranslation(value: unknown): ArticleTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return {
+    title: asString(row.title),
+    excerpt: asString(row.excerpt),
+    category: asString(row.category),
+    tags: asStringArray(row.tags),
+    coverAlt: asString(row.coverAlt),
+    seoTitle: asString(row.seoTitle),
+    seoDescription: asString(row.seoDescription),
+    blocks: asArticleBlocks(row.blocks),
+  };
+}
+
+function asTranslations<T>(
+  value: unknown,
+  parser: (translation: unknown) => T | undefined,
+): Partial<Record<"en" | "id", T>> | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  const en = parser(row.en);
+  const id = parser(row.id);
+  return en || id ? { ...(en ? { en } : {}), ...(id ? { id } : {}) } : undefined;
+}
 
 function publicAssetUrl(value: unknown) {
   const source = asString(value);
@@ -154,6 +212,7 @@ export function settingsToRow(settings: SiteSettings): Row {
 }
 
 export function mapProject(row: Row, techStack: string[] = []): Project {
+  const decisionsEnvelope = asRecord(row.decisions);
   return {
     id: asString(row.id),
     slug: asString(row.slug),
@@ -181,7 +240,7 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     process: asStringArray(row.process),
     gallery: asAssetArray(row.gallery),
     challenges: asStringArray(row.challenges),
-    decisions: asStringArray(row.decisions),
+    decisions: asStringArray(decisionsEnvelope?.items ?? row.decisions),
     testing: asString(row.testing),
     deployment: asString(row.deployment),
     result: asString(row.result),
@@ -192,6 +251,7 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     mobilePreviewImage: publicAssetUrl(row.mobile_preview_path),
     relatedProjectSlug: asString(row.related_project_slug) || undefined,
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(decisionsEnvelope?.translations, asProjectTranslation),
   };
 }
 
@@ -230,7 +290,11 @@ export function projectToRow(project: Project): Row {
     process: project.process,
     gallery: toStoredAssetArray(project.gallery),
     challenges: project.challenges,
-    decisions: project.decisions,
+    decisions: {
+      version: 1,
+      items: project.decisions,
+      translations: project.translations ?? {},
+    },
     display_order: project.displayOrder,
   };
 }
@@ -365,6 +429,7 @@ export const certificateToRow = (item: Certificate): Row => ({
 });
 
 export function mapArticle(row: Row): Article {
+  const contentEnvelope = asRecord(row.content);
   return {
     id: asString(row.id),
     slug: asString(row.slug),
@@ -382,8 +447,9 @@ export function mapArticle(row: Row): Article {
     readingTime: asNumber(row.reading_time, 1),
     seoTitle: asString(row.seo_title),
     seoDescription: asString(row.seo_description),
-    blocks: asArticleBlocks(row.content),
+    blocks: asArticleBlocks(contentEnvelope?.blocks ?? row.content),
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(contentEnvelope?.translations, asArticleTranslation),
   };
 }
 
@@ -402,7 +468,11 @@ export const articleToRow = (item: Article): Row => ({
   reading_time: item.readingTime,
   seo_title: item.seoTitle,
   seo_description: item.seoDescription,
-  content: item.blocks,
+  content: {
+    version: 1,
+    blocks: item.blocks,
+    translations: item.translations ?? {},
+  },
   display_order: item.displayOrder,
 });
 

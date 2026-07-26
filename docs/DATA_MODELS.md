@@ -18,6 +18,10 @@ Current TypeScript models live in `src/app/types/portfolio.ts`.
 | `SiteSettings` | Site-level toggles, SEO values, default mode, and feature visibility settings. |
 | `Article` | Blog metadata, publication state, SEO fields, cover media, and structured content blocks. |
 | `ArticleBlock` | Safe Markdown text section or image, with legacy paragraph, heading, quote, and list blocks retained for compatibility. Raw HTML is never rendered. |
+
+Project and article author-written content is localized through explicit `translations.en` and `translations.id` objects. Shared fields such as slug, status, dates, URLs, technology, and media remain outside translations. Legacy records are assigned to one detected source language rather than duplicated into both languages.
+
+Until dedicated database columns are introduced, localized project data is versioned inside the existing `projects.decisions` JSONB value and localized article data inside `articles.content` JSONB. The mappers remain backward-compatible with the former array values.
 | `PortfolioData` | Root aggregate for all portfolio content. |
 
 Current enum-like unions:

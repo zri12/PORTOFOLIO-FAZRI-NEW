@@ -1,5 +1,7 @@
 import { BarChart3, Bell, CalendarDays, CheckCircle2, ChevronDown, Circle, FlaskConical, LayoutDashboard, Search, Users } from "lucide-react";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { useLanguage } from "../../context/LanguageContext";
+import { localizeProject } from "../../lib/localizedContent";
 
 type ProjectPreviewProps = { slug: string; compact?: boolean; className?: string };
 
@@ -18,17 +20,19 @@ function Bars({ values = [38, 68, 52, 84, 66, 94] }: { values?: number[] }) {
 
 export function ProjectPreview({ slug, compact = false, className = "" }: ProjectPreviewProps) {
   const { projects } = usePortfolioData();
-  const project = projects.find((entry) => entry.slug === slug) ?? projects[0];
+  const { language } = useLanguage();
+  const sourceProject = projects.find((entry) => entry.slug === slug) ?? projects[0];
+  const project = sourceProject ? localizeProject(sourceProject, language) : undefined;
   const pad = compact ? "p-3" : "p-4 sm:p-5";
   const text = compact ? "text-[7px]" : "text-[9px]";
 
   if (!project) return null;
 
   if (project.coverImage) {
+    const naturalRatioClassName = className.replace(/\baspect-\[[^\]]+\]\b/g, "");
     return (
-      <div className={`project-preview relative h-full overflow-hidden rounded-[1.25rem] border border-white/10 bg-slate-950 shadow-2xl ${className}`}>
-        <img src={project.coverImage} alt={`${project.title} preview`} className="h-full w-full object-cover" loading="lazy" />
-        <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,.08)_48%,transparent_50%)]" />
+      <div className={`project-preview relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-slate-950 shadow-2xl ${naturalRatioClassName}`}>
+        <img src={project.coverImage} alt={`${project.title} preview`} className="h-auto w-full object-contain" loading="lazy" />
       </div>
     );
   }

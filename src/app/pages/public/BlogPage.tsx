@@ -5,12 +5,15 @@ import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useLanguage } from "../../context/LanguageContext";
 import type { Article } from "../../types/portfolio";
+import { hasArticleLanguage, localizeArticle } from "../../lib/localizedContent";
 
 export default function BlogPage() {
   const { articles, settings, profile } = usePortfolioData();
   const { language, t } = useLanguage();
   const published = articles
     .filter((article) => article.status === "published" && (!article.publishedAt || new Date(article.publishedAt) <= new Date()))
+    .filter((article) => hasArticleLanguage(article, language))
+    .map((article) => localizeArticle(article, language))
     .sort((a, b) => Number(b.featured) - Number(a.featured) || b.publishedAt.localeCompare(a.publishedAt));
   const featured = published[0];
   const rest = featured ? published.slice(1) : [];
@@ -51,8 +54,8 @@ export default function BlogPage() {
       <section className="mx-auto mt-10 max-w-7xl px-5 sm:px-6" aria-label={t("Article list")}>
         {published.length === 0 ? (
           <div className="border-y border-[var(--color-border)] py-16">
-            <p className="font-manrope text-2xl font-bold">{t("No published articles yet.")}</p>
-            <p className="mt-3 text-[var(--color-text-secondary)]">{t("New articles will appear here after they are published from the admin.")}</p>
+            <p className="font-manrope text-2xl font-bold">{language === "id" ? "Belum ada artikel dalam bahasa Indonesia." : "No articles are available in English yet."}</p>
+            <p className="mt-3 text-[var(--color-text-secondary)]">{language === "id" ? "Versi Indonesia dapat ditambahkan melalui editor artikel di admin." : "Add the English version through the article editor in admin."}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -72,11 +75,11 @@ export default function BlogPage() {
 function FeaturedArticle({ article, t }: { article: Article; t: (value: string) => string }) {
   return (
     <article className="group grid overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_24px_80px_rgba(0,0,0,.18)] lg:grid-cols-[1.1fr_.9fr]">
-      <Link to={`/blog/${article.slug}`} className="relative block min-h-[280px] overflow-hidden bg-[var(--color-bg-secondary)] sm:min-h-[380px] lg:min-h-[460px]">
+      <Link to={`/blog/${article.slug}`} className="relative block self-start overflow-hidden bg-[var(--color-bg-secondary)]">
         {article.coverImage ? (
-          <img src={article.coverImage} alt={article.coverAlt || article.title} loading="eager" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+          <img src={article.coverImage} alt={article.coverAlt || article.title} loading="eager" className="h-auto w-full object-contain" />
         ) : (
-          <ArticleVisual category={article.category} featured />
+          <div className="min-h-[280px] sm:min-h-[380px] lg:min-h-[460px]"><ArticleVisual category={article.category} featured /></div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
         <span className="absolute left-5 top-5 border border-[var(--color-accent-main)]/35 bg-[var(--color-bg-primary)]/85 px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-main)] backdrop-blur">Featured</span>
@@ -103,11 +106,11 @@ function FeaturedArticle({ article, t }: { article: Article; t: (value: string) 
 function ArticleCard({ article, index, t }: { article: Article; index: number; t: (value: string) => string }) {
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/60 hover:shadow-[0_24px_65px_rgba(0,0,0,.22)]">
-      <Link to={`/blog/${article.slug}`} className="relative block aspect-[16/10] overflow-hidden bg-[var(--color-surface-elevated)]">
+      <Link to={`/blog/${article.slug}`} className="relative block overflow-hidden bg-[var(--color-surface-elevated)]">
         {article.coverImage ? (
-          <img src={article.coverImage} alt={article.coverAlt || article.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+          <img src={article.coverImage} alt={article.coverAlt || article.title} loading="lazy" className="h-auto w-full object-contain" />
         ) : (
-          <ArticleVisual category={article.category} />
+          <div className="aspect-[16/10]"><ArticleVisual category={article.category} /></div>
         )}
       </Link>
       <div className="flex flex-1 flex-col p-5 sm:p-6">

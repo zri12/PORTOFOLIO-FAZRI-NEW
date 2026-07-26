@@ -5,13 +5,16 @@ import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useLanguage } from "../../context/LanguageContext";
 import { parseArticleMarkdown } from "../../lib/articleMarkdown";
+import { hasArticleLanguage, localizeArticle } from "../../lib/localizedContent";
 import type { ArticleBlock } from "../../types/portfolio";
 
 export default function ArticleDetailPage() {
   const { slug = "" } = useParams();
   const { articles, settings, profile } = usePortfolioData();
   const { language, t } = useLanguage();
-  const article = articles.find((item) => item.slug === slug && item.status === "published");
+  const anyLanguageArticle = articles.find((item) => item.slug === slug && item.status === "published");
+  const sourceArticle = anyLanguageArticle && hasArticleLanguage(anyLanguageArticle, language) ? anyLanguageArticle : undefined;
+  const article = sourceArticle ? localizeArticle(sourceArticle, language) : undefined;
   const schema = useMemo(() => article ? {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -38,7 +41,8 @@ export default function ArticleDetailPage() {
   });
 
   if (!article) {
-    return <main className="mx-auto min-h-[65vh] max-w-5xl px-5 pb-24 pt-36 sm:px-6"><p className="font-mono text-xs uppercase tracking-[.18em] text-[var(--color-accent-main)]">404 / Article</p><h1 className="mt-5 font-manrope text-4xl font-bold">{t("Article not found.")}</h1><Link to="/blog" className="mt-8 inline-flex items-center gap-2 border-b border-current pb-1 font-bold"><ArrowLeft size={17} /> {t("Back to blog")}</Link></main>;
+    const unavailable = Boolean(anyLanguageArticle);
+    return <main className="mx-auto min-h-[65vh] max-w-5xl px-5 pb-24 pt-36 sm:px-6"><p className="font-mono text-xs uppercase tracking-[.18em] text-[var(--color-accent-main)]">{unavailable ? "Language / Article" : "404 / Article"}</p><h1 className="mt-5 font-manrope text-4xl font-bold">{unavailable ? (language === "id" ? "Artikel ini belum tersedia dalam bahasa Indonesia." : "This article is not available in English yet.") : t("Article not found.")}</h1><Link to="/blog" className="mt-8 inline-flex items-center gap-2 border-b border-current pb-1 font-bold"><ArrowLeft size={17} /> {t("Back to blog")}</Link></main>;
   }
 
   const publishedDate = article.publishedAt ? new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", { dateStyle: "long" }).format(new Date(article.publishedAt)) : "";
@@ -54,7 +58,7 @@ export default function ArticleDetailPage() {
           <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--color-border)] py-5 text-sm text-[var(--color-text-muted)]"><span>{article.author}</span><span>{publishedDate}</span><span className="flex items-center gap-2"><Clock3 size={15} /> {article.readingTime} {t("min read")}</span></div>
         </header>
 
-        {article.coverImage && <figure className="mx-auto mt-6 max-w-7xl px-5 sm:px-6"><img src={article.coverImage} alt={article.coverAlt || article.title} className="max-h-[720px] w-full object-cover" /><figcaption className="mt-3 text-xs text-[var(--color-text-muted)]">{article.coverAlt}</figcaption></figure>}
+        {article.coverImage && <figure className="mx-auto mt-6 max-w-7xl px-5 sm:px-6"><img src={article.coverImage} alt={article.coverAlt || article.title} className="h-auto w-full object-contain" /><figcaption className="mt-3 text-xs text-[var(--color-text-muted)]">{article.coverAlt}</figcaption></figure>}
 
         <div className="mx-auto mt-12 max-w-3xl px-5 sm:px-6">
           {article.blocks.map((block) => <ArticleBlockView key={block.id} block={block} />)}
