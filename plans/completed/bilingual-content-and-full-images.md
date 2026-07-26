@@ -1,6 +1,6 @@
 # Bilingual Project and Article Content with Full Images
 
-Status: Validation and publication
+Status: Completed
 
 ## Objective
 
@@ -74,7 +74,7 @@ Add optional localized content objects to Project and Article. Existing top-leve
 - [x] Complete localized public project/article behavior.
 - [x] Remove project/article image cropping.
 - [x] Pass typecheck, lint, build, HTTP, and Supabase compatibility validation.
-- [ ] Push and deploy production.
+- [x] Push, merge to `main`, and deploy production.
 
 ## Discoveries
 
@@ -113,4 +113,6 @@ Revert the merge commit. Legacy top-level fields remain unchanged, so older appl
 
 ## Final Result
 
-Pending.
+Implemented bilingual Project and Article content with separate English and Indonesian admin editors, source-language classification for legacy records, locale-aware public listings/details/search/meta, and clear unavailable-translation states. Project and article uploads and public images now preserve the full original frame and aspect ratio.
+
+Validation passed with `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check`, local Vite HTTP 200, Supabase JSONB schema inspection, and production asset verification. PR #3 merged to `main` as `b4584a3`; Vercel reported success and `https://www.fazrilukman.id` served the matching `index-BWQkcSM1.js` asset.
