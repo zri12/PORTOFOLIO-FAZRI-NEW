@@ -456,7 +456,7 @@ export const portfolioRepository = {
   },
   getExperiences: () => byOrder(getData().experiences),
   createExperience(item: Partial<Experience>) {
-    const created: Experience = { id: uuid(), role: item.role || "New Experience", organization: item.organization || "Organization", type: item.type || "Project", period: item.period || "2026", location: item.location || "Indonesia", description: item.description || "Experience description.", responsibilities: item.responsibilities || [], technologies: item.technologies || [], relatedProjectSlug: item.relatedProjectSlug, published: item.published ?? true, displayOrder: item.displayOrder ?? getData().experiences.length + 1 };
+    const created: Experience = { id: uuid(), role: item.role ?? "", organization: item.organization ?? "", type: item.type ?? "", period: item.period ?? "", location: item.location ?? "", description: item.description ?? "", responsibilities: item.responsibilities ?? [], technologies: item.technologies ?? [], relatedProjectSlug: item.relatedProjectSlug, published: item.published ?? false, displayOrder: item.displayOrder ?? getData().experiences.length + 1 };
     updateData((data) => data.experiences.unshift(created));
     syncToBackend(() => supabasePortfolioRepository.upsertExperience(created));
     return created;

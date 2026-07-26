@@ -13,7 +13,7 @@ export default function AdminExperiencePage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <AdminPageHeader title="Experience" description="Manage timeline entries, responsibilities, publication state, and related project references." action={<button onClick={() => portfolioRepository.createExperience({ role: "New Role" })} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-4 py-2.5 text-sm font-bold text-[var(--color-bg-primary)]"><Plus size={16} /> Add Experience</button>} />
+      <AdminPageHeader title="Experience" description="Manage timeline entries, responsibilities, publication state, and related project references." action={<button onClick={() => portfolioRepository.createExperience({ role: "", organization: "", type: "", period: "", location: "", description: "", responsibilities: [], technologies: [], published: false, displayOrder: experiences.length + 1 })} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-4 py-2.5 text-sm font-bold text-[var(--color-bg-primary)]"><Plus size={16} /> Add Experience</button>} />
       <div className="space-y-4">
         {experiences.map((item) => (
           <article key={item.id} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5">

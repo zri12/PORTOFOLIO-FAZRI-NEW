@@ -11,18 +11,23 @@ import type { Technology } from "../../types/portfolio";
 const categories: Technology["category"][] = ["Frontend", "Backend", "Database", "Deployment", "Creative"];
 const levels: Technology["level"][] = ["Main Stack", "Frequently Used", "Familiar", "Currently Learning"];
 
-function createDraft(items: Technology[]): Technology {
+type TechnologyDraft = Omit<Technology, "category" | "level"> & {
+  category: Technology["category"] | "";
+  level: Technology["level"] | "";
+};
+
+function createDraft(): TechnologyDraft {
   return {
     id: crypto.randomUUID(),
-    name: "New Technology",
-    iconKey: "code",
+    name: "",
+    iconKey: "",
     logoUrl: "",
-    category: "Frontend",
-    level: "Familiar",
-    description: "Technology used in selected projects.",
+    category: "",
+    level: "",
+    description: "",
     featured: false,
-    active: true,
-    displayOrder: items.length + 1,
+    active: false,
+    displayOrder: 0,
   };
 }
 
@@ -31,25 +36,42 @@ export default function AdminTechnologyFormPage() {
   const { techStack } = usePortfolioData();
   const navigate = useNavigate();
   const source = id ? techStack.find((item) => item.id === id) : undefined;
-  const [draft, setDraft] = useState<Technology>(() => source || createDraft(techStack));
+  const formKey = id || "new";
+  const [draft, setDraft] = useState<TechnologyDraft>(() => source || createDraft());
+  const [loadedFormKey, setLoadedFormKey] = useState(formKey);
+  const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (source) setDraft(source);
-    else if (!id) setDraft(createDraft(techStack));
-  }, [id, source, techStack]);
+    if (loadedFormKey !== formKey) {
+      setDraft(source || createDraft());
+      setLoadedFormKey(formKey);
+      setIsDirty(false);
+      return;
+    }
 
-  const set = <K extends keyof Technology>(key: K, value: Technology[K]) => {
+    if (isDirty) return;
+    if (source) setDraft(source);
+  }, [formKey, isDirty, loadedFormKey, source, techStack]);
+
+  const set = <K extends keyof TechnologyDraft>(key: K, value: TechnologyDraft[K]) => {
     setError("");
+    setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
   const save = async () => {
+    if (!draft.category || !draft.level) {
+      setError("Select a category and level before saving.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      portfolioRepository.updateTechnology(draft);
+      const next: Technology = { ...draft, category: draft.category, level: draft.level };
+      portfolioRepository.updateTechnology(next);
       await portfolioRepository.flushPendingWrites();
+      setIsDirty(false);
       navigate("/admin/tech-stack");
     } catch (saveError) {
       setError(formatAdminSaveError(saveError, "Technology could not be saved to Supabase."));
@@ -68,17 +90,19 @@ export default function AdminTechnologyFormPage() {
             <AdminInput label="Icon Key / Fallback Text" value={draft.iconKey} onChange={(value) => set("iconKey", value)} />
             <label>
               <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">Category</span>
-              <select value={draft.category} onChange={(event) => set("category", event.target.value as Technology["category"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+              <select value={draft.category} onChange={(event) => set("category", event.target.value as TechnologyDraft["category"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+                <option value="">Select category</option>
                 {categories.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">Level</span>
-              <select value={draft.level} onChange={(event) => set("level", event.target.value as Technology["level"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+              <select value={draft.level} onChange={(event) => set("level", event.target.value as TechnologyDraft["level"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+                <option value="">Select level</option>
                 {levels.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
-            <AdminInput label="Display Order" value={String(draft.displayOrder)} onChange={(value) => set("displayOrder", Number(value) || 0)} />
+            <AdminInput label="Display Order" value={draft.displayOrder ? String(draft.displayOrder) : ""} onChange={(value) => set("displayOrder", Number(value) || 0)} />
           </div>
           <AdminInput label="Description" value={draft.description} onChange={(value) => set("description", value)} textarea />
           <div className="flex flex-wrap gap-5">

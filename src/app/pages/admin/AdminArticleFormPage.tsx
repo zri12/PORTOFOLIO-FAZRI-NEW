@@ -12,26 +12,37 @@ import type { Article, ArticleBlock } from "../../types/portfolio";
 
 const blockId = () => crypto.randomUUID();
 
-function newDraft(author: string, order: number): Article {
-  const now = new Date().toISOString();
-  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "Web Development", tags: [], coverImage: "", coverAlt: "", author, status: "draft", featured: false, publishedAt: now, updatedAt: now, readingTime: 1, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "paragraph", text: "" }], displayOrder: order };
+function newDraft(): Article {
+  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "", tags: [], coverImage: "", coverAlt: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "paragraph", text: "" }], displayOrder: 0 };
 }
 
 export default function AdminArticleFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { articles, profile } = usePortfolioData();
+  const { articles } = usePortfolioData();
   const source = id ? articles.find((item) => item.id === id) : undefined;
-  const [draft, setDraft] = useState<Article>(() => source || newDraft(profile.fullName, articles.length + 1));
+  const formKey = id || "new";
+  const [draft, setDraft] = useState<Article>(() => source || newDraft());
+  const [loadedFormKey, setLoadedFormKey] = useState(formKey);
+  const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (loadedFormKey !== formKey) {
+      setDraft(source || newDraft());
+      setLoadedFormKey(formKey);
+      setIsDirty(false);
+      return;
+    }
+
+    if (isDirty) return;
     if (source) setDraft(source);
-  }, [source]);
+  }, [formKey, isDirty, loadedFormKey, source]);
 
   const set = <K extends keyof Article>(key: K, value: Article[K]) => {
     setError("");
+    setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
   const updateBlock = (index: number, block: ArticleBlock) => set("blocks", draft.blocks.map((item, itemIndex) => itemIndex === index ? block : item));
@@ -72,6 +83,7 @@ export default function AdminArticleFormPage() {
     try {
       portfolioRepository.updateArticle({ ...draft, status, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
       await portfolioRepository.flushPendingWrites();
+      setIsDirty(false);
       navigate("/admin/articles");
     } catch (saveError) {
       setError(formatAdminSaveError(saveError, "Article could not be saved to Supabase."));
@@ -88,7 +100,7 @@ export default function AdminArticleFormPage() {
           <AdminInput label="Title" value={draft.title} onChange={(value) => { set("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
           <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
           <AdminInput label="Excerpt" value={draft.excerpt} onChange={(value) => set("excerpt", value)} textarea />
-          <div className="grid gap-4 md:grid-cols-2"><AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} /><AdminInput label="Tags (comma separated)" value={draft.tags.join(", ")} onChange={(value) => set("tags", value.split(",").map((tag) => tag.trim()).filter(Boolean))} /><AdminInput label="Author" value={draft.author} onChange={(value) => set("author", value)} /><AdminInput label="Reading Time (minutes)" value={String(draft.readingTime)} onChange={(value) => set("readingTime", Math.max(1, Number(value) || 1))} /></div>
+          <div className="grid gap-4 md:grid-cols-2"><AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} /><AdminInput label="Tags (comma separated)" value={draft.tags.join(", ")} onChange={(value) => set("tags", value.split(",").map((tag) => tag.trim()).filter(Boolean))} /><AdminInput label="Author" value={draft.author} onChange={(value) => set("author", value)} /><AdminInput label="Reading Time (minutes)" value={draft.readingTime ? String(draft.readingTime) : ""} onChange={(value) => set("readingTime", Number(value) || 0)} /></div>
           <div className="flex flex-wrap gap-5"><p className="text-sm font-semibold text-[var(--color-text-secondary)]">Current status: <span className={draft.status === "published" ? "text-emerald-300" : "text-amber-200"}>{draft.status}</span></p><label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)]"><input type="checkbox" checked={draft.featured} onChange={(event) => set("featured", event.target.checked)} /> Featured</label></div>
         </FormSection>
 

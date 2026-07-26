@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router";
 import { AdminImageField, AdminGalleryField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
@@ -19,21 +18,49 @@ const imageHints = {
   gallery: "Recommended 1600x1000px or consistent 16:10 images. First image becomes the large gallery item.",
 };
 
-function createDraftProject(projects: Project[]): Project {
-  const base = projects[0] || portfolioSeed.projects[0];
+type ProjectDraft = Omit<Project, "clientType"> & {
+  clientType: Project["clientType"] | "";
+};
+
+function createDraftProject(): ProjectDraft {
   return {
-    ...base,
     id: crypto.randomUUID(),
-    title: "Untitled Project",
-    slug: "untitled-project",
+    slug: "",
+    title: "",
+    fullName: "",
+    category: "",
+    type: "",
+    role: "",
+    year: "",
     status: "draft",
     featured: false,
+    clientType: "",
+    techStack: [],
+    shortDescription: "",
+    fullDescription: "",
+    overview: "",
+    background: "",
+    objectives: [],
+    targetUsers: [],
+    responsibilities: [],
+    solution: "",
+    features: [],
+    architecture: "",
+    dataStructure: "",
+    process: [],
+    gallery: [],
+    challenges: [],
+    decisions: [],
+    testing: "",
+    deployment: "",
+    result: "",
+    liveUrl: "",
+    sourceUrl: "",
     coverImage: "",
     heroImage: "",
     mobilePreviewImage: "",
-    gallery: [],
     relatedProjectSlug: "",
-    displayOrder: projects.length + 1,
+    displayOrder: 0,
   };
 }
 
@@ -43,7 +70,7 @@ export default function AdminProjectFormPage() {
   const navigate = useNavigate();
   const source = id ? projects.find((project) => project.id === id) : undefined;
   const formKey = id || "new";
-  const [draft, setDraft] = useState<Project>(() => source || createDraftProject(projects));
+  const [draft, setDraft] = useState<ProjectDraft>(() => source || createDraftProject());
   const [loadedFormKey, setLoadedFormKey] = useState(formKey);
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -51,7 +78,7 @@ export default function AdminProjectFormPage() {
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
-      setDraft(source || createDraftProject(projects));
+      setDraft(source || createDraftProject());
       setLoadedFormKey(formKey);
       setIsDirty(false);
       return;
@@ -59,20 +86,23 @@ export default function AdminProjectFormPage() {
 
     if (isDirty) return;
     if (source) setDraft(source);
-    else if (!id) setDraft(createDraftProject(projects));
-  }, [formKey, id, isDirty, loadedFormKey, projects, source]);
+  }, [formKey, isDirty, loadedFormKey, source]);
 
-  const updateDraft = (updater: (current: Project) => Project) => {
+  const updateDraft = (updater: (current: ProjectDraft) => ProjectDraft) => {
     setError("");
     setIsDirty(true);
     setDraft(updater);
   };
 
-  const set = <K extends keyof Project>(key: K, value: Project[K]) => {
+  const set = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) => {
     updateDraft((current) => ({ ...current, [key]: value }));
   };
   const save = async (status: Project["status"]) => {
-    const next = { ...draft, status, slug: draft.slug || slugify(draft.title) };
+    if (!draft.clientType) {
+      setError("Select a client type before saving.");
+      return;
+    }
+    const next: Project = { ...draft, clientType: draft.clientType, status, slug: draft.slug || slugify(draft.title) };
     setSaving(true);
     setError("");
     try {
@@ -102,12 +132,13 @@ export default function AdminProjectFormPage() {
             <AdminInput label="Type" value={draft.type} onChange={(value) => set("type", value)} />
             <AdminInput label="Year" value={draft.year} onChange={(value) => set("year", value)} />
             <AdminInput label="Role" value={draft.role} onChange={(value) => set("role", value)} />
-            <AdminInput label="Display Order" value={String(draft.displayOrder)} onChange={(value) => set("displayOrder", Number(value) || 0)} />
+            <AdminInput label="Display Order" value={draft.displayOrder ? String(draft.displayOrder) : ""} onChange={(value) => set("displayOrder", Number(value) || 0)} />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <label>
               <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">Client Type</span>
-              <select value={draft.clientType} onChange={(event) => set("clientType", event.target.value as Project["clientType"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+              <select value={draft.clientType} onChange={(event) => set("clientType", event.target.value as ProjectDraft["clientType"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+                <option value="">Select client type</option>
                 <option>Academic Project</option>
                 <option>Client Work</option>
                 <option>Personal Project</option>
