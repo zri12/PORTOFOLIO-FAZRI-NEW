@@ -6,21 +6,31 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { normalizeArticleEditorBlocks } from "../../lib/articleMarkdown";
+import { emptyArticleTranslation, ensureArticleTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { slugify } from "../../lib/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { Article, ArticleBlock } from "../../types/portfolio";
+import type { Article, ArticleBlock, ArticleTranslation, ContentLanguage } from "../../types/portfolio";
 
 const blockId = () => crypto.randomUUID();
 
 function newDraft(): Article {
-  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "", tags: [], coverImage: "", coverAlt: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "markdown", source: "" }], displayOrder: 0 };
+  const en = { ...emptyArticleTranslation(), blocks: [{ id: blockId(), type: "markdown" as const, source: "" }] };
+  const id = { ...emptyArticleTranslation(), blocks: [{ id: blockId(), type: "markdown" as const, source: "" }] };
+  return { id: crypto.randomUUID(), slug: "", ...en, coverImage: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, displayOrder: 0, translations: { en, id } };
 }
 
-const prepareArticleForEditor = (article: Article): Article => ({
-  ...article,
-  blocks: normalizeArticleEditorBlocks(article.blocks),
-});
+const prepareArticleForEditor = (article: Article): Article => {
+  const translations = ensureArticleTranslations(article) ?? {};
+  return {
+    ...article,
+    blocks: normalizeArticleEditorBlocks(article.blocks),
+    translations: {
+      en: { ...emptyArticleTranslation(), ...translations.en, blocks: normalizeArticleEditorBlocks(translations.en?.blocks ?? []) },
+      id: { ...emptyArticleTranslation(), ...translations.id, blocks: normalizeArticleEditorBlocks(translations.id?.blocks ?? []) },
+    },
+  };
+};
 
 export default function AdminArticleFormPage() {
   const { id } = useParams();
@@ -33,6 +43,7 @@ export default function AdminArticleFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
@@ -51,31 +62,53 @@ export default function AdminArticleFormPage() {
     setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
-  const updateBlock = (index: number, block: ArticleBlock) => set("blocks", draft.blocks.map((item, itemIndex) => itemIndex === index ? block : item));
+  const translation = { ...emptyArticleTranslation(), ...(draft.translations?.[editingLanguage] ?? {}) };
+  const setTranslation = <K extends keyof ArticleTranslation>(key: K, value: ArticleTranslation[K]) => {
+    setError("");
+    setIsDirty(true);
+    setDraft((current) => ({
+      ...current,
+      translations: {
+        ...current.translations,
+        [editingLanguage]: { ...emptyArticleTranslation(), ...current.translations?.[editingLanguage], [key]: value },
+      },
+    }));
+  };
+  const updateBlock = (index: number, block: ArticleBlock) => setTranslation("blocks", translation.blocks.map((item, itemIndex) => itemIndex === index ? block : item));
   const addImageAfter = (index: number) => {
-    const next = [...draft.blocks];
+    const next = [...translation.blocks];
     next.splice(
       index + 1,
       0,
       { id: blockId(), type: "image", url: "", alt: "", caption: "" },
       { id: blockId(), type: "markdown", source: "" },
     );
-    set("blocks", next);
+    setTranslation("blocks", next);
   };
-  const removeImage = (index: number) => set("blocks", normalizeArticleEditorBlocks(draft.blocks.filter((_, itemIndex) => itemIndex !== index)));
+  const removeImage = (index: number) => setTranslation("blocks", normalizeArticleEditorBlocks(translation.blocks.filter((_, itemIndex) => itemIndex !== index)));
 
   const save = async (status: Article["status"]) => {
-    const title = draft.title.trim();
+    const preparedTranslations = {
+      en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
+      id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
+    };
+    const complete = (item: ArticleTranslation) => item.title.trim() && item.excerpt.trim() && item.blocks.some((block) => block.type === "markdown" && block.source.trim());
+    if (status === "published" && (!complete(preparedTranslations.en) || !complete(preparedTranslations.id))) {
+      setError("Publishing requires title, excerpt, and article content in both English and Indonesian.");
+      return;
+    }
+    const primary = complete(preparedTranslations.en) ? preparedTranslations.en : preparedTranslations.id;
+    const title = primary.title.trim();
     const slug = (draft.slug || slugify(title)).trim();
-    if (!title || !slug || !draft.excerpt.trim()) {
-      setError("Title, slug, and excerpt are required.");
+    if (!title || !slug || !primary.excerpt.trim()) {
+      setError("Add title, slug, and excerpt in at least one language.");
       return;
     }
     if (articles.some((article) => article.id !== draft.id && article.slug.toLowerCase() === slug.toLowerCase())) {
       setError("Slug is already used by another article.");
       return;
     }
-    const editorBlocks = normalizeArticleEditorBlocks(draft.blocks);
+    const editorBlocks = normalizeArticleEditorBlocks(primary.blocks);
     if (!editorBlocks.some((block) => block.type === "markdown" && block.source.trim())) {
       setError("Write article content before saving.");
       return;
@@ -83,7 +116,20 @@ export default function AdminArticleFormPage() {
     setSaving(true);
     setError("");
     try {
-      portfolioRepository.updateArticle({ ...draft, blocks: editorBlocks, status, title, slug, seoTitle: draft.seoTitle.trim() || title, seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(), coverAlt: draft.coverAlt.trim() || title, readingTime: Math.max(1, draft.readingTime), publishedAt: draft.publishedAt || new Date().toISOString() });
+      portfolioRepository.updateArticle({
+        ...draft,
+        ...primary,
+        blocks: editorBlocks,
+        translations: preparedTranslations,
+        status,
+        title,
+        slug,
+        seoTitle: primary.seoTitle.trim() || title,
+        seoDescription: primary.seoDescription.trim() || primary.excerpt.trim(),
+        coverAlt: primary.coverAlt.trim() || title,
+        readingTime: Math.max(1, draft.readingTime),
+        publishedAt: draft.publishedAt || new Date().toISOString(),
+      });
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/articles");
@@ -98,27 +144,29 @@ export default function AdminArticleFormPage() {
     <div className="mx-auto max-w-5xl">
       <AdminPageHeader title={id ? "Edit Article" : "New Article"} description="Write continuous Markdown-style content, insert images between text sections, and manage publication metadata." />
       <div className="grid gap-6">
+        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} />
         <FormSection title="Article Details">
-          <AdminInput label="Title" value={draft.title} onChange={(value) => { set("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
+          <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--color-accent-main)]">{editingLanguage === "en" ? "English content" : "Konten Indonesia"}</p>
+          <AdminInput label="Title" value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
           <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
-          <AdminInput label="Excerpt" value={draft.excerpt} onChange={(value) => set("excerpt", value)} textarea />
-          <div className="grid gap-4 md:grid-cols-2"><AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} /><AdminInput label="Tags (comma separated)" value={draft.tags.join(", ")} onChange={(value) => set("tags", value.split(",").map((tag) => tag.trim()).filter(Boolean))} /><AdminInput label="Author" value={draft.author} onChange={(value) => set("author", value)} /><AdminInput label="Reading Time (minutes)" value={draft.readingTime ? String(draft.readingTime) : ""} onChange={(value) => set("readingTime", Number(value) || 0)} /></div>
+          <AdminInput label="Excerpt" value={translation.excerpt} onChange={(value) => setTranslation("excerpt", value)} textarea />
+          <div className="grid gap-4 md:grid-cols-2"><AdminInput label="Category" value={translation.category} onChange={(value) => setTranslation("category", value)} /><AdminInput label="Tags (comma separated)" value={translation.tags.join(", ")} onChange={(value) => setTranslation("tags", value.split(",").map((tag) => tag.trim()).filter(Boolean))} /><AdminInput label="Author" value={draft.author} onChange={(value) => set("author", value)} /><AdminInput label="Reading Time (minutes)" value={draft.readingTime ? String(draft.readingTime) : ""} onChange={(value) => set("readingTime", Number(value) || 0)} /></div>
           <div className="flex flex-wrap gap-5"><p className="text-sm font-semibold text-[var(--color-text-secondary)]">Current status: <span className={draft.status === "published" ? "text-emerald-300" : "text-amber-200"}>{draft.status}</span></p><label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)]"><input type="checkbox" checked={draft.featured} onChange={(event) => set("featured", event.target.checked)} /> Featured</label></div>
         </FormSection>
 
         <FormSection title="Cover Image">
-          <AdminImageField label="Article Cover" value={draft.coverImage} folder={`articles/${draft.slug || draft.id}/cover`} hint="Use a clear landscape image. The original file remains available in Supabase Storage." aspect="aspect-[16/9]" onChange={(value) => set("coverImage", value)} />
-          <AdminInput label="Image Alt Text" value={draft.coverAlt} onChange={(value) => set("coverAlt", value)} />
+          <AdminImageField label="Article Cover" value={draft.coverImage} folder={`articles/${draft.slug || draft.id}/cover`} hint="The original image ratio and full frame are preserved." cropMode="original" onChange={(value) => set("coverImage", value)} />
+          <AdminInput label={`Image Alt Text (${editingLanguage.toUpperCase()})`} value={translation.coverAlt} onChange={(value) => setTranslation("coverAlt", value)} />
         </FormSection>
 
         <FormSection title="Article Content">
           <div className="space-y-4">
-            {draft.blocks.map((block, index) => {
+            {translation.blocks.map((block, index) => {
               if (block.type === "markdown") {
-                return <MarkdownBlockEditor key={block.id} block={block} sectionNumber={draft.blocks.slice(0, index + 1).filter((item) => item.type === "markdown").length} onChange={(next) => updateBlock(index, next)} onAddImage={() => addImageAfter(index)} />;
+                return <MarkdownBlockEditor key={block.id} block={block} sectionNumber={translation.blocks.slice(0, index + 1).filter((item) => item.type === "markdown").length} onChange={(next) => updateBlock(index, next)} onAddImage={() => addImageAfter(index)} />;
               }
               if (block.type === "image") {
-                return <ImageBlockEditor key={block.id} block={block} imageNumber={draft.blocks.slice(0, index + 1).filter((item) => item.type === "image").length} articleSlug={draft.slug || draft.id} onChange={(next) => updateBlock(index, next)} onRemove={() => removeImage(index)} />;
+                return <ImageBlockEditor key={block.id} block={block} imageNumber={translation.blocks.slice(0, index + 1).filter((item) => item.type === "image").length} articleSlug={draft.slug || draft.id} onChange={(next) => updateBlock(index, next)} onRemove={() => removeImage(index)} />;
               }
               return null;
             })}
@@ -126,13 +174,31 @@ export default function AdminArticleFormPage() {
         </FormSection>
 
         <FormSection title="Google Preview">
-          <AdminInput label="SEO Title" value={draft.seoTitle} onChange={(value) => set("seoTitle", value)} />
-          <AdminInput label="SEO Description" value={draft.seoDescription} onChange={(value) => set("seoDescription", value)} textarea />
-          <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4"><p className="text-xs text-emerald-400">{draft.slug ? `${location.origin}/blog/${draft.slug}` : "Article URL"}</p><p className="mt-2 text-lg text-sky-300">{draft.seoTitle || draft.title || "Article title"}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">{draft.seoDescription || draft.excerpt || "Article description"}</p></div>
+          <AdminInput label="SEO Title" value={translation.seoTitle} onChange={(value) => setTranslation("seoTitle", value)} />
+          <AdminInput label="SEO Description" value={translation.seoDescription} onChange={(value) => setTranslation("seoDescription", value)} textarea />
+          <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4"><p className="text-xs text-emerald-400">{draft.slug ? `${location.origin}/blog/${draft.slug}` : "Article URL"}</p><p className="mt-2 text-lg text-sky-300">{translation.seoTitle || translation.title || "Article title"}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">{translation.seoDescription || translation.excerpt || "Article description"}</p></div>
         </FormSection>
 
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
         <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
+      </div>
+    </div>
+  );
+}
+
+function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+      <div>
+        <p className="text-sm font-bold">Article language</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Fill both versions before publishing. Images and publication settings remain shared.</p>
+      </div>
+      <div className="flex border border-[var(--color-border)]">
+        {(["en", "id"] as const).map((language) => (
+          <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
+            {language === "en" ? "English" : "Indonesia"}
+          </button>
+        ))}
       </div>
     </div>
   );

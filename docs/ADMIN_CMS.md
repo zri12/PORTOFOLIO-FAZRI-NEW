@@ -109,6 +109,10 @@ Project forms should include:
 - challenges, decisions, testing, deployment, result
 - live URL and source URL
 
+Project text is edited independently in English and Indonesian. Shared media and technical metadata are entered once. Drafts may be incomplete, but publishing requires title, short description, and overview in both languages.
+
+Project covers, hero images, responsive previews, and gallery images retain their original aspect ratio and are not force-cropped during upload or public display.
+
 ## Tech Stack CRUD
 
 Tech stack management should include icon selection, category, usage level, description, featured flag, active flag, and ordering. Do not require raw SVG editing from the admin user.
@@ -136,6 +140,8 @@ Article content uses a linear Markdown-style editor instead of separate controls
 - `1.` for an ordered list
 
 An image can be inserted after any text section. Inserting an image automatically creates the next Markdown text section so writing can continue below it. Markdown is parsed into safe React content; raw HTML must not be rendered.
+
+Article title, excerpt, taxonomy, alt text, SEO copy, and Markdown blocks are edited independently in English and Indonesian. Publishing requires the core article content in both languages. Article cover and content images retain their original aspect ratio.
 
 ## Comments
 

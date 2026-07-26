@@ -122,42 +122,25 @@ type GalleryFieldProps = {
 export function AdminGalleryField({ label, values, folder, hint, onChange }: GalleryFieldProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [editor, setEditor] = useState<CropRequest | null>(null);
 
-  const uploadCropped = async (file: File, previewUrl: string) => {
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return;
     setBusy(true);
     setError("");
     try {
-      if (!isSupabaseEnabled) {
-        onChange([...values, previewUrl]);
-        return;
+      const next = [...values];
+      for (const file of Array.from(files)) {
+        if (isSupabaseEnabled) {
+          next.push((await uploadPortfolioFile(file, folder)).url);
+        } else {
+          next.push(await fileToDataUrl(file));
+        }
       }
-      const uploaded = await uploadPortfolioFile(file, folder);
-      onChange([...values, uploaded.url]);
+      onChange(next);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const upload = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setError("");
-    try {
-      const file = files[0];
-      setEditor({
-        file,
-        dataUrl: await fileToDataUrl(file),
-        aspectRatio: 16 / 10,
-        title: `${label} ${values.length + 1}`,
-        onApply: uploadCropped,
-      });
-      if (files.length > 1) {
-        setError("Crop one gallery image at a time so each preview stays clean.");
-      }
-    } catch {
-      setError("Could not read image file.");
     }
   };
 
@@ -171,8 +154,8 @@ export function AdminGalleryField({ label, values, folder, hint, onChange }: Gal
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {values.map((value, index) => (
           <div key={`${value}-${index}`} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
-            <div className="aspect-[16/10] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)]">
-              {value ? <img src={getPreviewUrl(value)} alt={`${label} ${index + 1}`} className="h-full w-full object-contain" /> : null}
+            <div className="min-h-[160px] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)]">
+              {value ? <img src={getPreviewUrl(value)} alt={`${label} ${index + 1}`} className="h-auto max-h-[420px] w-full object-contain" /> : null}
             </div>
             <input value={value} onChange={(event) => updateAt(index, event.target.value)} className="mt-2 w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 text-xs outline-none" />
             <button type="button" onClick={() => removeAt(index)} className="mt-2 text-xs text-red-300">Remove</button>
@@ -182,13 +165,12 @@ export function AdminGalleryField({ label, values, folder, hint, onChange }: Gal
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => onChange([...values, ""])} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">Add URL row</button>
         <label className="inline-flex cursor-pointer items-center gap-2 border border-[var(--color-border)] px-3 py-2 text-xs font-bold hover:border-[var(--color-accent-main)]">
-          <Upload size={14} /> {busy ? "Uploading..." : "Upload and crop image"}
-          <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(event) => void upload(event.target.files)} />
+          <Upload size={14} /> {busy ? "Uploading..." : "Upload original images"}
+          <input type="file" accept="image/*" multiple className="hidden" disabled={busy} onChange={(event) => void upload(event.target.files)} />
         </label>
       </div>
       {!isSupabaseEnabled && <p className="mt-2 text-xs leading-5 text-amber-200/80">Supabase env is not active, so uploaded gallery images use temporary local preview URLs until Supabase is configured.</p>}
       {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
-      {editor && <CropEditor request={editor} onClose={() => setEditor(null)} />}
     </div>
   );
 }

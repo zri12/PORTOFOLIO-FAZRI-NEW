@@ -9,6 +9,8 @@ import { DualCharacterReveal } from "../../components/portfolio/DualCharacterRev
 import { CardStack } from "../../components/portfolio/CardStack";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
+import { useLanguage } from "../../context/LanguageContext";
+import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent";
 import portrait from "../../../imports/fazri.png";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
@@ -143,7 +145,10 @@ function CertificatePreviewModal({ certificate, onClose }: { certificate: Certif
 export default function HomePage() {
   const { mode, toggleMode } = useContext(ThemeModeContext);
   const data = usePortfolioData();
-  const projectsData = Array.isArray(data.projects) ? data.projects : [];
+  const { language } = useLanguage();
+  const projectsData = (Array.isArray(data.projects) ? data.projects : [])
+    .filter((project) => hasProjectLanguage(project, language))
+    .map((project) => localizeProject(project, language));
   const profile = data.profile;
   const cvLink = cvLinkProps(profile.cvUrl);
   const techStack = Array.isArray(data.techStack) ? data.techStack : [];

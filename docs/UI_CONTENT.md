@@ -2,10 +2,11 @@
 
 ## Language
 
-- Public portfolio UI: English.
+- Public portfolio UI: English and Indonesian through the language toggle.
 - Admin UI: English.
 - Code and documentation: English.
 - Proper names and Indonesian project names remain unchanged.
+- Project and article editorial content is authored separately for each language; the UI must not present source-language content as if it were translated.
 
 ## Content Tone
 

@@ -5,17 +5,18 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
+import { emptyProjectTranslation, ensureProjectTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { Project } from "../../types/portfolio";
+import type { ContentLanguage, Project, ProjectTranslation } from "../../types/portfolio";
 
 const toLines = (items: string[]) => items.join("\n");
 const fromLines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
 const imageHints = {
-  cover: "Recommended 1600x1000px or 16:10. Used for project cards and preview fallback.",
-  hero: "Recommended 1920x1200px or 16:10. Use a clean dashboard/browser mockup for the project detail hero.",
-  mobile: "Recommended 900x1200px or 3:4. Use mobile/tablet screenshots when available.",
-  gallery: "Recommended 1600x1000px or consistent 16:10 images. First image becomes the large gallery item.",
+  cover: "Uploaded and displayed at its original aspect ratio without cropping.",
+  hero: "Uploaded and displayed at its original aspect ratio without cropping.",
+  mobile: "Uploaded and displayed at its original aspect ratio without cropping.",
+  gallery: "Every gallery image keeps its original aspect ratio and full frame.",
 };
 
 type ProjectDraft = Omit<Project, "clientType"> & {
@@ -23,6 +24,8 @@ type ProjectDraft = Omit<Project, "clientType"> & {
 };
 
 function createDraftProject(): ProjectDraft {
+  const en = emptyProjectTranslation();
+  const id = emptyProjectTranslation();
   return {
     id: crypto.randomUUID(),
     slug: "",
@@ -61,6 +64,18 @@ function createDraftProject(): ProjectDraft {
     mobilePreviewImage: "",
     relatedProjectSlug: "",
     displayOrder: 0,
+    translations: { en, id },
+  };
+}
+
+function prepareProjectForEditor(project: Project): ProjectDraft {
+  const translations = ensureProjectTranslations(project) ?? {};
+  return {
+    ...project,
+    translations: {
+      en: { ...emptyProjectTranslation(), ...translations.en },
+      id: { ...emptyProjectTranslation(), ...translations.id },
+    },
   };
 }
 
@@ -70,22 +85,23 @@ export default function AdminProjectFormPage() {
   const navigate = useNavigate();
   const source = id ? projects.find((project) => project.id === id) : undefined;
   const formKey = id || "new";
-  const [draft, setDraft] = useState<ProjectDraft>(() => source || createDraftProject());
+  const [draft, setDraft] = useState<ProjectDraft>(() => source ? prepareProjectForEditor(source) : createDraftProject());
   const [loadedFormKey, setLoadedFormKey] = useState(formKey);
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
-      setDraft(source || createDraftProject());
+      setDraft(source ? prepareProjectForEditor(source) : createDraftProject());
       setLoadedFormKey(formKey);
       setIsDirty(false);
       return;
     }
 
     if (isDirty) return;
-    if (source) setDraft(source);
+    if (source) setDraft(prepareProjectForEditor(source));
   }, [formKey, isDirty, loadedFormKey, source]);
 
   const updateDraft = (updater: (current: ProjectDraft) => ProjectDraft) => {
@@ -97,12 +113,36 @@ export default function AdminProjectFormPage() {
   const set = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) => {
     updateDraft((current) => ({ ...current, [key]: value }));
   };
+  const translation = { ...emptyProjectTranslation(), ...(draft.translations?.[editingLanguage] ?? {}) };
+  const setTranslation = <K extends keyof ProjectTranslation>(key: K, value: ProjectTranslation[K]) => {
+    updateDraft((current) => ({
+      ...current,
+      translations: {
+        ...current.translations,
+        [editingLanguage]: { ...emptyProjectTranslation(), ...current.translations?.[editingLanguage], [key]: value },
+      },
+    }));
+  };
   const save = async (status: Project["status"]) => {
     if (!draft.clientType) {
       setError("Select a client type before saving.");
       return;
     }
-    const next: Project = { ...draft, clientType: draft.clientType, status, slug: draft.slug || slugify(draft.title) };
+    const translations = {
+      en: { ...emptyProjectTranslation(), ...draft.translations?.en },
+      id: { ...emptyProjectTranslation(), ...draft.translations?.id },
+    };
+    const complete = (item: ProjectTranslation) => item.title.trim() && item.shortDescription.trim() && item.overview.trim();
+    if (status === "published" && (!complete(translations.en) || !complete(translations.id))) {
+      setError("Publishing requires title, short description, and overview in both English and Indonesian.");
+      return;
+    }
+    const primary = complete(translations.en) ? translations.en : translations.id;
+    if (!primary.title.trim()) {
+      setError("Add a project title in at least one language.");
+      return;
+    }
+    const next: Project = { ...draft, ...primary, translations, clientType: draft.clientType, status, slug: draft.slug || slugify(primary.title) };
     setSaving(true);
     setError("");
     try {
@@ -123,15 +163,16 @@ export default function AdminProjectFormPage() {
     <div className="mx-auto max-w-6xl">
       <AdminPageHeader title={id ? "Edit Project" : "New Project"} description="Manage all project metadata, screenshots, case-study sections, gallery images, and related project links." />
       <div className="grid gap-6">
+        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} />
         <FormSection title="Project Identity">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminInput label="Title" value={draft.title} onChange={(value) => updateDraft((current) => ({ ...current, title: value, slug: slugify(value) }))} />
+            <AdminInput label={`Title (${editingLanguage.toUpperCase()})`} value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
             <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
-            <AdminInput label="Full Name" value={draft.fullName} onChange={(value) => set("fullName", value)} />
-            <AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} />
-            <AdminInput label="Type" value={draft.type} onChange={(value) => set("type", value)} />
+            <AdminInput label="Full Name" value={translation.fullName} onChange={(value) => setTranslation("fullName", value)} />
+            <AdminInput label="Category" value={translation.category} onChange={(value) => setTranslation("category", value)} />
+            <AdminInput label="Type" value={translation.type} onChange={(value) => setTranslation("type", value)} />
             <AdminInput label="Year" value={draft.year} onChange={(value) => set("year", value)} />
-            <AdminInput label="Role" value={draft.role} onChange={(value) => set("role", value)} />
+            <AdminInput label="Role" value={translation.role} onChange={(value) => setTranslation("role", value)} />
             <AdminInput label="Display Order" value={draft.displayOrder ? String(draft.displayOrder) : ""} onChange={(value) => set("displayOrder", Number(value) || 0)} />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -164,8 +205,8 @@ export default function AdminProjectFormPage() {
             <input type="checkbox" checked={draft.featured} onChange={(event) => set("featured", event.target.checked)} />
             Featured on home page
           </label>
-          <AdminInput label="Short Description" value={draft.shortDescription} onChange={(value) => set("shortDescription", value)} textarea />
-          <AdminInput label="Full Description" value={draft.fullDescription} onChange={(value) => set("fullDescription", value)} textarea />
+          <AdminInput label="Short Description" value={translation.shortDescription} onChange={(value) => setTranslation("shortDescription", value)} textarea />
+          <AdminInput label="Full Description" value={translation.fullDescription} onChange={(value) => setTranslation("fullDescription", value)} textarea />
           <div className="grid gap-4 md:grid-cols-2">
             <AdminInput label="Live URL" value={draft.liveUrl} onChange={(value) => set("liveUrl", value)} />
             <AdminInput label="Source URL" value={draft.sourceUrl} onChange={(value) => set("sourceUrl", value)} />
@@ -174,9 +215,9 @@ export default function AdminProjectFormPage() {
 
         <FormSection title="Images">
           <div className="grid gap-4 lg:grid-cols-3">
-            <AdminImageField label="Project Cover Image" value={draft.coverImage} folder={`projects/${draft.slug || draft.id}/cover`} hint={imageHints.cover} onChange={(value) => set("coverImage", value)} />
-            <AdminImageField label="Project Detail Hero Image" value={draft.heroImage} folder={`projects/${draft.slug || draft.id}/hero`} hint={imageHints.hero} onChange={(value) => set("heroImage", value)} />
-            <AdminImageField label="Mobile / Responsive Preview" value={draft.mobilePreviewImage} folder={`projects/${draft.slug || draft.id}/responsive`} hint={imageHints.mobile} aspect="aspect-[3/4]" onChange={(value) => set("mobilePreviewImage", value)} />
+            <AdminImageField label="Project Cover Image" value={draft.coverImage} folder={`projects/${draft.slug || draft.id}/cover`} hint={imageHints.cover} cropMode="original" onChange={(value) => set("coverImage", value)} />
+            <AdminImageField label="Project Detail Hero Image" value={draft.heroImage} folder={`projects/${draft.slug || draft.id}/hero`} hint={imageHints.hero} cropMode="original" onChange={(value) => set("heroImage", value)} />
+            <AdminImageField label="Mobile / Responsive Preview" value={draft.mobilePreviewImage} folder={`projects/${draft.slug || draft.id}/responsive`} hint={imageHints.mobile} cropMode="original" onChange={(value) => set("mobilePreviewImage", value)} />
           </div>
           <AdminGalleryField label="Interface Gallery" values={draft.gallery} folder={`projects/${draft.slug || draft.id}/gallery`} hint={imageHints.gallery} onChange={(values) => set("gallery", values)} />
         </FormSection>
@@ -202,25 +243,25 @@ export default function AdminProjectFormPage() {
         </FormSection>
 
         <FormSection title="Case Study Content">
-          <AdminInput label="Overview" value={draft.overview} onChange={(value) => set("overview", value)} textarea />
-          <AdminInput label="Background and Problem" value={draft.background} onChange={(value) => set("background", value)} textarea />
-          <AdminInput label="Solution" value={draft.solution} onChange={(value) => set("solution", value)} textarea />
-          <AdminInput label="System Architecture" value={draft.architecture} onChange={(value) => set("architecture", value)} textarea />
-          <AdminInput label="Data Structure" value={draft.dataStructure} onChange={(value) => set("dataStructure", value)} textarea />
-          <AdminInput label="Testing" value={draft.testing} onChange={(value) => set("testing", value)} textarea />
-          <AdminInput label="Deployment" value={draft.deployment} onChange={(value) => set("deployment", value)} textarea />
-          <AdminInput label="Result" value={draft.result} onChange={(value) => set("result", value)} textarea />
+          <AdminInput label="Overview" value={translation.overview} onChange={(value) => setTranslation("overview", value)} textarea />
+          <AdminInput label="Background and Problem" value={translation.background} onChange={(value) => setTranslation("background", value)} textarea />
+          <AdminInput label="Solution" value={translation.solution} onChange={(value) => setTranslation("solution", value)} textarea />
+          <AdminInput label="System Architecture" value={translation.architecture} onChange={(value) => setTranslation("architecture", value)} textarea />
+          <AdminInput label="Data Structure" value={translation.dataStructure} onChange={(value) => setTranslation("dataStructure", value)} textarea />
+          <AdminInput label="Testing" value={translation.testing} onChange={(value) => setTranslation("testing", value)} textarea />
+          <AdminInput label="Deployment" value={translation.deployment} onChange={(value) => setTranslation("deployment", value)} textarea />
+          <AdminInput label="Result" value={translation.result} onChange={(value) => setTranslation("result", value)} textarea />
         </FormSection>
 
         <FormSection title="Detail Lists">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminInput label="Objectives (one per line)" value={toLines(draft.objectives)} onChange={(value) => set("objectives", fromLines(value))} textarea />
-            <AdminInput label="Target Users (one per line)" value={toLines(draft.targetUsers)} onChange={(value) => set("targetUsers", fromLines(value))} textarea />
-            <AdminInput label="Role and Responsibilities (one per line)" value={toLines(draft.responsibilities)} onChange={(value) => set("responsibilities", fromLines(value))} textarea />
-            <AdminInput label="Main Features (one per line)" value={toLines(draft.features)} onChange={(value) => set("features", fromLines(value))} textarea />
-            <AdminInput label="Development Process (one per line)" value={toLines(draft.process)} onChange={(value) => set("process", fromLines(value))} textarea />
-            <AdminInput label="Challenges (one per line)" value={toLines(draft.challenges)} onChange={(value) => set("challenges", fromLines(value))} textarea />
-            <AdminInput label="Technical Decisions (one per line)" value={toLines(draft.decisions)} onChange={(value) => set("decisions", fromLines(value))} textarea />
+            <AdminInput label="Objectives (one per line)" value={toLines(translation.objectives)} onChange={(value) => setTranslation("objectives", fromLines(value))} textarea />
+            <AdminInput label="Target Users (one per line)" value={toLines(translation.targetUsers)} onChange={(value) => setTranslation("targetUsers", fromLines(value))} textarea />
+            <AdminInput label="Role and Responsibilities (one per line)" value={toLines(translation.responsibilities)} onChange={(value) => setTranslation("responsibilities", fromLines(value))} textarea />
+            <AdminInput label="Main Features (one per line)" value={toLines(translation.features)} onChange={(value) => setTranslation("features", fromLines(value))} textarea />
+            <AdminInput label="Development Process (one per line)" value={toLines(translation.process)} onChange={(value) => setTranslation("process", fromLines(value))} textarea />
+            <AdminInput label="Challenges (one per line)" value={toLines(translation.challenges)} onChange={(value) => setTranslation("challenges", fromLines(value))} textarea />
+            <AdminInput label="Technical Decisions (one per line)" value={toLines(translation.decisions)} onChange={(value) => setTranslation("decisions", fromLines(value))} textarea />
           </div>
         </FormSection>
 
@@ -230,6 +271,24 @@ export default function AdminProjectFormPage() {
           <button onClick={() => navigate("/admin/projects")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
           {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+      <div>
+        <p className="text-sm font-bold">Project language</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Fill both versions before publishing. Images, links, technology, and status remain shared.</p>
+      </div>
+      <div className="flex border border-[var(--color-border)]">
+        {(["en", "id"] as const).map((language) => (
+          <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
+            {language === "en" ? "English" : "Indonesia"}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -6,11 +6,18 @@ import { SectionHeading } from "../../components/common/SectionHeading";
 import { ProjectPreview } from "../../components/portfolio/ProjectPreview";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { useLanguage } from "../../context/LanguageContext";
+import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent";
 
 const categories = ["All Work", "Web Application", "Education", "Dashboard", "Data Mining", "CRM", "Company Profile", "Client Work", "Personal Project", "Academic Project"];
 
 export default function ProjectsPage() {
   const { projects, techStack } = usePortfolioData();
+  const { language, t } = useLanguage();
+  const localizedProjects = useMemo(
+    () => projects.filter((project) => hasProjectLanguage(project, language)).map((project) => localizeProject(project, language)),
+    [language, projects],
+  );
   const [activeCategory, setActiveCategory] = useState("All Work");
   const [query, setQuery] = useState("");
   const [tech, setTech] = useState("All Tech");
@@ -20,10 +27,11 @@ export default function ProjectsPage() {
     description: "Explore web application, dashboard, data mining, CRM, and education projects by Fazri Lukman Nurrohman.",
   });
 
-  const techOptions = useMemo(() => ["All Tech", ...Array.from(new Set(projects.flatMap((project) => project.techStack)))], [projects]);
+  const techOptions = useMemo(() => ["All Tech", ...Array.from(new Set(localizedProjects.flatMap((project) => project.techStack)))], [localizedProjects]);
 
-  const filteredProjects = projects.filter((project) => {
-    const categoryMatch = activeCategory === "All Work" || project.category.includes(activeCategory) || project.type.includes(activeCategory) || project.clientType === activeCategory;
+  const filteredProjects = localizedProjects.filter((project) => {
+    const source = projects.find((entry) => entry.id === project.id) ?? project;
+    const categoryMatch = activeCategory === "All Work" || source.category.includes(activeCategory) || source.type.includes(activeCategory) || source.clientType === activeCategory;
     const techMatch = tech === "All Tech" || project.techStack.includes(tech);
     const text = `${project.title} ${project.fullName} ${project.shortDescription} ${project.techStack.join(" ")}`.toLowerCase();
     return categoryMatch && techMatch && text.includes(query.toLowerCase());
@@ -42,14 +50,14 @@ export default function ProjectsPage() {
           <div className="no-scrollbar flex snap-x gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
             {categories.map((category) => (
               <button key={category} onClick={() => setActiveCategory(category)} className={`min-h-11 shrink-0 snap-start whitespace-nowrap border px-4 py-2 text-sm font-semibold transition ${activeCategory === category ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-main)]/50 hover:text-[var(--color-text-main)]"}`}>
-                {category}
+                {t(category)}
               </button>
             ))}
           </div>
           <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_180px_auto] xl:w-full">
             <label className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={17} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects..." className="min-h-11 w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-accent-main)]" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search projects...")} className="min-h-11 w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-accent-main)]" />
             </label>
             <select value={tech} onChange={(event) => setTech(event.target.value)} className="min-h-11 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-accent-main)]">
               {techOptions.map((option) => <option key={option}>{option}</option>)}
@@ -64,12 +72,15 @@ export default function ProjectsPage() {
       <section className="px-5 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-7xl">
           {filteredProjects.length === 0 ? (
-            <EmptyState title="No projects match the current filters" description="Try clearing the filters or searching by project title, category, or technology." />
+            <EmptyState
+              title={language === "id" ? "Tidak ada project yang tersedia untuk bahasa atau filter ini" : "No projects are available for this language or filter"}
+              description={language === "id" ? "Tambahkan versi Indonesia di admin atau bersihkan filter pencarian." : "Add the English version in admin or clear the current filters."}
+            />
           ) : (
             <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">
               {filteredProjects.map((project) => (
                 <Link key={project.id} to={`/projects/${project.slug}`} className="group flex min-h-[460px] flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]/60 sm:min-h-[520px]">
-                  <div className="relative aspect-[4/3] border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3">
+                  <div className="relative border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3">
                     <ProjectPreview slug={project.slug} compact />
                   </div>
                   <div className="flex flex-1 flex-col p-5 sm:p-6">

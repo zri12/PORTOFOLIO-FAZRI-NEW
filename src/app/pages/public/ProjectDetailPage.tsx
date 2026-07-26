@@ -7,6 +7,7 @@ import { ProjectPreview } from "../../components/portfolio/ProjectPreview";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent";
 
 function DetailBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -20,8 +21,11 @@ function DetailBlock({ title, children }: { title: string; children: React.React
 export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
   const { projects, techStack } = usePortfolioData();
-  const { t } = useLanguage();
-  const project = projects.find((entry) => entry.slug === slug);
+  const { language, t } = useLanguage();
+  const availableProjects = projects.filter((entry) => hasProjectLanguage(entry, language));
+  const anyLanguageProject = projects.find((entry) => entry.slug === slug);
+  const sourceProject = availableProjects.find((entry) => entry.slug === slug);
+  const project = sourceProject ? localizeProject(sourceProject, language) : undefined;
 
   useDocumentMeta({
     title: project ? `${project.title} Case Study - Fazri` : "Project Not Found - Fazri",
@@ -32,17 +36,21 @@ export default function ProjectDetailPage() {
     return (
       <main className="min-h-screen bg-[var(--color-bg-primary)] px-6 pt-32">
         <div className="mx-auto max-w-4xl">
-          <EmptyState title={t("Project not found")} description={t("The selected project is unavailable or has been moved.")} />
+          <EmptyState
+            title={anyLanguageProject ? (language === "id" ? "Project ini belum tersedia dalam bahasa Indonesia" : "This project is not available in English yet") : t("Project not found")}
+            description={anyLanguageProject ? (language === "id" ? "Tambahkan versi Indonesia melalui editor project di admin." : "Add the English version through the project editor in admin.") : t("The selected project is unavailable or has been moved.")}
+          />
           <Link to="/projects" className="mt-6 inline-flex items-center gap-2 text-[var(--color-accent-main)]"><ArrowLeft size={16} /> {t("Back to Projects")}</Link>
         </div>
       </main>
     );
   }
 
-  const index = projects.findIndex((entry) => entry.id === project.id);
-  const previous = projects[(index - 1 + projects.length) % projects.length];
-  const next = projects[(index + 1) % projects.length];
-  const related = projects.find((entry) => entry.slug === project.relatedProjectSlug) || projects.find((entry) => entry.category === project.category && entry.id !== project.id) || next;
+  const localizedProjects = availableProjects.map((entry) => localizeProject(entry, language));
+  const index = localizedProjects.findIndex((entry) => entry.id === project.id);
+  const previous = localizedProjects[(index - 1 + localizedProjects.length) % localizedProjects.length];
+  const next = localizedProjects[(index + 1) % localizedProjects.length];
+  const related = localizedProjects.find((entry) => entry.slug === project.relatedProjectSlug) || localizedProjects.find((entry) => entry.category === project.category && entry.id !== project.id) || next;
   const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
 
   return (
@@ -80,8 +88,8 @@ export default function ProjectDetailPage() {
                 <span className="h-3 w-3 rounded-full bg-green-400" />
                 <span className="ml-auto font-mono text-[10px] text-[var(--color-text-muted)]">{project.slug}.fazri.dev</span>
               </div>
-              <div className="aspect-[16/11]">
-                {project.heroImage ? <img src={project.heroImage} alt={`${project.title} interface preview`} className="h-full w-full object-cover" /> : <ProjectPreview slug={project.slug} />}
+              <div>
+                {project.heroImage ? <img src={project.heroImage} alt={`${project.title} interface preview`} className="h-auto w-full object-contain" /> : <ProjectPreview slug={project.slug} />}
               </div>
             </div>
           </div>
