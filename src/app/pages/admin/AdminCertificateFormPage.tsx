@@ -3,26 +3,24 @@ import { useNavigate, useParams } from "react-router";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Certificate } from "../../types/portfolio";
 
-function createDraft(items: Certificate[]): Certificate {
+function createDraft(): Certificate {
   return {
-    ...(items[0] || portfolioSeed.certificates[0]),
     id: crypto.randomUUID(),
-    title: "New Certificate",
+    title: "",
     issuer: "",
-    category: "Development",
-    issueDate: new Date().toISOString().slice(0, 10),
+    category: "",
+    issueDate: "",
     credentialId: "",
     credentialUrl: "",
     image: "",
     featured: false,
-    published: true,
-    displayOrder: items.length + 1,
+    published: false,
+    displayOrder: 0,
   };
 }
 
@@ -31,17 +29,28 @@ export default function AdminCertificateFormPage() {
   const { certificates } = usePortfolioData();
   const navigate = useNavigate();
   const source = id ? certificates.find((item) => item.id === id) : undefined;
-  const [draft, setDraft] = useState<Certificate>(() => source || createDraft(certificates));
+  const formKey = id || "new";
+  const [draft, setDraft] = useState<Certificate>(() => source || createDraft());
+  const [loadedFormKey, setLoadedFormKey] = useState(formKey);
+  const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (loadedFormKey !== formKey) {
+      setDraft(source || createDraft());
+      setLoadedFormKey(formKey);
+      setIsDirty(false);
+      return;
+    }
+
+    if (isDirty) return;
     if (source) setDraft(source);
-    else if (!id) setDraft(createDraft(certificates));
-  }, [certificates, id, source]);
+  }, [certificates, formKey, isDirty, loadedFormKey, source]);
 
   const set = <K extends keyof Certificate>(key: K, value: Certificate[K]) => {
     setError("");
+    setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
   const save = async () => {
@@ -50,6 +59,7 @@ export default function AdminCertificateFormPage() {
     try {
       portfolioRepository.updateCertificate(draft);
       await portfolioRepository.flushPendingWrites();
+      setIsDirty(false);
       navigate("/admin/certificates");
     } catch (saveError) {
       setError(formatAdminSaveError(saveError, "Certificate could not be saved to Supabase."));
@@ -69,7 +79,7 @@ export default function AdminCertificateFormPage() {
             <AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} />
             <AdminInput label="Issue Date" value={draft.issueDate} onChange={(value) => set("issueDate", value)} />
             <AdminInput label="Credential ID" value={draft.credentialId} onChange={(value) => set("credentialId", value)} />
-            <AdminInput label="Display Order" value={String(draft.displayOrder)} onChange={(value) => set("displayOrder", Number(value) || 0)} />
+            <AdminInput label="Display Order" value={draft.displayOrder ? String(draft.displayOrder) : ""} onChange={(value) => set("displayOrder", Number(value) || 0)} />
           </div>
           <AdminInput label="Credential URL" value={draft.credentialUrl} onChange={(value) => set("credentialUrl", value)} />
           <div className="flex flex-wrap gap-5">

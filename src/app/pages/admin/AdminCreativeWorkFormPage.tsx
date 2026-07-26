@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router";
 import { AdminGalleryField, AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { portfolioSeed } from "../../data/seed/portfolioSeed";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
@@ -12,19 +11,30 @@ import type { CreativeWork } from "../../types/portfolio";
 
 const categories: CreativeWork["category"][] = ["UI/UX Design", "Graphic Design", "Photography", "Videography", "Photo Editing", "Video Editing"];
 
-function createDraft(items: CreativeWork[]): CreativeWork {
+type CreativeWorkDraft = Omit<CreativeWork, "category"> & {
+  category: CreativeWork["category"] | "";
+};
+
+function createDraft(): CreativeWorkDraft {
   return {
-    ...(items[0] || portfolioSeed.creativeWorks[0]),
     id: crypto.randomUUID(),
-    slug: "new-creative-work",
-    title: "New Creative Work",
+    slug: "",
+    title: "",
+    category: "",
+    role: "",
+    year: "",
+    tools: [],
+    description: "",
+    brief: "",
     cover: "",
     gallery: [],
     beforeImage: "",
     afterImage: "",
+    videoUrl: "",
+    duration: "",
     featured: false,
     status: "draft",
-    displayOrder: items.length + 1,
+    displayOrder: 0,
   };
 }
 
@@ -33,25 +43,42 @@ export default function AdminCreativeWorkFormPage() {
   const { creativeWorks } = usePortfolioData();
   const navigate = useNavigate();
   const source = id ? creativeWorks.find((item) => item.id === id) : undefined;
-  const [draft, setDraft] = useState<CreativeWork>(() => source || createDraft(creativeWorks));
+  const formKey = id || "new";
+  const [draft, setDraft] = useState<CreativeWorkDraft>(() => source || createDraft());
+  const [loadedFormKey, setLoadedFormKey] = useState(formKey);
+  const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (source) setDraft(source);
-    else if (!id) setDraft(createDraft(creativeWorks));
-  }, [creativeWorks, id, source]);
+    if (loadedFormKey !== formKey) {
+      setDraft(source || createDraft());
+      setLoadedFormKey(formKey);
+      setIsDirty(false);
+      return;
+    }
 
-  const set = <K extends keyof CreativeWork>(key: K, value: CreativeWork[K]) => {
+    if (isDirty) return;
+    if (source) setDraft(source);
+  }, [creativeWorks, formKey, isDirty, loadedFormKey, source]);
+
+  const set = <K extends keyof CreativeWorkDraft>(key: K, value: CreativeWorkDraft[K]) => {
     setError("");
+    setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
   const save = async (status: CreativeWork["status"]) => {
+    if (!draft.category) {
+      setError("Select a category before saving.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      portfolioRepository.updateCreativeWork({ ...draft, status, slug: draft.slug || slugify(draft.title) });
+      const next: CreativeWork = { ...draft, category: draft.category, status, slug: draft.slug || slugify(draft.title) };
+      portfolioRepository.updateCreativeWork(next);
       await portfolioRepository.flushPendingWrites();
+      setIsDirty(false);
       navigate("/admin/creative-works");
     } catch (saveError) {
       setError(formatAdminSaveError(saveError, "Creative work could not be saved to Supabase."));
@@ -66,17 +93,22 @@ export default function AdminCreativeWorkFormPage() {
       <div className="grid gap-6">
         <FormSection title="Work Details">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminInput label="Title" value={draft.title} onChange={(value) => setDraft({ ...draft, title: value, slug: slugify(value) })} />
+            <AdminInput label="Title" value={draft.title} onChange={(value) => {
+              setError("");
+              setIsDirty(true);
+              setDraft((current) => ({ ...current, title: value, slug: slugify(value) }));
+            }} />
             <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
             <label>
               <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">Category</span>
-              <select value={draft.category} onChange={(event) => set("category", event.target.value as CreativeWork["category"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+              <select value={draft.category} onChange={(event) => set("category", event.target.value as CreativeWorkDraft["category"])} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none">
+                <option value="">Select category</option>
                 {categories.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <AdminInput label="Role" value={draft.role} onChange={(value) => set("role", value)} />
             <AdminInput label="Year" value={draft.year} onChange={(value) => set("year", value)} />
-            <AdminInput label="Display Order" value={String(draft.displayOrder)} onChange={(value) => set("displayOrder", Number(value) || 0)} />
+            <AdminInput label="Display Order" value={draft.displayOrder ? String(draft.displayOrder) : ""} onChange={(value) => set("displayOrder", Number(value) || 0)} />
             <AdminInput label="Tools (comma separated)" value={draft.tools.join(", ")} onChange={(value) => set("tools", value.split(",").map((item) => item.trim()).filter(Boolean))} />
             <AdminInput label="Duration" value={draft.duration || ""} onChange={(value) => set("duration", value || undefined)} />
           </div>
