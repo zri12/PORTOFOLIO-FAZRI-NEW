@@ -113,6 +113,8 @@ Project text is edited independently in English and Indonesian. Shared media and
 
 Project covers, hero images, responsive previews, and gallery images retain their original aspect ratio and are not force-cropped during upload or public display.
 
+Article-list, creative-work, and media-library previews also use contain/natural-ratio rendering. Creative-work cover, before, and after uploads preserve the original file instead of opening the crop workflow.
+
 ## Tech Stack CRUD
 
 Tech stack management should include icon selection, category, usage level, description, featured flag, active flag, and ordering. Do not require raw SVG editing from the admin user.

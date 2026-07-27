@@ -67,8 +67,8 @@ export default function AdminArticlesPage() {
       ) : (
         <div className="overflow-hidden border border-[var(--color-border)]">
           {filtered.map((article) => (
-            <article key={article.id} className="grid gap-4 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 last:border-b-0 sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:p-5">
-              <div className="aspect-[16/10] overflow-hidden bg-[var(--color-bg-primary)]">{article.coverImage ? <img src={article.coverImage} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center font-mono text-[10px] uppercase tracking-[.14em] text-[var(--color-text-muted)]">No cover</div>}</div>
+            <article key={article.id} className="grid gap-4 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 last:border-b-0 sm:grid-cols-[11rem_1fr_auto] sm:items-center sm:p-5">
+              <div className="flex min-h-24 items-center justify-center overflow-hidden bg-[var(--color-bg-primary)]">{article.coverImage ? <img src={article.coverImage} alt="" className="h-auto w-full object-contain" /> : <div className="flex min-h-24 items-center justify-center font-mono text-[10px] uppercase tracking-[.14em] text-[var(--color-text-muted)]">No cover</div>}</div>
               <div className="min-w-0"><div className="flex flex-wrap gap-2"><StatusBadge status={article.status} />{article.featured && <StatusBadge status="featured" />}</div><h2 className="mt-3 truncate font-manrope text-lg font-bold">{article.title}</h2><p className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">{article.category} / {article.readingTime} min read</p></div>
               <div className="flex flex-wrap gap-2 sm:justify-end">
                 {article.status === "published" && <Link to={`/blog/${article.slug}`} target="_blank" title="View article" className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)]"><ExternalLink size={16} /></Link>}

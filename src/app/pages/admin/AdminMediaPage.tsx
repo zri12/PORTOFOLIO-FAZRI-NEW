@@ -54,7 +54,7 @@ export default function AdminMediaPage() {
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {media.map((item) => (
             <article key={item.id} className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
-              {item.type.startsWith("image") ? <img src={item.url} alt={item.name} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square items-center justify-center bg-[var(--color-bg-primary)] text-sm text-[var(--color-text-muted)]">{item.type}</div>}
+              {item.type.startsWith("image") ? <img src={item.url} alt={item.name} className="h-auto w-full object-contain" /> : <div className="flex aspect-square items-center justify-center bg-[var(--color-bg-primary)] text-sm text-[var(--color-text-muted)]">{item.type}</div>}
               <h2 className="mt-4 truncate font-bold">{item.name}</h2>
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">{Math.round(item.size / 1024)} KB</p>
               <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">{item.note}</p>

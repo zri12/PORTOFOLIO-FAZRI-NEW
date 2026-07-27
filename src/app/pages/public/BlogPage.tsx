@@ -54,8 +54,8 @@ export default function BlogPage() {
       <section className="mx-auto mt-10 max-w-7xl px-5 sm:px-6" aria-label={t("Article list")}>
         {published.length === 0 ? (
           <div className="border-y border-[var(--color-border)] py-16">
-            <p className="font-manrope text-2xl font-bold">{language === "id" ? "Belum ada artikel dalam bahasa Indonesia." : "No articles are available in English yet."}</p>
-            <p className="mt-3 text-[var(--color-text-secondary)]">{language === "id" ? "Versi Indonesia dapat ditambahkan melalui editor artikel di admin." : "Add the English version through the article editor in admin."}</p>
+            <p className="font-manrope text-2xl font-bold">{language === "id" ? "Belum ada artikel yang dipublikasikan." : "No published articles yet."}</p>
+            <p className="mt-3 text-[var(--color-text-secondary)]">{language === "id" ? "Artikel akan muncul setelah dipublikasikan melalui admin." : "Articles will appear after they are published through admin."}</p>
           </div>
         ) : (
           <div className="space-y-6">

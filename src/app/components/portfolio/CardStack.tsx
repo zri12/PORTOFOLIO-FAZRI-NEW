@@ -212,7 +212,7 @@ function DefaultStackCard({ item }: { item: CardStackItem }) {
   return (
     <div className="group relative h-full w-full">
       {item.imageSrc ? (
-        <img src={item.imageSrc} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" draggable={false} loading="lazy" decoding="async" />
+        <img src={item.imageSrc} alt={item.title} className="h-full w-full object-contain" draggable={false} loading="lazy" decoding="async" />
       ) : (
         <div className="h-full w-full bg-[var(--color-bg-secondary)]" />
       )}

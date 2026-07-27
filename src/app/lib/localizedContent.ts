@@ -94,17 +94,11 @@ export function ensureArticleTranslations(article: Article): Article["translatio
 }
 
 export function hasProjectLanguage(project: Project, language: ContentLanguage) {
-  const translation = ensureProjectTranslations(project)?.[language];
-  return Boolean(translation?.title.trim() && translation.shortDescription.trim());
+  return Boolean(selectProjectTranslation(project, language));
 }
 
 export function hasArticleLanguage(article: Article, language: ContentLanguage) {
-  const translation = ensureArticleTranslations(article)?.[language];
-  return Boolean(
-    translation?.title.trim()
-    && translation.excerpt.trim()
-    && translation.blocks.some((block) => blockHasContent(block)),
-  );
+  return Boolean(selectArticleTranslation(article, language));
 }
 
 function blockHasContent(block: ArticleBlock) {
@@ -115,11 +109,37 @@ function blockHasContent(block: ArticleBlock) {
 }
 
 export function localizeProject(project: Project, language: ContentLanguage): Project {
-  const translation = ensureProjectTranslations(project)?.[language];
+  const translation = selectProjectTranslation(project, language);
   return translation ? { ...project, ...translation } : project;
 }
 
 export function localizeArticle(article: Article, language: ContentLanguage): Article {
-  const translation = ensureArticleTranslations(article)?.[language];
+  const translation = selectArticleTranslation(article, language);
   return translation ? { ...article, ...translation } : article;
+}
+
+function selectProjectTranslation(project: Project, language: ContentLanguage) {
+  const translations = ensureProjectTranslations(project);
+  const requested = translations?.[language];
+  if (requested?.title.trim() && requested.shortDescription.trim()) return requested;
+  return (["en", "id"] as const)
+    .map((fallbackLanguage) => translations?.[fallbackLanguage])
+    .find((translation) => translation?.title.trim() && translation.shortDescription.trim());
+}
+
+function selectArticleTranslation(article: Article, language: ContentLanguage) {
+  const translations = ensureArticleTranslations(article);
+  const requested = translations?.[language];
+  if (articleTranslationHasContent(requested)) return requested;
+  return (["en", "id"] as const)
+    .map((fallbackLanguage) => translations?.[fallbackLanguage])
+    .find(articleTranslationHasContent);
+}
+
+function articleTranslationHasContent(translation: ArticleTranslation | undefined): translation is ArticleTranslation {
+  return Boolean(
+    translation?.title.trim()
+    && translation.excerpt.trim()
+    && translation.blocks.some((block) => blockHasContent(block)),
+  );
 }

@@ -121,9 +121,9 @@ export default function AdminCreativeWorkFormPage() {
         </FormSection>
         <FormSection title="Images">
           <div className="grid gap-4 md:grid-cols-3">
-            <AdminImageField label="Cover Image" value={draft.cover} folder={`creative-works/${draft.slug || draft.id}/cover`} hint="Recommended 1600x1000px or 16:10. This is used on creative work cards and detail hero." onChange={(value) => set("cover", value)} />
-            <AdminImageField label="Before Image" value={draft.beforeImage || ""} folder={`creative-works/${draft.slug || draft.id}/before`} hint="Optional. Recommended 1600x1000px, same ratio as After Image for clean comparison." onChange={(value) => set("beforeImage", value || undefined)} />
-            <AdminImageField label="After Image" value={draft.afterImage || ""} folder={`creative-works/${draft.slug || draft.id}/after`} hint="Optional. Recommended 1600x1000px, matching Before Image dimensions." onChange={(value) => set("afterImage", value || undefined)} />
+            <AdminImageField label="Cover Image" value={draft.cover} folder={`creative-works/${draft.slug || draft.id}/cover`} hint="The original image ratio and full frame are preserved." cropMode="original" onChange={(value) => set("cover", value)} />
+            <AdminImageField label="Before Image" value={draft.beforeImage || ""} folder={`creative-works/${draft.slug || draft.id}/before`} hint="Optional. The original image ratio and full frame are preserved." cropMode="original" onChange={(value) => set("beforeImage", value || undefined)} />
+            <AdminImageField label="After Image" value={draft.afterImage || ""} folder={`creative-works/${draft.slug || draft.id}/after`} hint="Optional. The original image ratio and full frame are preserved." cropMode="original" onChange={(value) => set("afterImage", value || undefined)} />
           </div>
           <AdminGalleryField label="Creative Gallery" values={draft.gallery} folder={`creative-works/${draft.slug || draft.id}/gallery`} hint="Recommended 1600x1000px or consistent 16:10 images. Use 3-8 images for a clean detail page." onChange={(values) => set("gallery", values)} />
         </FormSection>

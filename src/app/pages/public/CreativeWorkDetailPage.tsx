@@ -30,7 +30,7 @@ export default function CreativeWorkDetailPage() {
               <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)]">{t(work.description)}</p>
               <div className="mt-8 flex flex-wrap gap-2">{work.tools.map((tool) => <span key={tool} className="border border-[var(--color-border)] px-3 py-2 text-sm">{tool}</span>)}</div>
             </div>
-            <img src={work.cover} alt={t(work.title)} className="aspect-[16/11] w-full border border-[var(--color-border)] object-cover" />
+            <img src={work.cover} alt={t(work.title)} className="h-auto w-full border border-[var(--color-border)] object-contain" />
           </div>
         </div>
       </section>
@@ -38,7 +38,7 @@ export default function CreativeWorkDetailPage() {
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow={t("Creative brief")} title={t("Intent, process, and output.")} description={t(work.brief)} />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-                {work.gallery.map((image, index) => <img key={image} src={image} alt={`${t(work.title)} ${t("gallery")} ${index + 1}`} className="aspect-[4/3] w-full border border-[var(--color-border)] object-cover" loading="lazy" />)}
+                {work.gallery.map((image, index) => <img key={image} src={image} alt={`${t(work.title)} ${t("gallery")} ${index + 1}`} className="h-auto w-full border border-[var(--color-border)] object-contain" loading="lazy" />)}
           </div>
           {work.beforeImage && work.afterImage && (
             <div className="mt-14 grid gap-6 md:grid-cols-2">
@@ -54,5 +54,5 @@ export default function CreativeWorkDetailPage() {
 }
 
 function Panel({ label, image }: { label: string; image: string }) {
-  return <div><p className="mb-3 font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-text-muted)]">{label}</p><img src={image} alt={label} className="aspect-video w-full border border-[var(--color-border)] object-cover" /></div>;
+  return <div><p className="mb-3 font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-text-muted)]">{label}</p><img src={image} alt={label} className="h-auto w-full border border-[var(--color-border)] object-contain" /></div>;
 }

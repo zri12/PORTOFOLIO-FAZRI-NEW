@@ -7,6 +7,7 @@
 - Code and documentation: English.
 - Proper names and Indonesian project names remain unchanged.
 - Project and article editorial content is authored separately for each language; the UI must not present source-language content as if it were translated.
+- If a published legacy item has only one authored language, keep it visible by showing that source-language content until the selected-language version is added.
 
 ## Content Tone
 
