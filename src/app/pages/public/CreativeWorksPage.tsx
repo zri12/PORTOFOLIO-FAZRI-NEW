@@ -58,7 +58,7 @@ export default function CreativeWorksPage() {
                     src={work.cover}
                     alt=""
                     aria-hidden="true"
-                    className="relative h-full w-full object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-95"
+                    className="relative h-full w-full object-contain opacity-90 transition-opacity duration-500 group-hover:opacity-100"
                     loading="lazy"
                     onError={(event) => {
                       event.currentTarget.hidden = true;

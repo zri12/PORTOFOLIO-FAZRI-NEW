@@ -21,7 +21,7 @@ export default function AdminCreativeWorksPage() {
       <div className="grid gap-5 xl:grid-cols-2">
         {filtered.map((item) => (
           <article key={item.id} className="grid gap-4 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 md:grid-cols-[180px_1fr]">
-            <img src={item.cover} alt={item.title} className="aspect-square w-full object-cover" />
+            <img src={item.cover} alt={item.title} className="h-auto w-full object-contain" />
             <div>
               <div className="mb-3 flex flex-wrap gap-2"><StatusBadge status={item.category} /><StatusBadge status={item.status} />{item.featured && <StatusBadge status="featured" />}</div>
               <h2 className="font-manrope text-xl font-bold">{item.title}</h2>
