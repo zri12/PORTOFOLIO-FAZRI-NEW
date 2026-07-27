@@ -28,6 +28,8 @@ No task may be marked complete solely because the UI renders. Validation must ma
 - [ ] `/creative-works/light-place-people`
 - [ ] `/creative-works/frame-in-motion`
 - [ ] `/certificates`
+- [ ] `/blog`
+- [ ] `/blog/:slug`
 - [ ] `/contact`
 - [ ] unknown public route shows not-found state.
 

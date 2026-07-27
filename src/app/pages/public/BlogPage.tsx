@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, BookOpenText, Clock3, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpenText, Clock3, Files } from "lucide-react";
 import { Link } from "react-router";
 import { useMemo } from "react";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
@@ -17,6 +17,7 @@ export default function BlogPage() {
     .sort((a, b) => Number(b.featured) - Number(a.featured) || b.publishedAt.localeCompare(a.publishedAt));
   const featured = published[0];
   const rest = featured ? published.slice(1) : [];
+  const categories = Array.from(new Set(published.map((article) => article.category))).slice(0, 4);
   const schema = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "Blog",
@@ -37,33 +38,52 @@ export default function BlogPage() {
   });
 
   return (
-    <main className="overflow-x-clip bg-[var(--color-bg-primary)] pb-24 pt-28 text-[var(--color-text-main)] sm:pt-32">
-      <header className="mx-auto max-w-7xl px-5 sm:px-6">
-        <div className="grid gap-8 border-b border-[var(--color-border)] pb-12 lg:grid-cols-[1.12fr_.88fr] lg:items-end">
+    <main className="relative overflow-x-clip bg-[var(--color-bg-primary)] pb-28 pt-28 text-[var(--color-text-main)] sm:pt-32">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[680px] bg-[radial-gradient(circle_at_78%_8%,rgba(78,187,232,.11),transparent_34%),linear-gradient(180deg,rgba(255,255,255,.018),transparent)]" />
+      <header className="relative mx-auto max-w-7xl px-5 sm:px-6">
+        <div className="grid gap-10 border-b border-[var(--color-border)] pb-12 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end lg:pb-16">
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[.22em] text-[var(--color-accent-main)]">Insights / Journal</p>
-            <h1 className="mt-5 max-w-3xl font-manrope text-4xl font-bold leading-tight tracking-[-.025em] sm:text-6xl">{t("Notes from the process of building digital products.")}</h1>
+            <div className="flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.22em] text-[var(--color-accent-main)]">
+              <span className="h-px w-10 bg-current" /> Insights / Journal
+            </div>
+            <h1 className="mt-6 max-w-4xl font-manrope text-4xl font-bold leading-[1.04] tracking-[-.035em] sm:text-6xl lg:text-7xl">
+              {t("Notes from the process of building digital products.")}
+            </h1>
+            <p className="mt-7 max-w-2xl text-base leading-8 text-[var(--color-text-secondary)] sm:text-lg">
+              {t("Practical writing about web development, interface design, performance, and the decisions behind a product.")}
+            </p>
           </div>
-          <div className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5">
-            <Sparkles size={18} className="text-[var(--color-accent-main)]" />
-            <p className="mt-5 text-base leading-8 text-[var(--color-text-secondary)]">{t("Practical writing about web development, interface design, performance, and the decisions behind a product.")}</p>
-          </div>
+          <aside className="border-l border-[var(--color-border)] pl-6">
+            <Files size={20} className="text-[var(--color-accent-main)]" />
+            <strong className="mt-6 block font-manrope text-4xl">{String(published.length).padStart(2, "0")}</strong>
+            <span className="mt-1 block text-sm text-[var(--color-text-muted)]">{language === "id" ? "Artikel diterbitkan" : "Published articles"}</span>
+            {categories.length > 0 && <p className="mt-5 font-mono text-[9px] uppercase leading-6 tracking-[.12em] text-[var(--color-text-muted)]">{categories.join(" · ")}</p>}
+          </aside>
         </div>
       </header>
 
-      <section className="mx-auto mt-10 max-w-7xl px-5 sm:px-6" aria-label={t("Article list")}>
+      <section className="relative mx-auto mt-10 max-w-7xl px-5 sm:px-6 lg:mt-14" aria-label={t("Article list")}>
         {published.length === 0 ? (
           <div className="border-y border-[var(--color-border)] py-16">
             <p className="font-manrope text-2xl font-bold">{language === "id" ? "Belum ada artikel yang dipublikasikan." : "No published articles yet."}</p>
             <p className="mt-3 text-[var(--color-text-secondary)]">{language === "id" ? "Artikel akan muncul setelah dipublikasikan melalui admin." : "Articles will appear after they are published through admin."}</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {featured && <FeaturedArticle article={featured} t={t} />}
+          <div>
+            {featured && <FeaturedArticle article={featured} t={t} language={language} />}
             {rest.length > 0 && (
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {rest.map((article, index) => <ArticleCard key={article.id} article={article} index={index + 2} t={t} />)}
-              </div>
+              <section className="mt-20 sm:mt-24">
+                <div className="flex items-end justify-between gap-6 border-b border-[var(--color-border)] pb-5">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">Archive / {String(rest.length).padStart(2, "0")}</p>
+                    <h2 className="mt-3 font-manrope text-3xl font-bold tracking-[-.02em] sm:text-4xl">{language === "id" ? "Catatan terbaru" : "Latest notes"}</h2>
+                  </div>
+                  <BookOpenText size={24} className="mb-1 text-[var(--color-text-muted)]" />
+                </div>
+                <div className="grid gap-x-8 gap-y-14 pt-8 md:grid-cols-2">
+                  {rest.map((article, index) => <ArticleCard key={article.id} article={article} index={index + 2} t={t} language={language} />)}
+                </div>
+              </section>
             )}
           </div>
         )}
@@ -72,40 +92,41 @@ export default function BlogPage() {
   );
 }
 
-function FeaturedArticle({ article, t }: { article: Article; t: (value: string) => string }) {
+function FeaturedArticle({ article, t, language }: { article: Article; t: (value: string) => string; language: "en" | "id" }) {
   return (
-    <article className="group grid overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_24px_80px_rgba(0,0,0,.18)] lg:grid-cols-[1.1fr_.9fr]">
-      <Link to={`/blog/${article.slug}`} className="relative block self-start overflow-hidden bg-[var(--color-bg-secondary)]">
+    <article className="group border-y border-[var(--color-border)]">
+      <Link to={`/blog/${article.slug}`} className="relative block overflow-hidden bg-[var(--color-bg-secondary)]">
         {article.coverImage ? (
           <img src={article.coverImage} alt={article.coverAlt || article.title} loading="eager" className="h-auto w-full object-contain" />
         ) : (
           <div className="min-h-[280px] sm:min-h-[380px] lg:min-h-[460px]"><ArticleVisual category={article.category} featured /></div>
         )}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
-        <span className="absolute left-5 top-5 border border-[var(--color-accent-main)]/35 bg-[var(--color-bg-primary)]/85 px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-main)] backdrop-blur">Featured</span>
+        <span className="absolute left-4 top-4 border border-[var(--color-accent-main)]/35 bg-[var(--color-bg-primary)]/90 px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-main)] backdrop-blur sm:left-6 sm:top-6">Featured / 01</span>
       </Link>
-      <div className="flex min-w-0 flex-col p-6 sm:p-8 lg:p-10">
-        <div className="flex items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">
-          <span>{article.category}</span>
-          <span>01</span>
+      <div className="grid gap-8 py-8 sm:py-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-16">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{article.category}</p>
+          <p className="mt-4 text-sm text-[var(--color-text-muted)]">{formatArticleDate(article.publishedAt, language)}</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {article.tags.slice(0, 3).map((tag) => <span key={tag} className="border-l border-[var(--color-border)] pl-2 font-mono text-[9px] uppercase tracking-[.12em] text-[var(--color-text-muted)]">{tag}</span>)}
+          </div>
         </div>
-        <h2 className="mt-8 max-w-2xl font-manrope text-3xl font-bold leading-tight tracking-[-.02em] sm:text-5xl"><Link to={`/blog/${article.slug}`} className="hover:text-[var(--color-accent-main)]">{article.title}</Link></h2>
-        <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--color-text-secondary)]">{article.excerpt}</p>
-        <div className="mt-8 flex flex-wrap gap-2">
-          {article.tags.slice(0, 3).map((tag) => <span key={tag} className="border border-[var(--color-border)] px-3 py-2 font-mono text-[9px] uppercase tracking-[.12em] text-[var(--color-text-muted)]">{tag}</span>)}
-        </div>
-        <div className="mt-auto flex items-center justify-between gap-5 border-t border-[var(--color-border)] pt-6">
-          <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"><Clock3 size={14} /> {article.readingTime} {t("min read")}</span>
-          <Link to={`/blog/${article.slug}`} className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-accent-main)]">{t("Read article")} <ArrowRight size={15} /></Link>
+        <div>
+          <h2 className="max-w-4xl font-manrope text-3xl font-bold leading-[1.12] tracking-[-.025em] sm:text-5xl"><Link to={`/blog/${article.slug}`} className="transition-colors hover:text-[var(--color-accent-main)]">{article.title}</Link></h2>
+          <p className="mt-5 max-w-3xl text-base leading-8 text-[var(--color-text-secondary)]">{article.excerpt}</p>
+          <div className="mt-8 flex flex-wrap items-center gap-6">
+            <Link to={`/blog/${article.slug}`} className="inline-flex items-center gap-3 text-sm font-bold text-[var(--color-accent-main)]">{t("Read article")} <ArrowRight size={16} /></Link>
+            <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"><Clock3 size={14} /> {article.readingTime} {t("min read")}</span>
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
-function ArticleCard({ article, index, t }: { article: Article; index: number; t: (value: string) => string }) {
+function ArticleCard({ article, index, t, language }: { article: Article; index: number; t: (value: string) => string; language: "en" | "id" }) {
   return (
-    <article className="group flex min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-primary)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[var(--color-accent-main)]/60 hover:shadow-[0_24px_65px_rgba(0,0,0,.22)]">
+    <article className="group flex min-w-0 flex-col border-t border-[var(--color-border)] pt-4">
       <Link to={`/blog/${article.slug}`} className="relative block overflow-hidden bg-[var(--color-surface-elevated)]">
         {article.coverImage ? (
           <img src={article.coverImage} alt={article.coverAlt || article.title} loading="lazy" className="h-auto w-full object-contain" />
@@ -113,20 +134,27 @@ function ArticleCard({ article, index, t }: { article: Article; index: number; t
           <div className="aspect-[16/10]"><ArticleVisual category={article.category} /></div>
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-5 sm:p-6">
+      <div className="flex flex-1 flex-col pt-6">
         <div className="flex items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">
           <span className="truncate">{article.category}</span>
           <span>{String(index).padStart(2, "0")}</span>
         </div>
-        <h2 className="mt-5 font-manrope text-2xl font-bold leading-tight"><Link to={`/blog/${article.slug}`} className="hover:text-[var(--color-accent-main)]">{article.title}</Link></h2>
+        <h2 className="mt-5 max-w-xl font-manrope text-2xl font-bold leading-[1.18] tracking-[-.015em] sm:text-3xl"><Link to={`/blog/${article.slug}`} className="transition-colors hover:text-[var(--color-accent-main)]">{article.title}</Link></h2>
         <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--color-text-secondary)]">{article.excerpt}</p>
-        <div className="mt-auto flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-5">
-          <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"><Clock3 size={14} /> {article.readingTime} {t("min read")}</span>
+        <div className="mt-auto flex items-center justify-between gap-4 pt-7">
+          <span className="text-xs text-[var(--color-text-muted)]">{formatArticleDate(article.publishedAt, language)} · {article.readingTime} {t("min read")}</span>
           <Link to={`/blog/${article.slug}`} aria-label={`${t("Read")} ${article.title}`} className="flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-text-main)] transition-[border-color,color,transform] duration-300 hover:-translate-y-0.5 hover:border-[var(--color-accent-main)] hover:text-[var(--color-accent-main)]"><ArrowUpRight size={18} /></Link>
         </div>
       </div>
     </article>
   );
+}
+
+function formatArticleDate(value: string, language: "en" | "id" = "en") {
+  if (!value) return language === "id" ? "Tanpa tanggal" : "Undated";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 function ArticleVisual({ category, featured = false }: { category: string; featured?: boolean }) {

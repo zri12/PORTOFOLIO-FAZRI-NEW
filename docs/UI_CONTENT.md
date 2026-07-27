@@ -74,6 +74,16 @@ Do not invent outcomes or metrics. Keep descriptions factual and based on curren
 
 Visual elements should show meaningful dashboards, forms, data views, mobile states, or workflow details. Avoid generic abstract placeholders.
 
+## Blog
+
+The blog archive uses a modern editorial layout rather than a dense dashboard-card grid:
+
+- concise journal introduction with published-article count and active topics
+- one full-width featured visual that preserves the original image ratio
+- featured metadata and narrative separated below the visual
+- latest articles presented in a readable two-column archive on desktop and one column on mobile
+- restrained borders, cyan accents, and typography-led hierarchy without excessive cards or image cropping
+
 ## Creative Works
 
 Approved category labels:
