@@ -213,6 +213,7 @@ export function settingsToRow(settings: SiteSettings): Row {
 
 export function mapProject(row: Row, techStack: string[] = []): Project {
   const decisionsEnvelope = asRecord(row.decisions);
+  const storedTechStack = asStringArray(decisionsEnvelope?.techStack);
   return {
     id: asString(row.id),
     slug: asString(row.slug),
@@ -225,7 +226,7 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     status: asString(row.status, "draft") as Project["status"],
     featured: asBool(row.featured),
     clientType: asString(row.client_type, "Personal Project") as Project["clientType"],
-    techStack,
+    techStack: Array.from(new Set([...techStack, ...storedTechStack])),
     shortDescription: asString(row.short_description),
     fullDescription: asString(row.full_description),
     overview: asString(row.overview),
@@ -291,8 +292,9 @@ export function projectToRow(project: Project): Row {
     gallery: toStoredAssetArray(project.gallery),
     challenges: project.challenges,
     decisions: {
-      version: 1,
+      version: 2,
       items: project.decisions,
+      techStack: Array.from(new Set(project.techStack.map((name) => name.trim()).filter(Boolean))),
       translations: project.translations ?? {},
     },
     display_order: project.displayOrder,

@@ -1,4 +1,5 @@
 import { portfolioSeed } from "../data/seed/portfolioSeed";
+import { inferTechnologyCategory, technologyIconKey } from "../data/technologyCatalog";
 import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../lib/supabase/client";
 import {
   articleToRow,
@@ -224,11 +225,43 @@ export const supabasePortfolioRepository = {
     const { data, error } = await supabase.from("projects").upsert({ id: project.id, ...projectToRow(project) }, { onConflict: "id" }).select("id").single();
     if (error) throw error;
     const projectId = String((data as Row).id);
-    await supabase.from("project_technologies").delete().eq("project_id", projectId);
-    for (const [index, name] of project.techStack.entries()) {
-      const { data: tech } = await supabase.from("technologies").select("id").eq("name", name).maybeSingle();
-      const techId = asRow(tech)?.id;
-      if (techId) await supabase.from("project_technologies").upsert({ project_id: projectId, technology_id: techId, display_order: index + 1 });
+    const { error: deleteRelationsError } = await supabase.from("project_technologies").delete().eq("project_id", projectId);
+    if (deleteRelationsError) throw deleteRelationsError;
+    const normalizedNames = Array.from(new Set(project.techStack.map((name) => name.trim()).filter(Boolean)));
+    for (const [index, name] of normalizedNames.entries()) {
+      const { data: existingTech, error: findTechError } = await supabase.from("technologies").select("id").eq("name", name).maybeSingle();
+      if (findTechError) throw findTechError;
+
+      let techId = asRow(existingTech)?.id;
+      if (!techId) {
+        const technology: Technology = {
+          id: crypto.randomUUID(),
+          name,
+          iconKey: technologyIconKey(name),
+          logoUrl: "",
+          category: inferTechnologyCategory(name),
+          level: "Familiar",
+          description: `${name} used in selected portfolio projects.`,
+          featured: false,
+          active: true,
+          displayOrder: 1000 + index,
+        };
+        const { data: createdTech, error: createTechError } = await supabase
+          .from("technologies")
+          .insert({ id: technology.id, ...technologyToRow(technology) })
+          .select("id")
+          .single();
+        if (createTechError) throw createTechError;
+        techId = asRow(createdTech)?.id;
+      }
+
+      if (!techId) throw new Error(`Technology "${name}" could not be created.`);
+      const { error: relationError } = await supabase.from("project_technologies").upsert({
+        project_id: projectId,
+        technology_id: techId,
+        display_order: index + 1,
+      });
+      if (relationError) throw relationError;
     }
   },
 

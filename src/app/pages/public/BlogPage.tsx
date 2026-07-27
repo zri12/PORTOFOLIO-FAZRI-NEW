@@ -9,12 +9,16 @@ import { hasArticleLanguage, localizeArticle } from "../../lib/localizedContent"
 
 export default function BlogPage() {
   const { articles, settings, profile } = usePortfolioData();
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const published = articles
     .filter((article) => article.status === "published" && (!article.publishedAt || new Date(article.publishedAt) <= new Date()))
     .filter((article) => hasArticleLanguage(article, language))
     .map((article) => localizeArticle(article, language))
     .sort((a, b) => Number(b.featured) - Number(a.featured) || b.publishedAt.localeCompare(a.publishedAt));
+  const alternateLanguage = language === "en" ? "id" : "en";
+  const hasAlternateLanguageArticles = articles.some(
+    (article) => article.status === "published" && hasArticleLanguage(article, alternateLanguage),
+  );
   const featured = published[0];
   const rest = featured ? published.slice(1) : [];
   const categories = Array.from(new Set(published.map((article) => article.category))).slice(0, 4);
@@ -66,7 +70,20 @@ export default function BlogPage() {
         {published.length === 0 ? (
           <div className="border-y border-[var(--color-border)] py-16">
             <p className="font-manrope text-2xl font-bold">{language === "id" ? "Belum ada artikel yang dipublikasikan." : "No published articles yet."}</p>
-            <p className="mt-3 text-[var(--color-text-secondary)]">{language === "id" ? "Artikel akan muncul setelah dipublikasikan melalui admin." : "Articles will appear after they are published through admin."}</p>
+            <p className="mt-3 text-[var(--color-text-secondary)]">
+              {language === "id"
+                ? "Artikel akan muncul setelah versi Indonesia dipublikasikan melalui admin."
+                : "English articles will appear after an English version is added through admin."}
+            </p>
+            {hasAlternateLanguageArticles && (
+              <button
+                type="button"
+                onClick={() => setLanguage(alternateLanguage)}
+                className="mt-6 border-b border-[var(--color-accent-main)] pb-1 text-sm font-bold text-[var(--color-text-main)]"
+              >
+                {language === "en" ? "View available Indonesian articles" : "Lihat artikel bahasa Inggris yang tersedia"}
+              </button>
+            )}
           </div>
         ) : (
           <div>

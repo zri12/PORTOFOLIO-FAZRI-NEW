@@ -20,7 +20,7 @@ function DetailBlock({ title, children }: { title: string; children: React.React
 
 export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
-  const { projects, techStack } = usePortfolioData();
+  const { projects } = usePortfolioData();
   const { language, t } = useLanguage();
   const availableProjects = projects.filter((entry) => hasProjectLanguage(entry, language));
   const anyLanguageProject = projects.find((entry) => entry.slug === slug);
@@ -51,7 +51,7 @@ export default function ProjectDetailPage() {
   const previous = localizedProjects[(index - 1 + localizedProjects.length) % localizedProjects.length];
   const next = localizedProjects[(index + 1) % localizedProjects.length];
   const related = localizedProjects.find((entry) => entry.slug === project.relatedProjectSlug) || localizedProjects.find((entry) => entry.category === project.category && entry.id !== project.id) || next;
-  const projectTech = techStack.filter((tech) => project.techStack.includes(tech.name));
+  const projectTech = project.techStack;
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
@@ -102,7 +102,7 @@ export default function ProjectDetailPage() {
             <div>
               <h2 className="font-manrope text-xl font-bold">{t("Tech Stack")}</h2>
               <div className="mt-4 flex flex-wrap gap-2">
-                {projectTech.map((tech) => <span key={tech.id} className="max-w-full break-words border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm">{tech.name}</span>)}
+                {projectTech.map((tech) => <span key={tech} className="max-w-full break-words border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm">{tech}</span>)}
               </div>
             </div>
             <div>
