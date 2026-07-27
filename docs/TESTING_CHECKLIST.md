@@ -30,6 +30,8 @@ No task may be marked complete solely because the UI renders. Validation must ma
 - [ ] `/certificates`
 - [ ] `/blog`
 - [ ] `/blog/:slug`
+- [ ] EN never renders Indonesian-only project or article author content; IND never renders English-only author content.
+- [ ] A blog language with no translated articles shows an explicit empty state and a switch to the available language.
 - [ ] `/contact`
 - [ ] unknown public route shows not-found state.
 
@@ -53,6 +55,14 @@ No task may be marked complete solely because the UI renders. Validation must ma
 - [ ] `/admin/settings`
 - [ ] unknown admin route redirects to dashboard.
 
+Dashboard:
+
+- [ ] refresh data reports loading, success, and repository errors
+- [ ] every metric card opens its corresponding admin module
+- [ ] quick actions open the correct create or media route
+- [ ] draft, moderation, and unread queues use current repository counts
+- [ ] recent project, article, and message rows open the correct workflow
+
 ## Authentication
 
 - [ ] Unauthenticated admin access redirects to login.
@@ -74,6 +84,8 @@ Projects:
 - [ ] delete confirmation
 - [ ] publish/draft/archive handling
 - [ ] refresh persistence
+- [ ] searchable multi-select tech stack supports multiple development and creative tools
+- [ ] custom technology persists after saving and appears on `/projects/:slug`
 
 Tech stack, creative works, experience, certificates, comments, messages, media, and settings:
 

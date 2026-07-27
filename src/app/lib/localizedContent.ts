@@ -121,19 +121,15 @@ export function localizeArticle(article: Article, language: ContentLanguage): Ar
 function selectProjectTranslation(project: Project, language: ContentLanguage) {
   const translations = ensureProjectTranslations(project);
   const requested = translations?.[language];
-  if (requested?.title.trim() && requested.shortDescription.trim()) return requested;
-  return (["en", "id"] as const)
-    .map((fallbackLanguage) => translations?.[fallbackLanguage])
-    .find((translation) => translation?.title.trim() && translation.shortDescription.trim());
+  if (projectTranslationHasContent(requested)) return requested;
+  return undefined;
 }
 
 function selectArticleTranslation(article: Article, language: ContentLanguage) {
   const translations = ensureArticleTranslations(article);
   const requested = translations?.[language];
   if (articleTranslationHasContent(requested)) return requested;
-  return (["en", "id"] as const)
-    .map((fallbackLanguage) => translations?.[fallbackLanguage])
-    .find(articleTranslationHasContent);
+  return undefined;
 }
 
 function articleTranslationHasContent(translation: ArticleTranslation | undefined): translation is ArticleTranslation {
@@ -141,5 +137,13 @@ function articleTranslationHasContent(translation: ArticleTranslation | undefine
     translation?.title.trim()
     && translation.excerpt.trim()
     && translation.blocks.some((block) => blockHasContent(block)),
+  );
+}
+
+function projectTranslationHasContent(translation: ProjectTranslation | undefined): translation is ProjectTranslation {
+  return Boolean(
+    translation?.title.trim()
+    && translation.shortDescription.trim()
+    && translation.overview.trim(),
   );
 }

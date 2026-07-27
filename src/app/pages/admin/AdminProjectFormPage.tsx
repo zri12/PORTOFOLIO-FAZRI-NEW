@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { AdminImageField, AdminGalleryField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
+import { inferTechnologyCategory, technologyCatalog } from "../../data/technologyCatalog";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { slugify } from "../../lib/storage";
 import { emptyProjectTranslation, ensureProjectTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { ContentLanguage, Project, ProjectTranslation } from "../../types/portfolio";
+import type { ContentLanguage, Project, ProjectTranslation, Technology } from "../../types/portfolio";
 
 const toLines = (items: string[]) => items.join("\n");
 const fromLines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
@@ -223,23 +225,11 @@ export default function AdminProjectFormPage() {
         </FormSection>
 
         <FormSection title="Tech Stack">
-          <div className="grid gap-2 md:grid-cols-3">
-            {techStack.map((tech) => (
-              <label key={tech.id} className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={draft.techStack.includes(tech.name)}
-                  onChange={(event) => {
-                    const next = event.target.checked ? [...draft.techStack, tech.name] : draft.techStack.filter((item) => item !== tech.name);
-                    set("techStack", next);
-                  }}
-                />
-                {tech.logoUrl ? <img src={tech.logoUrl} alt="" className="h-6 w-6 object-contain" /> : <span className="font-mono text-[10px] text-[var(--color-accent-main)]">{tech.name.slice(0, 2)}</span>}
-                <span>{tech.name}</span>
-              </label>
-            ))}
-          </div>
-          <AdminInput label="Manual Tech Stack (comma separated, optional if tech is not registered yet)" value={draft.techStack.join(", ")} onChange={(value) => set("techStack", value.split(",").map((item) => item.trim()).filter(Boolean))} />
+          <TechnologyMultiSelect
+            technologies={techStack}
+            value={draft.techStack}
+            onChange={(next) => set("techStack", next)}
+          />
         </FormSection>
 
         <FormSection title="Case Study Content">
@@ -272,6 +262,168 @@ export default function AdminProjectFormPage() {
           {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
+    </div>
+  );
+}
+
+type TechnologyOption = {
+  name: string;
+  category: Technology["category"];
+  logoUrl?: string;
+};
+
+function TechnologyMultiSelect({
+  technologies,
+  value,
+  onChange,
+}: {
+  technologies: Technology[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeWhenOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeWhenOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWhenOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  const options = useMemo(() => {
+    const byName = new Map<string, TechnologyOption>();
+    technologyCatalog.forEach((item) => byName.set(item.name.toLocaleLowerCase(), item));
+    technologies.forEach((item) => byName.set(item.name.toLocaleLowerCase(), {
+      name: item.name,
+      category: item.category,
+      logoUrl: item.logoUrl,
+    }));
+    value.forEach((name) => {
+      const key = name.toLocaleLowerCase();
+      if (!byName.has(key)) byName.set(key, { name, category: inferTechnologyCategory(name) });
+    });
+    return Array.from(byName.values());
+  }, [technologies, value]);
+
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const filteredOptions = options.filter((option) =>
+    `${option.name} ${option.category}`.toLocaleLowerCase().includes(normalizedQuery),
+  );
+  const hasExactOption = options.some((option) => option.name.toLocaleLowerCase() === normalizedQuery);
+  const categories: Technology["category"][] = ["Frontend", "Backend", "Database", "Deployment", "Creative"];
+
+  const toggle = (name: string) => {
+    const existing = value.find((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase());
+    onChange(existing ? value.filter((item) => item !== existing) : [...value, name]);
+  };
+
+  const addCustom = () => {
+    const name = query.trim();
+    if (!name) return;
+    if (!value.some((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase())) onChange([...value, name]);
+    setQuery("");
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">Technologies and creative tools</span>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-12 w-full items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-4 py-3 text-left text-sm outline-none focus:border-[var(--color-accent-main)]"
+      >
+        <span className={value.length ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}>
+          {value.length ? `${value.length} selected` : "Search and select multiple technologies"}
+        </span>
+        <ChevronDown size={17} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {value.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {value.map((name) => (
+            <span key={name} className="inline-flex items-center gap-2 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-xs font-semibold">
+              {name}
+              <button type="button" onClick={() => toggle(name)} aria-label={`Remove ${name}`} className="text-[var(--color-text-muted)] hover:text-red-300">
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="absolute z-40 mt-2 w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-2xl">
+          <label className="flex items-center gap-3 border-b border-[var(--color-border)] px-4">
+            <Search size={16} className="shrink-0 text-[var(--color-text-muted)]" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && normalizedQuery && !hasExactOption) {
+                  event.preventDefault();
+                  addCustom();
+                }
+              }}
+              placeholder="Search React, Laravel, Figma, Premiere Pro..."
+              className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-[var(--color-text-muted)]"
+            />
+          </label>
+          <div role="listbox" aria-multiselectable="true" className="max-h-80 overflow-y-auto p-2">
+            {categories.map((category) => {
+              const categoryOptions = filteredOptions.filter((option) => option.category === category);
+              if (!categoryOptions.length) return null;
+              return (
+                <div key={category} className="mb-3 last:mb-0">
+                  <p className="px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[var(--color-accent-main)]">{category}</p>
+                  {categoryOptions.map((option) => {
+                    const selected = value.some((item) => item.toLocaleLowerCase() === option.name.toLocaleLowerCase());
+                    return (
+                      <button
+                        key={option.name}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => toggle(option.name)}
+                        className={`flex w-full items-center gap-3 px-2 py-2 text-left text-sm hover:bg-white/5 ${selected ? "text-[var(--color-text-main)]" : "text-[var(--color-text-secondary)]"}`}
+                      >
+                        <span className={`flex h-5 w-5 items-center justify-center border ${selected ? "border-[var(--color-accent-main)] bg-[var(--color-accent-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)]"}`}>
+                          {selected && <Check size={13} />}
+                        </span>
+                        {option.logoUrl && <img src={option.logoUrl} alt="" className="h-5 w-5 object-contain" />}
+                        <span>{option.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            {normalizedQuery && !hasExactOption && (
+              <button type="button" onClick={addCustom} className="flex w-full items-center gap-3 border-t border-[var(--color-border)] px-2 py-3 text-left text-sm font-semibold text-[var(--color-accent-main)]">
+                <Plus size={16} /> Add custom technology “{query.trim()}”
+              </button>
+            )}
+            {!filteredOptions.length && !normalizedQuery && <p className="p-4 text-sm text-[var(--color-text-muted)]">No technologies available.</p>}
+          </div>
+          <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3 text-xs text-[var(--color-text-muted)]">
+            <span>Select as many as needed. Type a new name to add a custom item.</span>
+            <button type="button" onClick={() => setOpen(false)} className="font-bold text-[var(--color-text-main)]">Done</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

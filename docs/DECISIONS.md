@@ -186,6 +186,18 @@ Decision: Article text is authored in Markdown-style sections separated only whe
 
 Consequences: Existing structured article blocks are normalized when opened in the admin editor, text can be pasted as one continuous source, and images remain explicit structured blocks with upload metadata.
 
+## ADR-017 - Localized Content Uses Strict Language Selection
+
+Status: Accepted
+
+Date: 2026-07-27
+
+Context: Falling back to Indonesian author content while the English toggle is active makes the interface language label inaccurate and obscures which translation is still missing.
+
+Decision: Public project and article pages render author content only when the selected language has a complete translation. Legacy content is detected and assigned to its actual source language.
+
+Consequences: Indonesian-only content remains visible in Indonesian mode and no longer appears as English. The English archive may show an explicit empty state until an English version is added through admin.
+
 ## Future ADR Template
 
 ```markdown

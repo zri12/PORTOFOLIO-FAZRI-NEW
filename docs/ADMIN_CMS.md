@@ -42,6 +42,8 @@ Required dashboard metrics and widgets:
 - recent items
 - quick actions
 
+Dashboard totals are derived from the shared repository rather than placeholder chart values. Metric cards, attention queues, quick actions, and recent-content rows link directly to their relevant CMS workflow. Manual refresh exposes loading, success, and error feedback.
+
 ## Shared CRUD Rules
 
 Every CRUD module must support, where relevant:
@@ -108,6 +110,8 @@ Project forms should include:
 - features, architecture, data structure, process, gallery
 - challenges, decisions, testing, deployment, result
 - live URL and source URL
+
+The tech stack field uses one searchable multi-select dropdown. It combines registered technologies with the built-in development and creative-tool catalog, supports multiple selections without closing the menu, and allows a custom name when a required tool is not listed.
 
 Project text is edited independently in English and Indonesian. Shared media and technical metadata are entered once. Drafts may be incomplete, but publishing requires title, short description, and overview in both languages.
 
