@@ -21,6 +21,8 @@ Current TypeScript models live in `src/app/types/portfolio.ts`.
 
 Project and article author-written content is localized through explicit `translations.en` and `translations.id` objects. Shared fields such as slug, status, dates, URLs, technology, and media remain outside translations. Legacy records are assigned to one detected source language rather than duplicated into both languages. Public pages render only the selected language; content from another language is never shown under the wrong language toggle.
 
+Admin save flows accept one English or Indonesian source version, detect the actual language from the author content, generate the opposite translation through the configured HTTP translation endpoint, and persist both explicit translation objects. Markdown markers and shared media URLs are kept outside translated text.
+
 Until dedicated database columns are introduced, localized project data is versioned inside the existing `projects.decisions` JSONB value and localized article data inside `articles.content` JSONB. The mappers remain backward-compatible with the former array values.
 
 Project technology names are also retained in the versioned project envelope in addition to normalized `project_technologies` relations. This preserves custom entries while newly selected catalog or custom technology names are registered in the master technology table.

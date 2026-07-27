@@ -86,6 +86,8 @@ Projects:
 - [ ] refresh persistence
 - [ ] searchable multi-select tech stack supports multiple development and creative tools
 - [ ] custom technology persists after saving and appears on `/projects/:slug`
+- [ ] one complete EN or ID project version generates and saves the opposite language
+- [ ] Indonesian content entered while the EN editor tab is active is detected as Indonesian
 
 Tech stack, creative works, experience, certificates, comments, messages, media, and settings:
 
@@ -105,6 +107,9 @@ Article editor:
 - [ ] inserting an image preserves text before it and creates text after it
 - [ ] repeated text-image-text sequences save and reload in the same order
 - [ ] raw HTML is displayed as text and is never executed
+- [ ] one complete EN or ID article version generates and saves the opposite language
+- [ ] automatic translation preserves Markdown heading, quote, bullet, and numbered-list prefixes
+- [ ] translation timeout, quota, provider, and network errors are visible without losing form content
 
 ## Local Persistence
 

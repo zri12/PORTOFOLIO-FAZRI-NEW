@@ -67,12 +67,13 @@ export function articleTranslationFromLegacy(article: Article): ArticleTranslati
   };
 }
 
-const indonesianWords = /\b(yang|dan|dengan|untuk|dari|pada|adalah|ini|itu|sebagai|membangun|cara|fitur|pengguna|sistem)\b/gi;
-const englishWords = /\b(the|and|with|for|from|this|that|as|build|how|feature|user|system|project)\b/gi;
+const indonesianWords = /\b(yang|dan|dengan|untuk|dari|pada|adalah|ini|itu|sebagai|membangun|cara|fitur|pengguna|sistem|aplikasi|website|proyek|data|dapat|menggunakan|membuat|menampilkan|mengelola|berbasis|melalui|hasil|tujuan|solusi|tantangan|halaman|agar|serta|dalam|oleh|atau|telah|akan|juga|tidak|lebih|baru|kami|saya|anda|pengelolaan|hingga|menjadi|membantu)\b/gi;
+const englishWords = /\b(the|and|with|for|from|this|that|as|build|how|feature|user|system|project|application|website|data|can|using|create|display|manage|based|through|result|objective|solution|challenge|page|so|also|within|into|more|new|we|you|not|will|have|has|become|help)\b/gi;
 
-export function detectContentLanguage(value: string): ContentLanguage {
+export function detectContentLanguage(value: string, fallback: ContentLanguage = "en"): ContentLanguage {
   const IndonesianScore = value.match(indonesianWords)?.length ?? 0;
   const englishScore = value.match(englishWords)?.length ?? 0;
+  if (IndonesianScore === englishScore) return fallback;
   return IndonesianScore > englishScore ? "id" : "en";
 }
 

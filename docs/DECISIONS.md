@@ -198,6 +198,18 @@ Decision: Public project and article pages render author content only when the s
 
 Consequences: Indonesian-only content remains visible in Indonesian mode and no longer appears as English. The English archive may show an explicit empty state until an English version is added through admin.
 
+## ADR-018 - Admin Generates Missing EN/ID Translations On Save
+
+Status: Accepted
+
+Date: 2026-07-27
+
+Context: Requiring authors to duplicate every project and article field in two languages makes publishing unnecessarily slow, while cross-language fallback labels Indonesian content as English.
+
+Decision: Project and article forms accept one English or Indonesian source version. On save, the application detects the actual source language and uses a configurable cross-browser HTTP translation service to generate and persist the opposite translation. Shared technical data and media remain untranslated.
+
+Consequences: Public pages continue using strict language selection while authors only need to write once. Author-written text is sent to an external provider during save, so translation depends on its availability, quota, and output quality. Failures are shown before any incomplete publication is saved.
+
 ## Future ADR Template
 
 ```markdown

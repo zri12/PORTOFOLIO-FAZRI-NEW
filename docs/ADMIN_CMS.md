@@ -113,7 +113,7 @@ Project forms should include:
 
 The tech stack field uses one searchable multi-select dropdown. It combines registered technologies with the built-in development and creative-tool catalog, supports multiple selections without closing the menu, and allows a custom name when a required tool is not listed.
 
-Project text is edited independently in English and Indonesian. Shared media and technical metadata are entered once. Drafts may be incomplete, but publishing requires title, short description, and overview in both languages.
+Project text can be entered in either English or Indonesian, regardless of which language tab is active. On save, the admin detects the actual source language, sends author-written text to the configured translation service, and stores both language versions. Shared media and technical metadata are entered once. Publishing requires title, short description, and overview in one source language.
 
 Project covers, hero images, responsive previews, and gallery images retain their original aspect ratio and are not force-cropped during upload or public display.
 
@@ -147,7 +147,9 @@ Article content uses a linear Markdown-style editor instead of separate controls
 
 An image can be inserted after any text section. Inserting an image automatically creates the next Markdown text section so writing can continue below it. Markdown is parsed into safe React content; raw HTML must not be rendered.
 
-Article title, excerpt, taxonomy, alt text, SEO copy, and Markdown blocks are edited independently in English and Indonesian. Publishing requires the core article content in both languages. Article cover and content images retain their original aspect ratio.
+Article title, excerpt, taxonomy, alt text, SEO copy, and Markdown blocks can be authored in either English or Indonesian. Saving generates the other language automatically while preserving Markdown prefixes and structured image blocks. Publishing requires the core article content in one source language. Article cover and content images retain their original aspect ratio.
+
+Automatic translation uses the HTTP endpoint configured by `VITE_TRANSLATION_API_URL`, with MyMemory as the default. It works across modern browsers, splits long content within the provider request limit, and exposes detection, translation, save, timeout, quota, and network feedback. Author-written text is sent to this external service when a project or article is saved; media URLs and shared technical fields are not translated.
 
 ## Comments
 

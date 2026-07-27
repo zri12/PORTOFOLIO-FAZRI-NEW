@@ -6,6 +6,10 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { inferTechnologyCategory, technologyCatalog } from "../../data/technologyCatalog";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import {
+  createAutomaticProjectTranslations,
+  projectTranslationIsPublishable,
+} from "../../lib/automaticTranslation";
 import { slugify } from "../../lib/storage";
 import { emptyProjectTranslation, ensureProjectTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
@@ -92,6 +96,7 @@ export default function AdminProjectFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [translationStatus, setTranslationStatus] = useState("");
   const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
@@ -130,24 +135,39 @@ export default function AdminProjectFormPage() {
       setError("Select a client type before saving.");
       return;
     }
-    const translations = {
+    const sourceTranslations = {
       en: { ...emptyProjectTranslation(), ...draft.translations?.en },
       id: { ...emptyProjectTranslation(), ...draft.translations?.id },
     };
-    const complete = (item: ProjectTranslation) => item.title.trim() && item.shortDescription.trim() && item.overview.trim();
-    if (status === "published" && (!complete(translations.en) || !complete(translations.id))) {
-      setError("Publishing requires title, short description, and overview in both English and Indonesian.");
-      return;
-    }
-    const primary = complete(translations.en) ? translations.en : translations.id;
-    if (!primary.title.trim()) {
+    if (!sourceTranslations.en.title.trim() && !sourceTranslations.id.title.trim()) {
       setError("Add a project title in at least one language.");
       return;
     }
-    const next: Project = { ...draft, ...primary, translations, clientType: draft.clientType, status, slug: draft.slug || slugify(primary.title) };
     setSaving(true);
     setError("");
+    setTranslationStatus("Detecting source language...");
     try {
+      const translations = await createAutomaticProjectTranslations(
+        sourceTranslations,
+        editingLanguage,
+        setTranslationStatus,
+      );
+      if (
+        status === "published"
+        && (!projectTranslationIsPublishable(translations.en) || !projectTranslationIsPublishable(translations.id))
+      ) {
+        throw new Error("Add a title, short description, and overview in one language. The other language is generated automatically.");
+      }
+      const primary = translations.en;
+      const next: Project = {
+        ...draft,
+        ...primary,
+        translations,
+        clientType: draft.clientType,
+        status,
+        slug: draft.slug || slugify(primary.title),
+      };
+      setTranslationStatus("Saving both language versions...");
       portfolioRepository.updateProject(next);
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
@@ -156,6 +176,7 @@ export default function AdminProjectFormPage() {
       setError(formatAdminSaveError(saveError, "Project could not be saved to Supabase."));
     } finally {
       setSaving(false);
+      setTranslationStatus("");
     }
   };
 
@@ -256,9 +277,10 @@ export default function AdminProjectFormPage() {
         </FormSection>
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Publish"}</button>
+          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Translating & saving..." : "Publish"}</button>
           <button onClick={() => void save("draft")} disabled={saving} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold disabled:opacity-60">Save Draft</button>
           <button onClick={() => navigate("/admin/projects")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
+          {translationStatus && <span className="self-center text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</span>}
           {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>
@@ -433,7 +455,7 @@ function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onCha
     <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
       <div>
         <p className="text-sm font-bold">Project language</p>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Fill both versions before publishing. Images, links, technology, and status remain shared.</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. On save, the text is sent to the translation service and both language versions are stored automatically.</p>
       </div>
       <div className="flex border border-[var(--color-border)]">
         {(["en", "id"] as const).map((language) => (

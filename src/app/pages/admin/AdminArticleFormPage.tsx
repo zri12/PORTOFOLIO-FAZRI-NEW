@@ -6,6 +6,10 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { normalizeArticleEditorBlocks } from "../../lib/articleMarkdown";
+import {
+  articleTranslationIsPublishable,
+  createAutomaticArticleTranslations,
+} from "../../lib/automaticTranslation";
 import { emptyArticleTranslation, ensureArticleTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { slugify } from "../../lib/storage";
@@ -43,6 +47,7 @@ export default function AdminArticleFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [translationStatus, setTranslationStatus] = useState("");
   const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
@@ -88,39 +93,57 @@ export default function AdminArticleFormPage() {
   const removeImage = (index: number) => setTranslation("blocks", normalizeArticleEditorBlocks(translation.blocks.filter((_, itemIndex) => itemIndex !== index)));
 
   const save = async (status: Article["status"]) => {
-    const preparedTranslations = {
+    const sourceTranslations = {
       en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
       id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
     };
-    const complete = (item: ArticleTranslation) => item.title.trim() && item.excerpt.trim() && item.blocks.some((block) => block.type === "markdown" && block.source.trim());
-    if (status === "published" && (!complete(preparedTranslations.en) || !complete(preparedTranslations.id))) {
-      setError("Publishing requires title, excerpt, and article content in both English and Indonesian.");
-      return;
-    }
-    const primary = complete(preparedTranslations.en) ? preparedTranslations.en : preparedTranslations.id;
-    const title = primary.title.trim();
-    const slug = (draft.slug || slugify(title)).trim();
-    if (!title || !slug || !primary.excerpt.trim()) {
-      setError("Add title, slug, and excerpt in at least one language.");
+    const preferredSource = sourceTranslations[editingLanguage].title.trim()
+      ? sourceTranslations[editingLanguage]
+      : sourceTranslations[editingLanguage === "en" ? "id" : "en"];
+    const sourceTitle = preferredSource.title.trim();
+    const slug = (draft.slug || slugify(sourceTitle)).trim();
+    if (!sourceTitle || !slug) {
+      setError("Add a title and slug in either English or Indonesian.");
       return;
     }
     if (articles.some((article) => article.id !== draft.id && article.slug.toLowerCase() === slug.toLowerCase())) {
       setError("Slug is already used by another article.");
       return;
     }
-    const editorBlocks = normalizeArticleEditorBlocks(primary.blocks);
-    if (!editorBlocks.some((block) => block.type === "markdown" && block.source.trim())) {
-      setError("Write article content before saving.");
+    if (
+      status === "published"
+      && (
+        !preferredSource.excerpt.trim()
+        || !preferredSource.blocks.some((block) => block.type === "markdown" && block.source.trim())
+      )
+    ) {
+      setError("Add an excerpt and article content in one language before publishing.");
       return;
     }
     setSaving(true);
     setError("");
+    setTranslationStatus("Detecting source language...");
     try {
+      const translations = await createAutomaticArticleTranslations(
+        sourceTranslations,
+        editingLanguage,
+        setTranslationStatus,
+      );
+      if (
+        status === "published"
+        && (!articleTranslationIsPublishable(translations.en) || !articleTranslationIsPublishable(translations.id))
+      ) {
+        throw new Error("Add a title, excerpt, and article content in one language. The other language is generated automatically.");
+      }
+      const primary = translations.en;
+      const title = primary.title.trim();
+      const editorBlocks = normalizeArticleEditorBlocks(primary.blocks);
+      setTranslationStatus("Saving both language versions...");
       portfolioRepository.updateArticle({
         ...draft,
         ...primary,
         blocks: editorBlocks,
-        translations: preparedTranslations,
+        translations,
         status,
         title,
         slug,
@@ -137,6 +160,7 @@ export default function AdminArticleFormPage() {
       setError(formatAdminSaveError(saveError, "Article could not be saved to Supabase."));
     } finally {
       setSaving(false);
+      setTranslationStatus("");
     }
   };
 
@@ -179,8 +203,9 @@ export default function AdminArticleFormPage() {
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4"><p className="text-xs text-emerald-400">{draft.slug ? `${location.origin}/blog/${draft.slug}` : "Article URL"}</p><p className="mt-2 text-lg text-sky-300">{translation.seoTitle || translation.title || "Article title"}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">{translation.seoDescription || translation.excerpt || "Article description"}</p></div>
         </FormSection>
 
+        {translationStatus && <p className="border border-[var(--color-accent-main)]/30 bg-[var(--color-accent-main)]/5 p-3 text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</p>}
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
-        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Translating & saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
       </div>
     </div>
   );
@@ -191,7 +216,7 @@ function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onCha
     <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
       <div>
         <p className="text-sm font-bold">Article language</p>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Fill both versions before publishing. Images and publication settings remain shared.</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. On save, the text is sent to the translation service and both language versions are stored automatically.</p>
       </div>
       <div className="flex border border-[var(--color-border)]">
         {(["en", "id"] as const).map((language) => (
