@@ -123,6 +123,9 @@ function selectProjectTranslation(project: Project, language: ContentLanguage) {
   const translations = ensureProjectTranslations(project);
   const requested = translations?.[language];
   if (projectTranslationHasContent(requested)) return requested;
+  const fallbackLanguage = language === "en" ? "id" : "en";
+  const fallback = translations?.[fallbackLanguage];
+  if (projectTranslationHasContent(fallback)) return fallback;
   return undefined;
 }
 
@@ -130,6 +133,9 @@ function selectArticleTranslation(article: Article, language: ContentLanguage) {
   const translations = ensureArticleTranslations(article);
   const requested = translations?.[language];
   if (articleTranslationHasContent(requested)) return requested;
+  const fallbackLanguage = language === "en" ? "id" : "en";
+  const fallback = translations?.[fallbackLanguage];
+  if (articleTranslationHasContent(fallback)) return fallback;
   return undefined;
 }
 
