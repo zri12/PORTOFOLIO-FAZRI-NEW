@@ -178,18 +178,31 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
     })),
     articles: asArray(value.articles, seed.articles).map((item, index) => {
       const fallback = seedArticlesBySlug.get(item.slug);
+      
+      let blocks = asArray(item.blocks, fallback?.blocks ?? []);
+      if (blocks.length === 0) blocks = fallback?.blocks ?? [];
+      
+      const translations = {
+        ...(fallback?.translations ?? {}),
+        ...(item.translations ?? {}),
+      };
+      
+      if (translations.en && translations.en.blocks && translations.en.blocks.length === 0) {
+        translations.en.blocks = fallback?.translations?.en?.blocks ?? fallback?.blocks ?? [];
+      }
+      if (translations.id && translations.id.blocks && translations.id.blocks.length === 0) {
+        translations.id.blocks = fallback?.translations?.id?.blocks ?? fallback?.blocks ?? [];
+      }
+
       const normalized: Article = {
         ...(fallback ?? item),
         ...item,
-        id: item.id || uid("article"),
-        slug: item.slug || slugify(item.title || "article"),
-        tags: asArray(item.tags, []),
-        blocks: asArray(item.blocks, []),
-        displayOrder: item.displayOrder ?? index + 1,
-        translations: {
-          ...(fallback?.translations ?? {}),
-          ...(item.translations ?? {}),
-        },
+        id: item.id || fallback?.id || uid("article"),
+        slug: item.slug || slugify(item.title || fallback?.title || "article"),
+        tags: asArray(item.tags, fallback?.tags ?? []),
+        blocks,
+        displayOrder: item.displayOrder ?? fallback?.displayOrder ?? index + 1,
+        translations,
       };
       return { ...normalized, translations: ensureArticleTranslations(normalized) };
     }),
