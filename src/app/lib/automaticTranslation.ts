@@ -1,12 +1,18 @@
 import type {
   ArticleBlock,
   ArticleTranslation,
+  CertificateTranslation,
   ContentLanguage,
+  CreativeWorkTranslation,
+  ExperienceTranslation,
   ProjectTranslation,
 } from "../types/portfolio";
 import {
   detectContentLanguage,
   emptyArticleTranslation,
+  emptyCertificateTranslation,
+  emptyCreativeWorkTranslation,
+  emptyExperienceTranslation,
   emptyProjectTranslation,
 } from "./localizedContent";
 
@@ -47,6 +53,18 @@ export function articleTranslationIsPublishable(value: ArticleTranslation) {
   );
 }
 
+export function creativeWorkTranslationIsPublishable(value: CreativeWorkTranslation) {
+  return Boolean(value.title.trim() && value.description.trim());
+}
+
+export function experienceTranslationIsPublishable(value: ExperienceTranslation) {
+  return Boolean(value.role.trim() && value.organization.trim() && value.description.trim());
+}
+
+export function certificateTranslationIsPublishable(value: CertificateTranslation) {
+  return Boolean(value.title.trim() && value.issuer.trim());
+}
+
 export async function createAutomaticProjectTranslations(
   translations: Partial<Record<ContentLanguage, ProjectTranslation>>,
   preferredSource: ContentLanguage,
@@ -82,6 +100,63 @@ export async function createAutomaticArticleTranslations(
   const targetLanguage = oppositeLanguage(detectedLanguage);
   onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} article content.`);
   const target = await translateArticle(source, detectedLanguage, targetLanguage, onProgress);
+  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+}
+
+export async function createAutomaticCreativeWorkTranslations(
+  translations: Partial<Record<ContentLanguage, CreativeWorkTranslation>>,
+  preferredSource: ContentLanguage,
+  onProgress?: TranslationProgress,
+) {
+  const en = { ...emptyCreativeWorkTranslation(), ...translations.en };
+  const id = { ...emptyCreativeWorkTranslation(), ...translations.id };
+  const preferred = preferredSource === "en" ? en : id;
+  const fallback = preferredSource === "en" ? id : en;
+  const source = creativeWorkContentScore(preferred) ? preferred : fallback;
+  if (!creativeWorkContentScore(source)) throw new AutomaticTranslationError("Add creative work content in English or Indonesian before saving.");
+
+  const detectedLanguage = detectContentLanguage(creativeWorkSourceText(source), preferredSource);
+  const targetLanguage = oppositeLanguage(detectedLanguage);
+  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} creative work content.`);
+  const target = await translateCreativeWork(source, detectedLanguage, targetLanguage, onProgress);
+  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+}
+
+export async function createAutomaticExperienceTranslations(
+  translations: Partial<Record<ContentLanguage, ExperienceTranslation>>,
+  preferredSource: ContentLanguage,
+  onProgress?: TranslationProgress,
+) {
+  const en = { ...emptyExperienceTranslation(), ...translations.en };
+  const id = { ...emptyExperienceTranslation(), ...translations.id };
+  const preferred = preferredSource === "en" ? en : id;
+  const fallback = preferredSource === "en" ? id : en;
+  const source = experienceContentScore(preferred) ? preferred : fallback;
+  if (!experienceContentScore(source)) throw new AutomaticTranslationError("Add experience content in English or Indonesian before saving.");
+
+  const detectedLanguage = detectContentLanguage(experienceSourceText(source), preferredSource);
+  const targetLanguage = oppositeLanguage(detectedLanguage);
+  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} experience content.`);
+  const target = await translateExperience(source, detectedLanguage, targetLanguage, onProgress);
+  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+}
+
+export async function createAutomaticCertificateTranslations(
+  translations: Partial<Record<ContentLanguage, CertificateTranslation>>,
+  preferredSource: ContentLanguage,
+  onProgress?: TranslationProgress,
+) {
+  const en = { ...emptyCertificateTranslation(), ...translations.en };
+  const id = { ...emptyCertificateTranslation(), ...translations.id };
+  const preferred = preferredSource === "en" ? en : id;
+  const fallback = preferredSource === "en" ? id : en;
+  const source = certificateContentScore(preferred) ? preferred : fallback;
+  if (!certificateContentScore(source)) throw new AutomaticTranslationError("Add certificate content in English or Indonesian before saving.");
+
+  const detectedLanguage = detectContentLanguage(certificateSourceText(source), preferredSource);
+  const targetLanguage = oppositeLanguage(detectedLanguage);
+  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} certificate content.`);
+  const target = await translateCertificate(source, detectedLanguage, targetLanguage, onProgress);
   return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
 
@@ -185,6 +260,53 @@ async function translateArticle(
   ]);
 
   return { title, excerpt, category, tags, coverAlt, seoTitle, seoDescription, blocks };
+}
+
+async function translateCreativeWork(
+  value: CreativeWorkTranslation,
+  sourceLanguage: ContentLanguage,
+  targetLanguage: ContentLanguage,
+  onProgress?: TranslationProgress,
+): Promise<CreativeWorkTranslation> {
+  onProgress?.(`Translating creative work from ${sourceLanguage.toUpperCase()} to ${targetLanguage.toUpperCase()}...`);
+  const [title, role, description, brief] = await Promise.all([
+    translateText(value.title, sourceLanguage, targetLanguage),
+    translateText(value.role, sourceLanguage, targetLanguage),
+    translateText(value.description, sourceLanguage, targetLanguage),
+    translateText(value.brief, sourceLanguage, targetLanguage),
+  ]);
+  return { title, role, description, brief };
+}
+
+async function translateExperience(
+  value: ExperienceTranslation,
+  sourceLanguage: ContentLanguage,
+  targetLanguage: ContentLanguage,
+  onProgress?: TranslationProgress,
+): Promise<ExperienceTranslation> {
+  onProgress?.(`Translating experience from ${sourceLanguage.toUpperCase()} to ${targetLanguage.toUpperCase()}...`);
+  const [role, organization, location, description, responsibilities] = await Promise.all([
+    translateText(value.role, sourceLanguage, targetLanguage),
+    translateText(value.organization, sourceLanguage, targetLanguage),
+    translateText(value.location, sourceLanguage, targetLanguage),
+    translateText(value.description, sourceLanguage, targetLanguage),
+    translateItems(value.responsibilities, sourceLanguage, targetLanguage),
+  ]);
+  return { role, organization, location, description, responsibilities };
+}
+
+async function translateCertificate(
+  value: CertificateTranslation,
+  sourceLanguage: ContentLanguage,
+  targetLanguage: ContentLanguage,
+  onProgress?: TranslationProgress,
+): Promise<CertificateTranslation> {
+  onProgress?.(`Translating certificate from ${sourceLanguage.toUpperCase()} to ${targetLanguage.toUpperCase()}...`);
+  const [title, issuer] = await Promise.all([
+    translateText(value.title, sourceLanguage, targetLanguage),
+    translateText(value.issuer, sourceLanguage, targetLanguage),
+  ]);
+  return { title, issuer };
 }
 
 async function translateArticleBlock(
@@ -406,6 +528,30 @@ function projectContentScore(value: ProjectTranslation) {
 
 function articleContentScore(value: ArticleTranslation) {
   return articleSourceText(value).trim().length;
+}
+
+function creativeWorkSourceText(value: CreativeWorkTranslation) {
+  return [value.title, value.role, value.description, value.brief].join(" ");
+}
+
+function creativeWorkContentScore(value: CreativeWorkTranslation) {
+  return creativeWorkSourceText(value).trim().length;
+}
+
+function experienceSourceText(value: ExperienceTranslation) {
+  return [value.role, value.organization, value.location, value.description, value.responsibilities.join(" ")].join(" ");
+}
+
+function experienceContentScore(value: ExperienceTranslation) {
+  return experienceSourceText(value).trim().length;
+}
+
+function certificateSourceText(value: CertificateTranslation) {
+  return [value.title, value.issuer].join(" ");
+}
+
+function certificateContentScore(value: CertificateTranslation) {
+  return certificateSourceText(value).trim().length;
 }
 
 function oppositeLanguage(language: ContentLanguage): ContentLanguage {

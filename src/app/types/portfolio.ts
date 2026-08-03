@@ -105,7 +105,14 @@ export interface Technology {
   displayOrder: number;
 }
 
-export interface CreativeWork {
+export interface CreativeWorkTranslation {
+  title: string;
+  role: string;
+  description: string;
+  brief: string;
+}
+
+export interface CreativeWork extends CreativeWorkTranslation {
   id: string;
   slug: string;
   title: string;
@@ -124,9 +131,18 @@ export interface CreativeWork {
   featured: boolean;
   status: PublishStatus;
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, CreativeWorkTranslation>>;
 }
 
-export interface Experience {
+export interface ExperienceTranslation {
+  role: string;
+  organization: string;
+  location: string;
+  description: string;
+  responsibilities: string[];
+}
+
+export interface Experience extends ExperienceTranslation {
   id: string;
   role: string;
   organization: string;
@@ -139,9 +155,15 @@ export interface Experience {
   relatedProjectSlug?: string;
   published: boolean;
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, ExperienceTranslation>>;
 }
 
-export interface Certificate {
+export interface CertificateTranslation {
+  title: string;
+  issuer: string;
+}
+
+export interface Certificate extends CertificateTranslation {
   id: string;
   title: string;
   issuer: string;
@@ -153,6 +175,7 @@ export interface Certificate {
   featured: boolean;
   published: boolean;
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, CertificateTranslation>>;
 }
 
 export type ArticleBlock =

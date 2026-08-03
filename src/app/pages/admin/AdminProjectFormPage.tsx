@@ -4,6 +4,7 @@ import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { AdminImageField, AdminGalleryField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
+import { LanguageEditorTabs } from "../../components/admin/LanguageEditorTabs";
 import { inferTechnologyCategory, technologyCatalog } from "../../data/technologyCatalog";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import {
@@ -468,29 +469,6 @@ function TechnologyMultiSelect({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function LanguageEditorTabs({ value, onChange, onTranslate, isTranslating }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void; onTranslate: () => void; isTranslating: boolean }) {
-  return (
-    <div className="flex flex-col gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-bold">Project language</p>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. Use Auto-Translate to generate the other language version.</p>
-      </div>
-      <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <button type="button" onClick={onTranslate} disabled={isTranslating} className="inline-flex items-center gap-2 border border-[var(--color-accent-main)]/50 bg-[var(--color-accent-main)]/10 px-4 py-2 text-xs font-bold text-[var(--color-accent-main)] transition-colors hover:bg-[var(--color-accent-main)]/20 disabled:opacity-50">
-          <Languages size={14} /> {isTranslating ? "Translating..." : `Auto-Translate to ${value === "en" ? "ID" : "EN"}`}
-        </button>
-        <div className="flex border border-[var(--color-border)]">
-          {(["en", "id"] as const).map((language) => (
-            <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
-              {language === "en" ? "English" : "Indonesia"}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -3,9 +3,12 @@ import type {
   ArticleBlock,
   ArticleTranslation,
   Certificate,
+  CertificateTranslation,
   ContactMessage,
   CreativeWork,
+  CreativeWorkTranslation,
   Experience,
+  ExperienceTranslation,
   PortfolioData,
   Profile,
   Project,
@@ -70,6 +73,38 @@ function asArticleTranslation(value: unknown): ArticleTranslation | undefined {
     seoTitle: asString(row.seoTitle),
     seoDescription: asString(row.seoDescription),
     blocks: asArticleBlocks(row.blocks),
+  };
+}
+
+function asCreativeWorkTranslation(value: unknown): CreativeWorkTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return {
+    title: asString(row.title),
+    role: asString(row.role),
+    description: asString(row.description),
+    brief: asString(row.brief),
+  };
+}
+
+function asExperienceTranslation(value: unknown): ExperienceTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return {
+    role: asString(row.role),
+    organization: asString(row.organization),
+    location: asString(row.location),
+    description: asString(row.description),
+    responsibilities: asStringArray(row.responsibilities),
+  };
+}
+
+function asCertificateTranslation(value: unknown): CertificateTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return {
+    title: asString(row.title),
+    issuer: asString(row.issuer),
   };
 }
 
@@ -348,6 +383,7 @@ export function mapCreativeWork(row: Row): CreativeWork {
     featured: asBool(row.featured),
     status: asString(row.status, "draft") as CreativeWork["status"],
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(row.translations, asCreativeWorkTranslation),
   };
 }
 
@@ -369,6 +405,7 @@ export const creativeWorkToRow = (item: CreativeWork): Row => ({
   featured: item.featured,
   status: item.status,
   display_order: item.displayOrder,
+  translations: item.translations ?? {},
 });
 
 export function mapExperience(row: Row, projectSlug?: string): Experience {
@@ -385,6 +422,7 @@ export function mapExperience(row: Row, projectSlug?: string): Experience {
     relatedProjectSlug: projectSlug,
     published: asBool(row.published, true),
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(row.translations, asExperienceTranslation),
   };
 }
 
@@ -399,6 +437,7 @@ export const experienceToRow = (item: Experience): Row => ({
   technologies: item.technologies,
   published: item.published,
   display_order: item.displayOrder,
+  translations: item.translations ?? {},
 });
 
 export function mapCertificate(row: Row): Certificate {
@@ -414,6 +453,7 @@ export function mapCertificate(row: Row): Certificate {
     featured: asBool(row.featured),
     published: asBool(row.published, true),
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(row.translations, asCertificateTranslation),
   };
 }
 
@@ -428,6 +468,7 @@ export const certificateToRow = (item: Certificate): Row => ({
   featured: item.featured,
   published: item.published,
   display_order: item.displayOrder,
+  translations: item.translations ?? {},
 });
 
 export function mapArticle(row: Row): Article {

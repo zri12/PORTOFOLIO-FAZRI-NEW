@@ -5,12 +5,14 @@ import { SectionHeading } from "../../components/common/SectionHeading";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { localizeCreativeWork } from "../../lib/localizedContent";
 
 export default function CreativeWorkDetailPage() {
   const { slug = "" } = useParams();
   const { creativeWorks } = usePortfolioData();
-  const { t } = useLanguage();
-  const work = creativeWorks.find((item) => item.slug === slug);
+  const { t, language } = useLanguage();
+  const rawWork = creativeWorks.find((item) => item.slug === slug);
+  const work = rawWork ? localizeCreativeWork(rawWork, language) : undefined;
 
   useDocumentMeta({ title: work ? `${work.title} - Creative Work` : "Creative Work Not Found", description: work?.description || "Creative work detail page." });
 

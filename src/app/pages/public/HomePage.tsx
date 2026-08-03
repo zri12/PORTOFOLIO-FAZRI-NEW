@@ -10,7 +10,14 @@ import { CardStack } from "../../components/portfolio/CardStack";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { useLanguage } from "../../context/LanguageContext";
-import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent";
+import {
+  hasCertificateLanguage,
+  hasExperienceLanguage,
+  hasProjectLanguage,
+  localizeCertificate,
+  localizeExperience,
+  localizeProject,
+} from "../../lib/localizedContent";
 import portrait from "../../../imports/fazri.png";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
@@ -153,8 +160,15 @@ export default function HomePage() {
   const cvLink = cvLinkProps(profile.cvUrl);
   const techStack = Array.isArray(data.techStack) ? data.techStack : [];
   const creativeWorks = Array.isArray(data.creativeWorks) ? data.creativeWorks : [];
-  const certificates = Array.isArray(data.certificates) ? data.certificates : [];
-  const experiences = Array.isArray(data.experiences) ? data.experiences : [];
+  
+  const certificates = (Array.isArray(data.certificates) ? data.certificates : [])
+    .filter((cert) => hasCertificateLanguage(cert, language))
+    .map((cert) => localizeCertificate(cert, language));
+    
+  const experiences = (Array.isArray(data.experiences) ? data.experiences : [])
+    .filter((exp) => hasExperienceLanguage(exp, language))
+    .map((exp) => localizeExperience(exp, language));
+    
   const comments = Array.isArray(data.comments) ? data.comments : [];
   const aboutImage = profile.aboutImageUrl || portrait;
   const [techTab, setTechTab] = useState<keyof typeof techGroups>("Frontend");

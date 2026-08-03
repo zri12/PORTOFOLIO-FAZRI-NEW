@@ -6,21 +6,25 @@ import { SectionHeading } from "../../components/common/SectionHeading";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { hasCreativeWorkLanguage, localizeCreativeWork } from "../../lib/localizedContent";
 
 const categories = ["All", "UI/UX Design", "Graphic Design", "Photography", "Videography", "Photo Editing", "Video Editing"];
 
 export default function CreativeWorksPage() {
   const { creativeWorks } = usePortfolioData();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
   useDocumentMeta({ title: "Creative Works - Fazri", description: "Selected UI design, graphic design, photography, videography, and editing works by Fazri." });
 
-  const works = creativeWorks.filter((work) => {
-    const categoryMatch = category === "All" || work.category === category;
-    const text = `${work.title} ${work.category} ${work.description} ${work.tools.join(" ")}`.toLowerCase();
-    return categoryMatch && text.includes(query.toLowerCase());
-  });
+  const works = creativeWorks
+    .filter((work) => hasCreativeWorkLanguage(work, language))
+    .map((work) => localizeCreativeWork(work, language))
+    .filter((work) => {
+      const categoryMatch = category === "All" || work.category === category;
+      const text = `${work.title} ${work.category} ${work.description} ${work.tools.join(" ")}`.toLowerCase();
+      return categoryMatch && text.includes(query.toLowerCase());
+    });
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">

@@ -5,10 +5,14 @@ import { SectionHeading } from "../../components/common/SectionHeading";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
+import { hasCertificateLanguage, localizeCertificate } from "../../lib/localizedContent";
 
 export default function CertificatesPage() {
-  const { certificates } = usePortfolioData();
-  const { t } = useLanguage();
+  const { certificates: rawCertificates } = usePortfolioData();
+  const { t, language } = useLanguage();
+  const certificates = rawCertificates
+    .filter((cert) => hasCertificateLanguage(cert, language))
+    .map((cert) => localizeCertificate(cert, language));
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [active, setActive] = useState<string | null>(null);
