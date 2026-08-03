@@ -18,15 +18,7 @@ import {
 
 type TranslationProgress = (message: string) => void;
 
-type MyMemoryResponse = {
-  responseData?: {
-    translatedText?: unknown;
-  };
-  responseStatus?: unknown;
-  responseDetails?: unknown;
-};
-
-const DEFAULT_TRANSLATION_ENDPOINT = "https://api.mymemory.translated.net/get";
+const DEFAULT_TRANSLATION_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
 const translationEndpoint = import.meta.env.VITE_TRANSLATION_API_URL?.trim() || DEFAULT_TRANSLATION_ENDPOINT;
 const MAX_SEGMENT_BYTES = 450;
 const textEncoder = new TextEncoder();
@@ -391,24 +383,28 @@ async function translateSegment(
     if (cachedAfterWait) return cachedAfterWait;
 
     const url = new URL(translationEndpoint);
+    url.searchParams.set("client", "gtx");
+    url.searchParams.set("sl", sourceLanguage);
+    url.searchParams.set("tl", targetLanguage);
+    url.searchParams.set("dt", "t");
     url.searchParams.set("q", segment);
-    url.searchParams.set("langpair", `${sourceLanguage}|${targetLanguage}`);
-    url.searchParams.set("mt", "1");
-    url.searchParams.set("de", "portfolio@fazrilukman.com");
 
     const controller = new AbortController();
     const timeout = globalThis.setTimeout(() => controller.abort(), 20_000);
     try {
       const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) throw new AutomaticTranslationError(`Translation service returned HTTP ${response.status}.`);
-      const payload = await response.json() as MyMemoryResponse;
-      const translatedText = payload.responseData?.translatedText;
-      if (Number(payload.responseStatus) !== 200 || typeof translatedText !== "string" || !translatedText.trim()) {
-        throw new AutomaticTranslationError(String(payload.responseDetails || "Translation service did not return translated text."));
+      if (!response.ok) {
+        if (response.status === 429) throw new AutomaticTranslationError("Translation quota exceeded. Please wait a moment and try again.");
+        throw new AutomaticTranslationError(`Translation service returned HTTP ${response.status}.`);
       }
-      if (/MYMEMORY WARNING/i.test(translatedText)) {
-        throw new AutomaticTranslationError("The free translation quota is temporarily unavailable. Please try again later.");
+      
+      const payload = await response.json();
+      if (!Array.isArray(payload) || !Array.isArray(payload[0])) {
+        throw new AutomaticTranslationError("Translation service did not return valid data.");
       }
+      
+      const translatedText = payload[0].map((s: any) => s[0]).join("");
+      
       const decodedText = decodeHtmlEntities(translatedText);
       translationCache.set(cacheKey, decodedText);
       return decodedText;
