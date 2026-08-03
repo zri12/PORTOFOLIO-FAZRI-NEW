@@ -423,15 +423,15 @@ async function translateSegment(
 let lastRequestTime = 0;
 
 async function withRequestSlot<T>(task: () => Promise<T>) {
-  if (activeRequests >= 1) {
+  if (activeRequests >= 5) {
     await new Promise<void>((resolve) => pendingSlots.push(resolve));
   }
   activeRequests += 1;
   
   const now = Date.now();
   const timeSinceLast = now - lastRequestTime;
-  if (timeSinceLast < 1000) {
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 1000 - timeSinceLast));
+  if (timeSinceLast < 100) {
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 100 - timeSinceLast));
   }
 
   try {
