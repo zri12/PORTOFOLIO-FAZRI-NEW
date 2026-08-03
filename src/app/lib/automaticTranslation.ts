@@ -8,7 +8,6 @@ import type {
   ProjectTranslation,
 } from "../types/portfolio";
 import {
-  detectContentLanguage,
   emptyArticleTranslation,
   emptyCertificateTranslation,
   emptyCreativeWorkTranslation,
@@ -66,14 +65,15 @@ export async function createAutomaticProjectTranslations(
   const id = { ...emptyProjectTranslation(), ...translations.id };
   const preferred = preferredSource === "en" ? en : id;
   const fallback = preferredSource === "en" ? id : en;
-  const source = projectContentScore(preferred) ? preferred : fallback;
+  // Trust the admin's selected language tab as the definitive source — never auto-detect
+  const sourceLanguage = preferredSource;
+  const source = projectContentScore(preferred) ? preferred : (projectContentScore(fallback) ? fallback : preferred);
   if (!projectContentScore(source)) throw new AutomaticTranslationError("Add project content in English or Indonesian before saving.");
 
-  const detectedLanguage = detectContentLanguage(projectSourceText(source), preferredSource);
-  const targetLanguage = oppositeLanguage(detectedLanguage);
-  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} project content.`);
-  const target = await translateProject(source, detectedLanguage, targetLanguage, onProgress);
-  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+  const targetLanguage = oppositeLanguage(sourceLanguage);
+  onProgress?.(`Translating project from ${sourceLanguage === "en" ? "English" : "Indonesian"} to ${targetLanguage === "en" ? "English" : "Indonesian"}...`);
+  const target = await translateProject(source, sourceLanguage, targetLanguage, onProgress);
+  return sourceLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
 
 export async function createAutomaticArticleTranslations(
@@ -85,14 +85,15 @@ export async function createAutomaticArticleTranslations(
   const id = { ...emptyArticleTranslation(), ...translations.id };
   const preferred = preferredSource === "en" ? en : id;
   const fallback = preferredSource === "en" ? id : en;
-  const source = articleContentScore(preferred) ? preferred : fallback;
+  // Trust the admin's selected language tab as the definitive source — never auto-detect
+  const sourceLanguage = preferredSource;
+  const source = articleContentScore(preferred) ? preferred : (articleContentScore(fallback) ? fallback : preferred);
   if (!articleContentScore(source)) throw new AutomaticTranslationError("Add article content in English or Indonesian before saving.");
 
-  const detectedLanguage = detectContentLanguage(articleSourceText(source), preferredSource);
-  const targetLanguage = oppositeLanguage(detectedLanguage);
-  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} article content.`);
-  const target = await translateArticle(source, detectedLanguage, targetLanguage, onProgress);
-  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+  const targetLanguage = oppositeLanguage(sourceLanguage);
+  onProgress?.(`Translating article from ${sourceLanguage === "en" ? "English" : "Indonesian"} to ${targetLanguage === "en" ? "English" : "Indonesian"}...`);
+  const target = await translateArticle(source, sourceLanguage, targetLanguage, onProgress);
+  return sourceLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
 
 export async function createAutomaticCreativeWorkTranslations(
@@ -104,14 +105,15 @@ export async function createAutomaticCreativeWorkTranslations(
   const id = { ...emptyCreativeWorkTranslation(), ...translations.id };
   const preferred = preferredSource === "en" ? en : id;
   const fallback = preferredSource === "en" ? id : en;
-  const source = creativeWorkContentScore(preferred) ? preferred : fallback;
+  // Trust the admin's selected language tab as the definitive source — never auto-detect
+  const sourceLanguage = preferredSource;
+  const source = creativeWorkContentScore(preferred) ? preferred : (creativeWorkContentScore(fallback) ? fallback : preferred);
   if (!creativeWorkContentScore(source)) throw new AutomaticTranslationError("Add creative work content in English or Indonesian before saving.");
 
-  const detectedLanguage = detectContentLanguage(creativeWorkSourceText(source), preferredSource);
-  const targetLanguage = oppositeLanguage(detectedLanguage);
-  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} creative work content.`);
-  const target = await translateCreativeWork(source, detectedLanguage, targetLanguage, onProgress);
-  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+  const targetLanguage = oppositeLanguage(sourceLanguage);
+  onProgress?.(`Translating creative work from ${sourceLanguage === "en" ? "English" : "Indonesian"} to ${targetLanguage === "en" ? "English" : "Indonesian"}...`);
+  const target = await translateCreativeWork(source, sourceLanguage, targetLanguage, onProgress);
+  return sourceLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
 
 export async function createAutomaticExperienceTranslations(
@@ -123,14 +125,15 @@ export async function createAutomaticExperienceTranslations(
   const id = { ...emptyExperienceTranslation(), ...translations.id };
   const preferred = preferredSource === "en" ? en : id;
   const fallback = preferredSource === "en" ? id : en;
-  const source = experienceContentScore(preferred) ? preferred : fallback;
+  // Trust the admin's selected language tab as the definitive source — never auto-detect
+  const sourceLanguage = preferredSource;
+  const source = experienceContentScore(preferred) ? preferred : (experienceContentScore(fallback) ? fallback : preferred);
   if (!experienceContentScore(source)) throw new AutomaticTranslationError("Add experience content in English or Indonesian before saving.");
 
-  const detectedLanguage = detectContentLanguage(experienceSourceText(source), preferredSource);
-  const targetLanguage = oppositeLanguage(detectedLanguage);
-  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} experience content.`);
-  const target = await translateExperience(source, detectedLanguage, targetLanguage, onProgress);
-  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+  const targetLanguage = oppositeLanguage(sourceLanguage);
+  onProgress?.(`Translating experience from ${sourceLanguage === "en" ? "English" : "Indonesian"} to ${targetLanguage === "en" ? "English" : "Indonesian"}...`);
+  const target = await translateExperience(source, sourceLanguage, targetLanguage, onProgress);
+  return sourceLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
 
 export async function createAutomaticCertificateTranslations(
@@ -142,15 +145,18 @@ export async function createAutomaticCertificateTranslations(
   const id = { ...emptyCertificateTranslation(), ...translations.id };
   const preferred = preferredSource === "en" ? en : id;
   const fallback = preferredSource === "en" ? id : en;
-  const source = certificateContentScore(preferred) ? preferred : fallback;
+  // Trust the admin's selected language tab as the definitive source — never auto-detect
+  const sourceLanguage = preferredSource;
+  const source = certificateContentScore(preferred) ? preferred : (certificateContentScore(fallback) ? fallback : preferred);
   if (!certificateContentScore(source)) throw new AutomaticTranslationError("Add certificate content in English or Indonesian before saving.");
 
-  const detectedLanguage = detectContentLanguage(certificateSourceText(source), preferredSource);
-  const targetLanguage = oppositeLanguage(detectedLanguage);
-  onProgress?.(`Detected ${detectedLanguage === "en" ? "English" : "Indonesian"} certificate content.`);
-  const target = await translateCertificate(source, detectedLanguage, targetLanguage, onProgress);
-  return detectedLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
+  const targetLanguage = oppositeLanguage(sourceLanguage);
+  onProgress?.(`Translating certificate from ${sourceLanguage === "en" ? "English" : "Indonesian"} to ${targetLanguage === "en" ? "English" : "Indonesian"}...`);
+  const target = await translateCertificate(source, sourceLanguage, targetLanguage, onProgress);
+  return sourceLanguage === "en" ? { en: source, id: target } : { en: target, id: source };
 }
+
+
 
 async function translateProject(
   value: ProjectTranslation,
