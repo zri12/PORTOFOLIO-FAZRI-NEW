@@ -394,6 +394,7 @@ async function translateSegment(
     url.searchParams.set("q", segment);
     url.searchParams.set("langpair", `${sourceLanguage}|${targetLanguage}`);
     url.searchParams.set("mt", "1");
+    url.searchParams.set("de", "portfolio@fazrilukman.com");
 
     const controller = new AbortController();
     const timeout = globalThis.setTimeout(() => controller.abort(), 20_000);
@@ -423,14 +424,24 @@ async function translateSegment(
   });
 }
 
+let lastRequestTime = 0;
+
 async function withRequestSlot<T>(task: () => Promise<T>) {
-  if (activeRequests >= 3) {
+  if (activeRequests >= 1) {
     await new Promise<void>((resolve) => pendingSlots.push(resolve));
   }
   activeRequests += 1;
+  
+  const now = Date.now();
+  const timeSinceLast = now - lastRequestTime;
+  if (timeSinceLast < 1000) {
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 1000 - timeSinceLast));
+  }
+
   try {
     return await task();
   } finally {
+    lastRequestTime = Date.now();
     activeRequests -= 1;
     pendingSlots.shift()?.();
   }
