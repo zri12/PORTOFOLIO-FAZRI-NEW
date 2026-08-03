@@ -15,6 +15,7 @@ import { emptyProjectTranslation, ensureProjectTranslations } from "../../lib/lo
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { ContentLanguage, Project, ProjectTranslation, Technology } from "../../types/portfolio";
+import { Languages } from "lucide-react";
 
 const toLines = (items: string[]) => items.join("\n");
 const fromLines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
@@ -143,31 +144,27 @@ export default function AdminProjectFormPage() {
       setError("Add a project title in at least one language.");
       return;
     }
+    
+    if (
+      status === "published"
+      && (!projectTranslationIsPublishable(sourceTranslations.en) || !projectTranslationIsPublishable(sourceTranslations.id))
+    ) {
+      setError("Both English and Indonesian versions must have a title, short description, and overview before publishing. Use Auto-Translate to generate the other language.");
+      return;
+    }
+    
     setSaving(true);
     setError("");
-    setTranslationStatus("Detecting source language...");
     try {
-      const translations = await createAutomaticProjectTranslations(
-        sourceTranslations,
-        editingLanguage,
-        setTranslationStatus,
-      );
-      if (
-        status === "published"
-        && (!projectTranslationIsPublishable(translations.en) || !projectTranslationIsPublishable(translations.id))
-      ) {
-        throw new Error("Add a title, short description, and overview in one language. The other language is generated automatically.");
-      }
-      const primary = translations.en;
+      const primary = sourceTranslations.en;
       const next: Project = {
         ...draft,
         ...primary,
-        translations,
+        translations: sourceTranslations,
         clientType: draft.clientType,
         status,
-        slug: draft.slug || slugify(primary.title),
+        slug: draft.slug || slugify(primary.title || sourceTranslations.id.title),
       };
-      setTranslationStatus("Saving both language versions...");
       portfolioRepository.updateProject(next);
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
@@ -176,6 +173,28 @@ export default function AdminProjectFormPage() {
       setError(formatAdminSaveError(saveError, "Project could not be saved to Supabase."));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    const targetLang = editingLanguage === "en" ? "id" : "en";
+    const sourceTranslations = {
+      en: { ...emptyProjectTranslation(), ...draft.translations?.en },
+      id: { ...emptyProjectTranslation(), ...draft.translations?.id },
+    };
+    setError("");
+    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
+    try {
+      const translated = await createAutomaticProjectTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
+      updateDraft((current) => ({
+        ...current,
+        translations: translated,
+      }));
+      setIsDirty(true);
+      setTranslationStatus("Translation complete!");
+      setTimeout(() => setTranslationStatus(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Translation failed.");
       setTranslationStatus("");
     }
   };
@@ -186,7 +205,7 @@ export default function AdminProjectFormPage() {
     <div className="mx-auto max-w-6xl">
       <AdminPageHeader title={id ? "Edit Project" : "New Project"} description="Manage all project metadata, screenshots, case-study sections, gallery images, and related project links." />
       <div className="grid gap-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} />
+        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} onTranslate={handleTranslate} isTranslating={!!translationStatus && translationStatus !== "Translation complete!"} />
         <FormSection title="Project Identity">
           <div className="grid gap-4 md:grid-cols-2">
             <AdminInput label={`Title (${editingLanguage.toUpperCase()})`} value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
@@ -277,7 +296,7 @@ export default function AdminProjectFormPage() {
         </FormSection>
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Translating & saving..." : "Publish"}</button>
+          <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Publish"}</button>
           <button onClick={() => void save("draft")} disabled={saving} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold disabled:opacity-60">Save Draft</button>
           <button onClick={() => navigate("/admin/projects")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
           {translationStatus && <span className="self-center text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</span>}
@@ -450,19 +469,24 @@ function TechnologyMultiSelect({
   );
 }
 
-function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void }) {
+function LanguageEditorTabs({ value, onChange, onTranslate, isTranslating }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void; onTranslate: () => void; isTranslating: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+    <div className="flex flex-col gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-sm font-bold">Project language</p>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. On save, the text is sent to the translation service and both language versions are stored automatically.</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. Use Auto-Translate to generate the other language version.</p>
       </div>
-      <div className="flex border border-[var(--color-border)]">
-        {(["en", "id"] as const).map((language) => (
-          <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
-            {language === "en" ? "English" : "Indonesia"}
-          </button>
-        ))}
+      <div className="flex flex-col items-center gap-3 sm:flex-row">
+        <button type="button" onClick={onTranslate} disabled={isTranslating} className="inline-flex items-center gap-2 border border-[var(--color-accent-main)]/50 bg-[var(--color-accent-main)]/10 px-4 py-2 text-xs font-bold text-[var(--color-accent-main)] transition-colors hover:bg-[var(--color-accent-main)]/20 disabled:opacity-50">
+          <Languages size={14} /> {isTranslating ? "Translating..." : `Auto-Translate to ${value === "en" ? "ID" : "EN"}`}
+        </button>
+        <div className="flex border border-[var(--color-border)]">
+          {(["en", "id"] as const).map((language) => (
+            <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
+              {language === "en" ? "English" : "Indonesia"}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

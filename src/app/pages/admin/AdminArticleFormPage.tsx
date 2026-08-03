@@ -15,6 +15,7 @@ import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { slugify } from "../../lib/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Article, ArticleBlock, ArticleTranslation, ContentLanguage } from "../../types/portfolio";
+import { Languages } from "lucide-react";
 
 const blockId = () => crypto.randomUUID();
 
@@ -97,12 +98,10 @@ export default function AdminArticleFormPage() {
       en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
       id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
     };
-    const preferredSource = sourceTranslations[editingLanguage].title.trim()
-      ? sourceTranslations[editingLanguage]
-      : sourceTranslations[editingLanguage === "en" ? "id" : "en"];
-    const sourceTitle = preferredSource.title.trim();
-    const slug = (draft.slug || slugify(sourceTitle)).trim();
-    if (!sourceTitle || !slug) {
+    const primary = sourceTranslations.en;
+    const title = primary.title.trim() || sourceTranslations.id.title.trim();
+    const slug = (draft.slug || slugify(title)).trim();
+    if (!title || !slug) {
       setError("Add a title and slug in either English or Indonesian.");
       return;
     }
@@ -112,44 +111,25 @@ export default function AdminArticleFormPage() {
     }
     if (
       status === "published"
-      && (
-        !preferredSource.excerpt.trim()
-        || !preferredSource.blocks.some((block) => block.type === "markdown" && block.source.trim())
-      )
+      && (!articleTranslationIsPublishable(sourceTranslations.en) || !articleTranslationIsPublishable(sourceTranslations.id))
     ) {
-      setError("Add an excerpt and article content in one language before publishing.");
+      setError("Add a title, excerpt, and article content in both languages before publishing. Use Auto-Translate to generate the other language.");
       return;
     }
     setSaving(true);
     setError("");
-    setTranslationStatus("Detecting source language...");
     try {
-      const translations = await createAutomaticArticleTranslations(
-        sourceTranslations,
-        editingLanguage,
-        setTranslationStatus,
-      );
-      if (
-        status === "published"
-        && (!articleTranslationIsPublishable(translations.en) || !articleTranslationIsPublishable(translations.id))
-      ) {
-        throw new Error("Add a title, excerpt, and article content in one language. The other language is generated automatically.");
-      }
-      const primary = translations.en;
-      const title = primary.title.trim();
-      const editorBlocks = normalizeArticleEditorBlocks(primary.blocks);
-      setTranslationStatus("Saving both language versions...");
       portfolioRepository.updateArticle({
         ...draft,
         ...primary,
-        blocks: editorBlocks,
-        translations,
+        blocks: sourceTranslations.en.blocks,
+        translations: sourceTranslations,
         status,
-        title,
+        title: primary.title.trim(),
         slug,
-        seoTitle: primary.seoTitle.trim() || title,
+        seoTitle: primary.seoTitle.trim() || primary.title.trim(),
         seoDescription: primary.seoDescription.trim() || primary.excerpt.trim(),
-        coverAlt: primary.coverAlt.trim() || title,
+        coverAlt: primary.coverAlt.trim() || primary.title.trim(),
         readingTime: Math.max(1, draft.readingTime),
         publishedAt: draft.publishedAt || new Date().toISOString(),
       });
@@ -160,6 +140,28 @@ export default function AdminArticleFormPage() {
       setError(formatAdminSaveError(saveError, "Article could not be saved to Supabase."));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    const targetLang = editingLanguage === "en" ? "id" : "en";
+    const sourceTranslations = {
+      en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
+      id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
+    };
+    setError("");
+    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
+    try {
+      const translated = await createAutomaticArticleTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
+      setDraft((current) => ({
+        ...current,
+        translations: translated,
+      }));
+      setIsDirty(true);
+      setTranslationStatus("Translation complete!");
+      setTimeout(() => setTranslationStatus(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Translation failed.");
       setTranslationStatus("");
     }
   };
@@ -168,7 +170,7 @@ export default function AdminArticleFormPage() {
     <div className="mx-auto max-w-5xl">
       <AdminPageHeader title={id ? "Edit Article" : "New Article"} description="Write continuous Markdown-style content, insert images between text sections, and manage publication metadata." />
       <div className="grid gap-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} />
+        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} onTranslate={handleTranslate} isTranslating={!!translationStatus && translationStatus !== "Translation complete!"} />
         <FormSection title="Article Details">
           <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--color-accent-main)]">{editingLanguage === "en" ? "English content" : "Konten Indonesia"}</p>
           <AdminInput label="Title" value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
@@ -205,25 +207,30 @@ export default function AdminArticleFormPage() {
 
         {translationStatus && <p className="border border-[var(--color-accent-main)]/30 bg-[var(--color-accent-main)]/5 p-3 text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</p>}
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
-        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Translating & saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
       </div>
     </div>
   );
 }
 
-function LanguageEditorTabs({ value, onChange }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void }) {
+function LanguageEditorTabs({ value, onChange, onTranslate, isTranslating }: { value: ContentLanguage; onChange: (language: ContentLanguage) => void; onTranslate: () => void; isTranslating: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+    <div className="flex flex-col gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-sm font-bold">Article language</p>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. On save, the text is sent to the translation service and both language versions are stored automatically.</p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Write in either language. Use Auto-Translate to generate the other language version.</p>
       </div>
-      <div className="flex border border-[var(--color-border)]">
-        {(["en", "id"] as const).map((language) => (
-          <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
-            {language === "en" ? "English" : "Indonesia"}
-          </button>
-        ))}
+      <div className="flex flex-col items-center gap-3 sm:flex-row">
+        <button type="button" onClick={onTranslate} disabled={isTranslating} className="inline-flex items-center gap-2 border border-[var(--color-accent-main)]/50 bg-[var(--color-accent-main)]/10 px-4 py-2 text-xs font-bold text-[var(--color-accent-main)] transition-colors hover:bg-[var(--color-accent-main)]/20 disabled:opacity-50">
+          <Languages size={14} /> {isTranslating ? "Translating..." : `Auto-Translate to ${value === "en" ? "ID" : "EN"}`}
+        </button>
+        <div className="flex border border-[var(--color-border)]">
+          {(["en", "id"] as const).map((language) => (
+            <button key={language} type="button" onClick={() => onChange(language)} className={`px-4 py-2 text-xs font-bold uppercase ${value === language ? "bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-secondary)]"}`}>
+              {language === "en" ? "English" : "Indonesia"}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
