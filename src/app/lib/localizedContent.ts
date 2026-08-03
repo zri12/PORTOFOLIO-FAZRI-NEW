@@ -271,29 +271,21 @@ function selectCertificateTranslation(certificate: Certificate, language: Conten
 }
 
 function articleTranslationHasContent(translation: ArticleTranslation | undefined): translation is ArticleTranslation {
-  return Boolean(
-    translation?.title.trim()
-    && translation.excerpt.trim()
-    && translation.blocks.some((block) => blockHasContent(block)),
-  );
+  return Boolean(translation?.title?.trim());
 }
 
 function projectTranslationHasContent(translation: ProjectTranslation | undefined): translation is ProjectTranslation {
-  return Boolean(
-    translation?.title.trim()
-    && translation.shortDescription.trim()
-    && translation.overview.trim(),
-  );
+  return Boolean(translation?.title?.trim());
 }
 
 function creativeWorkTranslationHasContent(translation: CreativeWorkTranslation | undefined): translation is CreativeWorkTranslation {
-  return Boolean(translation?.title.trim() && translation.description.trim());
+  return Boolean(translation?.title?.trim());
 }
 
 function experienceTranslationHasContent(translation: ExperienceTranslation | undefined): translation is ExperienceTranslation {
-  return Boolean(translation?.role.trim() && translation.organization.trim());
+  return Boolean(translation?.role?.trim() && translation?.organization?.trim());
 }
 
 function certificateTranslationHasContent(translation: CertificateTranslation | undefined): translation is CertificateTranslation {
-  return Boolean(translation?.title.trim() && translation.issuer.trim());
+  return Boolean(translation?.title?.trim());
 }
