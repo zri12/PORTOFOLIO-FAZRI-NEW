@@ -472,7 +472,6 @@ export const certificateToRow = (item: Certificate): Row => ({
 });
 
 export function mapArticle(row: Row): Article {
-  const contentEnvelope = asRecord(row.content);
   return {
     id: asString(row.id),
     slug: asString(row.slug),
@@ -490,9 +489,9 @@ export function mapArticle(row: Row): Article {
     readingTime: asNumber(row.reading_time, 1),
     seoTitle: asString(row.seo_title),
     seoDescription: asString(row.seo_description),
-    blocks: asArticleBlocks(contentEnvelope?.blocks ?? row.content),
+    blocks: asArticleBlocks(row.content),
     displayOrder: asNumber(row.display_order),
-    translations: asTranslations(contentEnvelope?.translations, asArticleTranslation),
+    translations: asTranslations(row.translations, asArticleTranslation),
   };
 }
 
@@ -511,11 +510,8 @@ export const articleToRow = (item: Article): Row => ({
   reading_time: item.readingTime,
   seo_title: item.seoTitle,
   seo_description: item.seoDescription,
-  content: {
-    version: 1,
-    blocks: item.blocks,
-    translations: item.translations ?? {},
-  },
+  content: item.blocks,
+  translations: item.translations ?? {},
   display_order: item.displayOrder,
 });
 
