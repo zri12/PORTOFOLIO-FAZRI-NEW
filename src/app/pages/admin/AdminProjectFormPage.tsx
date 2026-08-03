@@ -145,32 +145,35 @@ export default function AdminProjectFormPage() {
       return;
     }
     
-    if (
-      status === "published"
-      && (!projectTranslationIsPublishable(sourceTranslations.en) || !projectTranslationIsPublishable(sourceTranslations.id))
-    ) {
-      setError("Both English and Indonesian versions must have a title, short description, and overview before publishing. Use Auto-Translate to generate the other language.");
-      return;
-    }
-    
     setSaving(true);
     setError("");
+    
+    let finalTranslations = sourceTranslations;
+    
     try {
-      const primary = sourceTranslations.en;
+      if (status === "published" && (!projectTranslationIsPublishable(sourceTranslations.en) || !projectTranslationIsPublishable(sourceTranslations.id))) {
+        setTranslationStatus("Generating missing translations...");
+        finalTranslations = await createAutomaticProjectTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
+        setTranslationStatus("Translation complete!");
+        setTimeout(() => setTranslationStatus(""), 3000);
+      }
+      
+      const primary = finalTranslations.en;
       const next: Project = {
         ...draft,
         ...primary,
-        translations: sourceTranslations,
+        translations: finalTranslations,
         clientType: draft.clientType,
         status,
-        slug: draft.slug || slugify(primary.title || sourceTranslations.id.title),
+        slug: draft.slug || slugify(primary.title || finalTranslations.id.title),
       };
       portfolioRepository.updateProject(next);
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/projects");
     } catch (saveError) {
-      setError(formatAdminSaveError(saveError, "Project could not be saved to Supabase."));
+      setError(formatAdminSaveError(saveError, "Project could not be saved. If translation failed, try saving as draft first."));
+      setTranslationStatus("");
     } finally {
       setSaving(false);
     }

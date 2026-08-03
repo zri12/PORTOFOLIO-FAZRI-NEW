@@ -109,27 +109,33 @@ export default function AdminArticleFormPage() {
       setError("Slug is already used by another article.");
       return;
     }
-    if (
-      status === "published"
-      && (!articleTranslationIsPublishable(sourceTranslations.en) || !articleTranslationIsPublishable(sourceTranslations.id))
-    ) {
-      setError("Add a title, excerpt, and article content in both languages before publishing. Use Auto-Translate to generate the other language.");
-      return;
-    }
+
     setSaving(true);
     setError("");
+    
+    let finalTranslations = sourceTranslations;
+    
     try {
+      if (status === "published" && (!articleTranslationIsPublishable(sourceTranslations.en) || !articleTranslationIsPublishable(sourceTranslations.id))) {
+        setTranslationStatus("Generating missing translations...");
+        finalTranslations = await createAutomaticArticleTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
+        setTranslationStatus("Translation complete!");
+        setTimeout(() => setTranslationStatus(""), 3000);
+      }
+      
+      const finalPrimary = finalTranslations.en;
+
       portfolioRepository.updateArticle({
         ...draft,
-        ...primary,
-        blocks: sourceTranslations.en.blocks,
-        translations: sourceTranslations,
+        ...finalPrimary,
+        blocks: finalPrimary.blocks,
+        translations: finalTranslations,
         status,
-        title: primary.title.trim(),
+        title: finalPrimary.title.trim(),
         slug,
-        seoTitle: primary.seoTitle.trim() || primary.title.trim(),
-        seoDescription: primary.seoDescription.trim() || primary.excerpt.trim(),
-        coverAlt: primary.coverAlt.trim() || primary.title.trim(),
+        seoTitle: finalPrimary.seoTitle.trim() || finalPrimary.title.trim(),
+        seoDescription: finalPrimary.seoDescription.trim() || finalPrimary.excerpt.trim(),
+        coverAlt: finalPrimary.coverAlt.trim() || finalPrimary.title.trim(),
         readingTime: Math.max(1, draft.readingTime),
         publishedAt: draft.publishedAt || new Date().toISOString(),
       });
@@ -137,7 +143,8 @@ export default function AdminArticleFormPage() {
       setIsDirty(false);
       navigate("/admin/articles");
     } catch (saveError) {
-      setError(formatAdminSaveError(saveError, "Article could not be saved to Supabase."));
+      setError(formatAdminSaveError(saveError, "Article could not be saved. If translation failed, try saving as draft first."));
+      setTranslationStatus("");
     } finally {
       setSaving(false);
     }
