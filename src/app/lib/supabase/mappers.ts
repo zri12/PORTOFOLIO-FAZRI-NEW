@@ -364,11 +364,10 @@ export function projectToRow(project: Project): Row {
     process: project.process,
     gallery: toStoredAssetArray(project.gallery),
     challenges: project.challenges,
-    decisions: {
-      version: 2,
-      items: project.decisions,
-      techStack: Array.from(new Set(project.techStack.map((name) => name.trim()).filter(Boolean))),
-    },
+    // Production enforces projects.decisions as a JSON array. Translations are
+    // durable top-level data, while technologies are maintained by the
+    // normalized project_technologies relation.
+    decisions: project.decisions,
     translations: project.translations ?? {},
     display_order: project.displayOrder,
   };

@@ -21,10 +21,11 @@ describe("project translation mapper", () => {
     expect(project.translationError).toBeUndefined();
   });
 
-  it("writes translations to the worker-owned column instead of decisions", () => {
+  it("writes translations to the worker-owned column while preserving the decisions array constraint", () => {
     const project = { ...portfolioSeed.projects[0], translations: { id: translation } };
     const row = projectToRow(project);
     expect(row.translations).toEqual({ id: translation });
-    expect(row.decisions).not.toHaveProperty("translations");
+    expect(row.decisions).toEqual(project.decisions);
+    expect(Array.isArray(row.decisions)).toBe(true);
   });
 });
