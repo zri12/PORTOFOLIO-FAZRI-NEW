@@ -163,7 +163,7 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["TECHNOLOGIES USED", "TEKNOLOGI DIGUNAKAN"],
   ["CURRENT AVAILABILITY", "KETERSEDIAAN SAAT INI"],
   ["Open for select work", "Terbuka untuk pekerjaan terpilih"],
-  ["2024 ACTIVITY", "AKTIVITAS 2024"],
+  ["2026 ACTIVITY", "AKTIVITAS 2026"],
   ["Digital systems and web experiences", "Sistem digital dan pengalaman web"],
   ["Continuous learning and practical studies", "Pembelajaran berkelanjutan dan studi praktis"],
   ["Years of Experience", "Tahun Pengalaman"],
