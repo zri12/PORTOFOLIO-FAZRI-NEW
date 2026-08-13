@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { renderInitialHtml, type InitialSeoPage, type SeoLanguage } from "./seoRenderer";
+import { renderInitialHtml, type InitialSeoPage, type SeoLanguage } from "./seoRenderer.js";
 
 type ApiRequest = { url?: string; headers?: Record<string, string | string[] | undefined> };
 type ApiResponse = { setHeader(name: string, value: string): void; status(code: number): ApiResponse; send(body: string): void };

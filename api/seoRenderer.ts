@@ -1,5 +1,5 @@
-import { canonicalSeoUrl, seoHreflang, type SeoLanguage } from "../src/app/lib/seoShared";
-export type { SeoLanguage } from "../src/app/lib/seoShared";
+import { canonicalSeoUrl, seoHreflang, type SeoLanguage } from "../src/app/lib/seoShared.js";
+export type { SeoLanguage } from "../src/app/lib/seoShared.js";
 
 export type InitialSeoPage = {
   language: SeoLanguage;
