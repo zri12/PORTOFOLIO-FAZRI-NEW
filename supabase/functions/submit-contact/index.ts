@@ -8,7 +8,7 @@ import { requirePublicFeature } from "../_shared/siteSettings.ts";
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
-  if (req.method !== "POST") return errorResponse("Method not allowed.", 405);
+  if (req.method !== "POST") return errorResponse("Method not allowed.", 405, req);
 
   try {
     const supabase = createAdminClient();
@@ -28,9 +28,9 @@ Deno.serve(async (req) => {
       status: "New",
     });
     if (error) throw error;
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true }, 200, req);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Contact submission failed.";
-    return errorResponse(message, message === "This feature is currently disabled." ? 403 : 400);
+    return errorResponse(message, message === "This feature is currently disabled." ? 403 : 400, req);
   }
 });

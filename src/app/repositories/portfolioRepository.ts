@@ -175,6 +175,7 @@ function normalizeData(value: Partial<PortfolioData> | null | undefined): Portfo
       ...seed.certificates[index % seed.certificates.length],
       ...item,
       id: item.id || uid("cert"),
+      slug: item.slug || slugify(item.title || seed.certificates[index % seed.certificates.length].title),
       displayOrder: item.displayOrder ?? index + 1,
     })),
     articles: asArray(value.articles, seed.articles).map((item, index) => {
@@ -502,7 +503,8 @@ export const portfolioRepository = {
   getCertificates: () => byOrder(getData().certificates),
   createCertificate(item: Partial<Certificate>) {
     const base = getData().certificates[0] || portfolioSeed.certificates[0];
-    const created: Certificate = { ...base, ...item, id: uuid(), title: item.title || "New Certificate", featured: item.featured ?? false, published: item.published ?? true };
+    const title = item.title || "New Certificate";
+    const created: Certificate = { ...base, ...item, id: uuid(), title, slug: item.slug || slugify(title), featured: item.featured ?? false, published: item.published ?? true };
     updateData((data) => data.certificates.unshift(created));
     syncToBackend(() => supabasePortfolioRepository.upsertCertificate(created));
     return created;

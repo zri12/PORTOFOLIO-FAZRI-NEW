@@ -66,18 +66,36 @@ http://localhost:5173
 
 ## Environment
 
-Create `.env.local` or configure these values in the hosting dashboard:
+Copy `.env.example` to `.env.local`. Configure server-only Vercel Function variables separately from public Vite variables:
 
 ```env
+# Server-only Vercel Function variables
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_PUBLIC_BUCKET=
+SITE_URL=
+
+# Public Vite variables (browser configuration, not secrets)
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
-VITE_SUPABASE_PUBLIC_BUCKET=portfolio-public
-VITE_ADMIN_AUTH_DOMAIN=portfolio-admin.example
-VITE_ENABLE_SUPABASE=true
-VITE_ENABLE_REALTIME=true
+VITE_SUPABASE_PUBLIC_BUCKET=
+VITE_ENABLE_SUPABASE=
+VITE_ENABLE_REALTIME=
+VITE_SITE_URL=
+
+# Optional public Admin username aliases
+VITE_ADMIN_USERNAME=
+VITE_ADMIN_AUTH_EMAIL=
+VITE_ADMIN_AUTH_DOMAIN=
+
+# Server-only Supabase Edge Function translation variables
+TRANSLATION_PROVIDER=
+TRANSLATION_API_KEY=
+TRANSLATION_MODEL=
+TRANSLATION_WORKER_SECRET=
 ```
 
-For admin scripts and Edge Functions, keep service-role secrets outside browser-exposed `VITE_*` variables.
+For admin scripts and Edge Functions, keep service-role and translation secrets outside browser-exposed `VITE_*` variables. Never expose `SUPABASE_SERVICE_ROLE_KEY`, `TRANSLATION_API_KEY`, `TRANSLATION_WORKER_SECRET`, Gemini credentials, a Supabase PAT, or a database password as `VITE_*`.
 
 ```env
 SUPABASE_URL=
@@ -146,7 +164,7 @@ npm run lint
 npm run build
 ```
 
-For Vercel, add the `VITE_*` environment variables to Production and Preview. For cPanel or static hosting, upload the generated `dist/` output and keep the same frontend environment values available during build time.
+For Vercel, add both the server-only variables and the public `VITE_*` variables to Production and Preview. For cPanel or static hosting, upload the generated `dist/` output and keep the public Vite values available during build time.
 
 Supabase Edge Functions are deployed separately:
 

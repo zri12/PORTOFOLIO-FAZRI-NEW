@@ -25,7 +25,7 @@ export default function AboutPage() {
   const cvLink = cvLinkProps(profile.cvUrl);
   const projectCount = data.projects.filter((project) => project.status === "published").length;
   const certificateCount = data.certificates.filter((certificate) => certificate.published).length;
-  useDocumentMeta({ title: `${t("About")} | ${profile.fullName}`, description: profile.description, language });
+  useDocumentMeta({ title: `${t("About")} | ${profile.fullName}`, description: profile.description, canonicalPath: "/about", siteUrl: data.settings.siteUrl, image: profile.aboutImageUrl || data.settings.seoImage, imageAlt: profile.fullName, language, structuredData: { "@context": "https://schema.org", "@graph": [{ "@type": "ProfilePage", "@id": `${data.settings.siteUrl.replace(/\/$/, "")}/about#profile`, name: `${t("About")} ${profile.fullName}`, mainEntity: { "@id": `${data.settings.siteUrl.replace(/\/$/, "")}/#person` } }, { "@type": "Person", "@id": `${data.settings.siteUrl.replace(/\/$/, "")}/#person`, name: profile.fullName, jobTitle: profile.title, description: profile.description, image: profile.aboutImageUrl || undefined }] } });
 
   return (
     <main className="overflow-x-clip bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28">

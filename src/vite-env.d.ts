@@ -14,6 +14,7 @@ interface ImportMetaEnv {
   readonly VITE_ADMIN_AUTH_EMAIL?: string;
   readonly VITE_ENABLE_SUPABASE?: string;
   readonly VITE_ENABLE_REALTIME?: string;
+  readonly VITE_ENABLE_DEV_ADMIN_MOCK?: string;
 }
 
 interface ImportMeta {

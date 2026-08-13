@@ -7,15 +7,15 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { hasCreativeWorkLanguage, localizeCreativeWork } from "../../lib/localizedContent";
+import { localizedPath } from "../../lib/seo";
 
 const categories = ["All", "UI/UX Design", "Graphic Design", "Photography", "Videography", "Photo Editing", "Video Editing"];
 
 export default function CreativeWorksPage() {
-  const { creativeWorks } = usePortfolioData();
+  const { creativeWorks, settings, profile } = usePortfolioData();
   const { t, language } = useLanguage();
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
-  useDocumentMeta({ title: "Creative Works - Fazri", description: "Selected UI design, graphic design, photography, videography, and editing works by Fazri." });
 
   const works = creativeWorks
     .filter((work) => work.status === "published" && hasCreativeWorkLanguage(work, language))
@@ -25,6 +25,7 @@ export default function CreativeWorksPage() {
       const text = `${work.title} ${work.category} ${work.description} ${work.tools.join(" ")}`.toLowerCase();
       return categoryMatch && text.includes(query.toLowerCase());
     });
+  useDocumentMeta({ title: `${t("Creative Works")} | ${profile.fullName}`, description: "Selected UI design, graphic design, photography, videography, and editing works by Fazri.", canonicalPath: "/creative-works", siteUrl: settings.siteUrl, image: settings.seoImage, language, structuredData: { "@context": "https://schema.org", "@type": "CollectionPage", name: t("Creative Works"), mainEntity: { "@type": "ItemList", itemListElement: works.map((work, index) => ({ "@type": "ListItem", position: index + 1, name: work.title, url: `${settings.siteUrl.replace(/\/$/, "")}${localizedPath(`/creative-works/${work.slug}`, language)}` })) } } });
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">

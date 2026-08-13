@@ -8,11 +8,12 @@ import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useLanguage } from "../../context/LanguageContext";
 import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent";
+import { localizedPath } from "../../lib/seo";
 
 const categories = ["All Work", "Web Application", "Education", "Dashboard", "Data Mining", "CRM", "Company Profile", "Client Work", "Personal Project", "Academic Project"];
 
 export default function ProjectsPage() {
-  const { projects } = usePortfolioData();
+  const { projects, settings, profile } = usePortfolioData();
   const { language, t } = useLanguage();
   const localizedProjects = useMemo(
     () => projects.filter((project) => project.status === "published" && hasProjectLanguage(project, language)).map((project) => localizeProject(project, language)),
@@ -21,11 +22,6 @@ export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState("All Work");
   const [query, setQuery] = useState("");
   const [tech, setTech] = useState("All Tech");
-
-  useDocumentMeta({
-    title: "Projects - Fazri Lukman Nurrohman",
-    description: "Explore web application, dashboard, data mining, CRM, and education projects by Fazri Lukman Nurrohman.",
-  });
 
   const techOptions = useMemo(() => ["All Tech", ...Array.from(new Set(localizedProjects.flatMap((project) => project.techStack)))], [localizedProjects]);
 
@@ -36,6 +32,7 @@ export default function ProjectsPage() {
     const text = `${project.title} ${project.fullName} ${project.shortDescription} ${project.techStack.join(" ")}`.toLowerCase();
     return categoryMatch && techMatch && text.includes(query.toLowerCase());
   });
+  useDocumentMeta({ title: `${t("Projects")} | ${profile.fullName}`, description: "Explore web application, dashboard, data mining, CRM, and education projects by Fazri Lukman Nurrohman.", canonicalPath: "/projects", siteUrl: settings.siteUrl, image: settings.seoImage, language, structuredData: { "@context": "https://schema.org", "@type": "CollectionPage", name: t("Projects"), mainEntity: { "@type": "ItemList", itemListElement: filteredProjects.map((project, index) => ({ "@type": "ListItem", position: index + 1, name: project.title, url: `${settings.siteUrl.replace(/\/$/, "")}${localizedPath(`/projects/${project.slug}`, language)}` })) } } });
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">

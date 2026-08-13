@@ -9,12 +9,12 @@ import { hasCreativeWorkLanguage, localizeCreativeWork } from "../../lib/localiz
 
 export default function CreativeWorkDetailPage() {
   const { slug = "" } = useParams();
-  const { creativeWorks } = usePortfolioData();
+  const { creativeWorks, settings, profile } = usePortfolioData();
   const { t, language } = useLanguage();
   const rawWork = creativeWorks.find((item) => item.slug === slug && item.status === "published" && hasCreativeWorkLanguage(item, language));
   const work = rawWork ? localizeCreativeWork(rawWork, language) : undefined;
 
-  useDocumentMeta({ title: work ? `${work.title} - Creative Work` : "Creative Work Not Found", description: work?.description || "Creative work detail page.", canonicalPath: work ? `/creative-works/${work.slug}` : "/creative-works", image: work?.cover, language });
+  useDocumentMeta({ title: work ? `${work.title} - ${profile.fullName}` : "Creative Work Not Found", description: work?.description || "Creative work detail page.", canonicalPath: work ? `/creative-works/${work.slug}` : "/creative-works", siteUrl: settings.siteUrl, image: work?.cover || settings.seoImage, imageAlt: work?.title, language, noIndex: !work, structuredData: work ? { "@context": "https://schema.org", "@graph": [{ "@type": "CreativeWork", name: work.title, description: work.description, image: work.cover || undefined, creator: { "@id": `${settings.siteUrl.replace(/\/$/, "")}/#person`, name: profile.fullName }, url: `${settings.siteUrl.replace(/\/$/, "")}/creative-works/${work.slug}` }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: t("Home") }, { "@type": "ListItem", position: 2, name: t("Creative Works") }, { "@type": "ListItem", position: 3, name: work.title }] }] } : undefined });
 
   if (!work) {
     return <main className="min-h-screen bg-[var(--color-bg-primary)] px-6 pt-32"><div className="mx-auto max-w-4xl"><EmptyState title={t("Creative work not found")} description={t("The selected work is unavailable.")} /></div></main>;

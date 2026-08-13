@@ -6,9 +6,11 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { hasCertificateLanguage, localizeCertificate } from "../../lib/localizedContent";
+import { localizedPath } from "../../lib/seo";
+import { Link } from "react-router";
 
 export default function CertificatesPage() {
-  const { certificates: rawCertificates } = usePortfolioData();
+  const { certificates: rawCertificates, settings, profile } = usePortfolioData();
   const { t, language } = useLanguage();
   const certificates = rawCertificates
     .filter((cert) => cert.published && hasCertificateLanguage(cert, language))
@@ -16,7 +18,7 @@ export default function CertificatesPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [active, setActive] = useState<string | null>(null);
-  useDocumentMeta({ title: "Certificates - Fazri", description: "Selected certificates and achievements from Fazri Lukman Nurrohman's learning journey." });
+  useDocumentMeta({ title: `${t("Certificates")} | ${profile.fullName}`, description: "Selected certificates and achievements from Fazri Lukman Nurrohman's learning journey.", canonicalPath: "/certificates", siteUrl: settings.siteUrl, image: settings.seoImage, language, structuredData: { "@context": "https://schema.org", "@type": "CollectionPage", name: t("Certificates"), mainEntity: { "@type": "ItemList", itemListElement: certificates.map((item, index) => ({ "@type": "ListItem", position: index + 1, name: item.title, url: `${settings.siteUrl.replace(/\/$/, "")}${localizedPath(`/certificates/${item.slug}`, language)}` })) } } });
 
   const categories = ["All", ...Array.from(new Set(certificates.map((item) => item.category)))];
   const filtered = certificates.filter((item) => (category === "All" || item.category === category) && `${item.title} ${item.issuer}`.toLowerCase().includes(query.toLowerCase()));
@@ -65,7 +67,7 @@ export default function CertificatesPage() {
           {filtered.length === 0 ? <EmptyState title="No certificates found" description="Try a different search or category." /> : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map((item) => (
-                <button key={item.id} onClick={() => setActive(item.id)} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]">
+                <Link key={item.id} to={localizedPath(`/certificates/${item.slug}`, language)} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]">
                   <div className="flex min-h-[180px] items-center justify-center overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.2),transparent_48%),var(--color-bg-primary)] p-3">
                     <img
                       src={item.image}
@@ -83,7 +85,7 @@ export default function CertificatesPage() {
                     <h2 className="mt-3 font-manrope text-xl font-bold">{item.title}</h2>
                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{item.issuer} / {item.issueDate}</p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           )}

@@ -7,7 +7,7 @@ import { cleanText } from "../_shared/validation.ts";
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
-  if (req.method !== "POST") return errorResponse("Method not allowed.", 405);
+  if (req.method !== "POST") return errorResponse("Method not allowed.", 405, req);
 
   try {
     const supabase = createAdminClient();
@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
     if (error && error.code !== "23505") throw error;
     const { data, error: countError } = await supabase.from("visitor_comments").select("likes_count").eq("id", commentId).single();
     if (countError) throw countError;
-    return jsonResponse({ ok: true, likes: data.likes_count });
+    return jsonResponse({ ok: true, likes: data.likes_count }, 200, req);
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Like failed.", 400);
+    return errorResponse(error instanceof Error ? error.message : "Like failed.", 400, req);
   }
 });

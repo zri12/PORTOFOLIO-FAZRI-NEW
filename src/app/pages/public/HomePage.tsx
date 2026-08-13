@@ -180,7 +180,19 @@ export default function HomePage() {
   const [spiderSceneReady, setSpiderSceneReady] = useState(false);
   const [compactViewport, setCompactViewport] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const reduce = useReducedMotion();
-  useDocumentMeta({ title: `${profile.fullName} - ${profile.title}`, description: profile.headline, language });
+  const seoGraph = useMemo(() => {
+    const siteUrl = data.settings.siteUrl.replace(/\/$/, "");
+    const personId = `${siteUrl}/#person`;
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "WebSite", "@id": `${siteUrl}/#website`, url: siteUrl, name: data.settings.websiteName || profile.fullName, description: data.settings.seoDescription || profile.description, inLanguage: language },
+        { "@type": "Person", "@id": personId, name: profile.fullName, url: siteUrl, jobTitle: profile.title, description: profile.description || profile.headline, image: profile.aboutImageUrl || undefined, sameAs: socialLinks.map((item) => item.href), knowsAbout: techStack.filter((item) => item.active).map((item) => item.name) },
+        { "@type": "WebPage", "@id": `${siteUrl}/#webpage`, url: siteUrl, name: data.settings.seoTitle || `${profile.fullName} — ${profile.title}`, about: { "@id": personId }, inLanguage: language },
+      ],
+    };
+  }, [data.settings, language, profile, socialLinks, techStack]);
+  useDocumentMeta({ title: data.settings.seoTitle || `${profile.fullName} - ${profile.title}`, description: data.settings.seoDescription || profile.description || profile.headline, siteUrl: data.settings.siteUrl, image: data.settings.seoImage || profile.aboutImageUrl, imageAlt: profile.fullName, language, structuredData: seoGraph });
   const heroCharRef = useRef<HTMLDivElement>(null);
   const heroDashRef = useRef<HTMLDivElement>(null);
   const heroModeCardRef = useRef<HTMLDivElement>(null);

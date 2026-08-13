@@ -87,7 +87,15 @@ export default function ContactPage() {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const commentMessageRef = useRef<HTMLTextAreaElement>(null);
 
-  useDocumentMeta({ title: `${t("Contact")} | ${profile.fullName}`, description: profile.description, language });
+  useDocumentMeta({
+    title: `${t("Contact")} | ${profile.fullName}`,
+    description: profile.description,
+    canonicalPath: "/contact",
+    siteUrl: settings.siteUrl,
+    image: settings.seoImage || profile.aboutImageUrl,
+    imageAlt: profile.fullName,
+    language,
+  });
 
   const resolvedCommentKeys = useMemo(() => new Set(comments.filter((comment) => comment.status !== "pending").map(commentMatchKey)), [comments]);
   const visibleComments = useMemo(() => {

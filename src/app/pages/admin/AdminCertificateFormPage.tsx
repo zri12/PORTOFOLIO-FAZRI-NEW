@@ -5,12 +5,14 @@ import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
+import { slugify } from "../../lib/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import type { Certificate, CertificateTranslation } from "../../types/portfolio";
 
 function createDraft(): Certificate {
   return {
     id: crypto.randomUUID(),
+    slug: "",
     title: "",
     issuer: "",
     category: "",
@@ -73,7 +75,7 @@ export default function AdminCertificateFormPage() {
     setError("");
     
     try {
-      portfolioRepository.updateCertificate(draft);
+      portfolioRepository.updateCertificate({ ...draft, slug: draft.slug.trim() || slugify(draft.title) });
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/certificates");
@@ -91,6 +93,7 @@ export default function AdminCertificateFormPage() {
         <FormSection title="Certificate Details">
           <div className="grid gap-4 md:grid-cols-2">
             <AdminInput label="Title" value={translation.title} onChange={(value) => { setError(""); setTranslation("title", value); }} />
+            <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
             <AdminInput label="Issuer" value={translation.issuer} onChange={(value) => setTranslation("issuer", value)} />
             <AdminInput label="Category" value={draft.category} onChange={(value) => set("category", value)} />
             <AdminInput label="Issue Date" value={draft.issueDate} onChange={(value) => set("issueDate", value)} />

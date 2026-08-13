@@ -149,7 +149,7 @@ An image can be inserted after any text section. Inserting an image automaticall
 
 Article title, excerpt, taxonomy, alt text, SEO copy, and Markdown blocks can be authored in either English or Indonesian. Saving generates the other language automatically while preserving Markdown prefixes and structured image blocks. Publishing requires the core article content in one source language. Article cover and content images retain their original aspect ratio.
 
-Automatic translation uses the HTTP endpoint configured by `VITE_TRANSLATION_API_URL`, with MyMemory as the default. It works across modern browsers, splits long content within the provider request limit, and exposes detection, translation, save, timeout, quota, and network feedback. Author-written text is sent to this external service when a project or article is saved; media URLs and shared technical fields are not translated.
+Automatic translation is queued by Supabase and processed server-side by the Edge Function with the Gemini provider. Translation credentials are never browser configuration. Author-written text is translated while media URLs and shared technical fields remain protected.
 
 ## Comments
 

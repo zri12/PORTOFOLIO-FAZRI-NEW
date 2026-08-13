@@ -25,7 +25,7 @@ async function assertActiveAdmin(req: Request) {
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
-  if (req.method !== "POST") return errorResponse("Method not allowed.", 405);
+  if (req.method !== "POST") return errorResponse("Method not allowed.", 405, req);
   try {
     await assertActiveAdmin(req);
     const admin = createAdminClient();
@@ -79,9 +79,9 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return jsonResponse({ ok: true, claimed: jobs.length, completed });
+    return jsonResponse({ ok: true, claimed: jobs.length, completed }, 200, req);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Translation processing failed.";
-    return errorResponse(message, error instanceof AuthenticationError ? 401 : 500);
+    return errorResponse(message, error instanceof AuthenticationError ? 401 : 500, req);
   }
 });

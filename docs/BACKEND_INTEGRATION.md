@@ -18,18 +18,36 @@ If a fresh Supabase project is needed later, export the current schema from the 
 
 ## Environment Files
 
-Copy `.env.example` to `.env.local` and fill:
+Copy `.env.example` to `.env.local` for local development. In Vercel, configure the server and client groups separately.
 
 ```env
+# Server-only Vercel Function variables (never use VITE_ for these)
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_PUBLIC_BUCKET=
+SITE_URL=
+
+# Public Vite variables; these are browser configuration, not secrets
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
-VITE_SUPABASE_PUBLIC_BUCKET=portfolio-public
-VITE_ADMIN_AUTH_DOMAIN=portfolio-admin.example
-VITE_ENABLE_SUPABASE=true
-VITE_ENABLE_REALTIME=true
+VITE_SUPABASE_PUBLIC_BUCKET=
+VITE_ENABLE_SUPABASE=
+VITE_ENABLE_REALTIME=
+VITE_SITE_URL=
+
+# Optional public Admin username aliases
+VITE_ADMIN_USERNAME=
+VITE_ADMIN_AUTH_EMAIL=
+VITE_ADMIN_AUTH_DOMAIN=
+
+# Server-only Edge Function translation secrets
+TRANSLATION_PROVIDER=
+TRANSLATION_API_KEY=
+TRANSLATION_MODEL=
+TRANSLATION_WORKER_SECRET=
 ```
 
-Keep service-role credentials only in the local shell, CI secrets, hosting secrets, or `.env.admin.local`. Never expose service-role credentials through `VITE_*`.
+`VITE_*` variables are public browser configuration. Keep service-role credentials and all translation credentials only in local shells, CI secrets, Vercel/Supabase secrets, or `.env.admin.local`. Never expose `SUPABASE_SERVICE_ROLE_KEY`, `TRANSLATION_API_KEY`, `TRANSLATION_WORKER_SECRET`, Gemini credentials, a Supabase PAT, or a database password through `VITE_*`.
 
 ## Admin and Service Secrets
 
@@ -77,6 +95,8 @@ Then set secrets:
 supabase secrets set SUPABASE_URL="YOUR_PROJECT_URL"
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
 ```
+
+The translation worker and Gemini provider are configured only with Supabase Edge Function secrets (`TRANSLATION_PROVIDER`, `TRANSLATION_API_KEY`, `TRANSLATION_MODEL`, and `TRANSLATION_WORKER_SECRET`). They do not use a browser translation API URL.
 
 ## Verification
 

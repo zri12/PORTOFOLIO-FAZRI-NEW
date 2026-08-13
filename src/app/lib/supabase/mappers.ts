@@ -21,6 +21,7 @@ import type {
   VisitorComment,
 } from "../../types/portfolio";
 import { getSupabaseClient, publicBucket } from "./client";
+import { slugify } from "../storage";
 
 type Row = Record<string, unknown>;
 
@@ -485,6 +486,7 @@ export const experienceToRow = (item: Experience): Row => ({
 export function mapCertificate(row: Row): Certificate {
   return {
     id: asString(row.id),
+    slug: asString(row.slug) || slugify(asString(row.title)),
     title: asString(row.title),
     issuer: asString(row.issuer),
     category: asString(row.category),
@@ -501,6 +503,7 @@ export function mapCertificate(row: Row): Certificate {
 }
 
 export const certificateToRow = (item: Certificate): Row => ({
+  slug: item.slug,
   title: item.title,
   issuer: item.issuer,
   category: item.category,

@@ -6,13 +6,14 @@ import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { useLanguage } from "../../context/LanguageContext";
 import { parseArticleMarkdown } from "../../lib/articleMarkdown";
 import { hasArticleLanguage, localizeArticle } from "../../lib/localizedContent";
+import { isPublishedAt, localizedPath } from "../../lib/seo";
 import type { ArticleBlock } from "../../types/portfolio";
 
 export default function ArticleDetailPage() {
   const { slug = "" } = useParams();
   const { articles, settings, profile } = usePortfolioData();
   const { language, t } = useLanguage();
-  const anyLanguageArticle = articles.find((item) => item.slug === slug && item.status === "published");
+  const anyLanguageArticle = articles.find((item) => item.slug === slug && item.status === "published" && isPublishedAt(item.publishedAt));
   const sourceArticle = anyLanguageArticle && hasArticleLanguage(anyLanguageArticle, language) ? anyLanguageArticle : undefined;
   const article = sourceArticle ? localizeArticle(sourceArticle, language) : undefined;
   const schema = useMemo(() => article ? {
@@ -23,10 +24,11 @@ export default function ArticleDetailPage() {
     image: article.coverImage || settings.seoImage || undefined,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt || article.publishedAt,
-    mainEntityOfPage: `${settings.siteUrl.replace(/\/$/, "")}/blog/${article.slug}`,
-    author: { "@type": "Person", name: article.author || profile.fullName },
+    mainEntityOfPage: `${settings.siteUrl.replace(/\/$/, "")}${localizedPath(`/blog/${article.slug}`, language)}`,
+    author: { "@id": `${settings.siteUrl.replace(/\/$/, "")}/#person`, "@type": "Person", name: article.author || profile.fullName },
     publisher: { "@type": "Person", name: profile.fullName },
-  } : undefined, [article, profile.fullName, settings.seoImage, settings.siteUrl]);
+    breadcrumb: { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: t("Home") }, { "@type": "ListItem", position: 2, name: t("Blog") }, { "@type": "ListItem", position: 3, name: article.title }] },
+  } : undefined, [article, language, profile.fullName, settings.seoImage, settings.siteUrl, t]);
 
   useDocumentMeta({
     title: article ? `${article.seoTitle || article.title} | ${profile.displayName}` : `Article not found | ${profile.displayName}`,

@@ -5,6 +5,7 @@ import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { AnimatePresence, motion } from "motion/react";
 import { BrandMark } from "../common/BrandMark";
+import { localizedPath } from "../../lib/seo";
 
 export const Navbar = () => {
   const { mode, toggleMode } = useContext(ThemeModeContext);
@@ -47,14 +48,14 @@ export const Navbar = () => {
     { label: t("Certificates"), path: "/certificates" },
     { label: t("Blog"), path: "/blog" },
     { label: t("Contact"), path: "/contact" },
-  ];
+  ].map((link) => ({ ...link, path: localizedPath(link.path, language) }));
   const nextModeLabel = mode === "professional" ? t("Spider Mode") : t("Pro Mode");
   const nextModeAction = mode === "professional" ? t("Switch to Spider Mode") : t("Switch to Pro Mode");
 
   return (
     <nav className={`portfolio-nav fixed top-0 z-50 w-full border-b transition-all duration-500 ${mode === "spider" ? "spider-nav" : ""} ${scrolled || isOpen ? "border-[var(--color-border)] bg-[var(--color-bg-secondary)]/92 py-3 backdrop-blur-md sm:py-4" : "border-transparent bg-transparent py-4 sm:py-6"}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 sm:px-6">
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to={localizedPath("/", language)} className="flex items-center gap-3 group">
           <BrandMark className="h-10 w-10 rounded-xl transition-colors group-hover:border-[var(--color-accent-main)] [&_span]:text-lg" />
           <div className="hidden sm:flex flex-col">
             <span className="font-manrope font-bold tracking-wide leading-none text-[var(--color-text-main)]">FAZRI</span>
@@ -81,7 +82,7 @@ export const Navbar = () => {
             <span className={`px-2 py-1 transition ${language === "id" ? "bg-[var(--color-accent-main)] text-[var(--color-bg-primary)]" : "text-[var(--color-text-muted)]"}`}>IND</span>
           </button>
           
-          <Link to="/contact" className="hidden items-center justify-center rounded-lg bg-[var(--color-text-main)] px-5 py-2 text-sm font-medium text-[var(--color-bg-primary)] transition-opacity hover:opacity-90 xl:flex">
+          <Link to={localizedPath("/contact", language)} className="hidden items-center justify-center rounded-lg bg-[var(--color-text-main)] px-5 py-2 text-sm font-medium text-[var(--color-bg-primary)] transition-opacity hover:opacity-90 xl:flex">
             {t("Contact Me")}
           </Link>
           <button className="flex h-10 w-10 items-center justify-center text-[var(--color-text-main)] xl:hidden" onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? "Close navigation" : "Open navigation"} aria-expanded={isOpen}>

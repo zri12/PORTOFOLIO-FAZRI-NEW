@@ -6,6 +6,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { BrandMark } from "../common/BrandMark";
 import { hasCreativeWorkLanguage, hasProjectLanguage, localizeCreativeWork, localizeProfile, localizeProject } from "../../lib/localizedContent";
+import { localizedPath } from "../../lib/seo";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -28,7 +29,7 @@ export const Footer = () => {
       <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-12">
           <div className="sm:col-span-2 lg:col-span-4">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to={localizedPath("/", language)} className="flex items-center gap-3">
               <BrandMark className="h-12 w-12 [&_span]:text-xl" />
               <div>
                 <span className="block font-manrope text-lg font-bold">{profile.fullName}</span>
@@ -42,8 +43,8 @@ export const Footer = () => {
               <span className="border border-[var(--color-border)] px-3 py-2 capitalize">{mode === "professional" ? t("Professional Mode") : t("Spider Mode")}</span>
             </div>
           </div>
-          <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Blog", "/blog"], ["Contact", "/contact"]]} t={t} />
-          <FooterList title={t("Featured Projects")} items={publishedProjects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} translateItems={false} />
+          <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Blog", "/blog"], ["Contact", "/contact"]]} t={t} language={language} />
+          <FooterList title={t("Featured Projects")} items={publishedProjects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} language={language} translateItems={false} />
           <div className="sm:col-span-2 lg:col-span-3">
             <h4 className="mb-5 font-manrope font-bold">{t("Connect")}</h4>
             <div className="mb-6 grid grid-cols-4 gap-3">
@@ -54,13 +55,13 @@ export const Footer = () => {
               ))}
             </div>
             <div className="space-y-3 text-sm text-[var(--color-text-secondary)]">
-              <Link to="/contact" className="flex items-center gap-2 hover:text-[var(--color-accent-main)]"><Mail size={15} /> {profile.email}</Link>
+              <Link to={localizedPath("/contact", language)} className="flex items-center gap-2 hover:text-[var(--color-accent-main)]"><Mail size={15} /> {profile.email}</Link>
               <a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-[var(--color-accent-main)]"><MessageCircle size={15} /> WhatsApp</a>
             </div>
             <div className="mt-6">
               <h5 className="mb-3 text-sm font-bold">{t("Creative Links")}</h5>
               <div className="space-y-2">
-                {publishedCreativeWorks.slice(0, 2).map((work) => <Link key={work.id} to={`/creative-works/${work.slug}`} className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{work.title}</Link>)}
+                {publishedCreativeWorks.slice(0, 2).map((work) => <Link key={work.id} to={localizedPath(`/creative-works/${work.slug}`, language)} className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{work.title}</Link>)}
               </div>
             </div>
           </div>
@@ -78,12 +79,12 @@ export const Footer = () => {
   );
 };
 
-function FooterList({ title, items, t, translateItems = true }: { title: string; items: string[][]; t: (value: string) => string; translateItems?: boolean }) {
+function FooterList({ title, items, t, language, translateItems = true }: { title: string; items: string[][]; t: (value: string) => string; language: "en" | "id"; translateItems?: boolean }) {
   return (
     <div className="lg:col-span-2">
       <h4 className="mb-5 font-manrope font-bold">{title}</h4>
       <ul className="space-y-3">
-        {items.map(([label, href]) => <li key={href}><Link to={href} className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{translateItems ? t(label) : label}</Link></li>)}
+        {items.map(([label, href]) => <li key={href}><Link to={localizedPath(href, language)} className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{translateItems ? t(label) : label}</Link></li>)}
       </ul>
     </div>
   );

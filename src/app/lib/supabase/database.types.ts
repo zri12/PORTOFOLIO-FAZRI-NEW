@@ -187,6 +187,7 @@ export type Database = {
           issue_date: string | null
           issuer: string
           published: boolean
+          slug: string
           source_language:
             | Database["public"]["Enums"]["content_language"]
             | null
@@ -213,6 +214,7 @@ export type Database = {
           issue_date?: string | null
           issuer: string
           published?: boolean
+          slug?: string
           source_language?:
             | Database["public"]["Enums"]["content_language"]
             | null
@@ -239,6 +241,7 @@ export type Database = {
           issue_date?: string | null
           issuer?: string
           published?: boolean
+          slug?: string
           source_language?:
             | Database["public"]["Enums"]["content_language"]
             | null

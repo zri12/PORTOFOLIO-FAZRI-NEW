@@ -181,6 +181,7 @@ export interface CertificateTranslation {
 
 export interface Certificate extends CertificateTranslation, TranslationMetadata {
   id: string;
+  slug: string;
   title: string;
   issuer: string;
   category: string;

@@ -219,9 +219,9 @@ export const portfolioSeed: PortfolioData = {
     { id: "exp-foundation", role: "Exploration & Foundation", organization: "Learning and organization activities", type: "Learning", period: "2022 - 2023", location: "Indonesia", description: "Strengthened cross-disciplinary practice across development, UI design, and visual production.", responsibilities: ["Study web foundations", "Create visual assets", "Practice deployment"], technologies: ["PHP", "Bootstrap", "JavaScript"], relatedProjectSlug: "sm-v-lab-ipa", published: true, displayOrder: 3 },
   ],
   certificates: [
-    { id: "cert-web", title: "Web Development Fundamentals", issuer: "Dicoding", category: "Development", issueDate: "2024-04-16", credentialId: "DCD-WEB-2024-FL", credentialUrl: "https://fazri.dev/certificates/web-development", image: visual("Certificate"), featured: true, published: true, displayOrder: 1 },
-    { id: "cert-ui", title: "UI/UX Design Essentials", issuer: "Coursera", category: "Design", issueDate: "2023-09-12", credentialId: "CRS-UIUX-FL", credentialUrl: "https://fazri.dev/certificates/uiux", image: visual("UI/UX Certificate", "red"), featured: false, published: true, displayOrder: 2 },
-    { id: "cert-js", title: "JavaScript Intermediate", issuer: "Codepolitan", category: "Development", issueDate: "2023-06-20", credentialId: "CDP-JS-FL", credentialUrl: "https://fazri.dev/certificates/javascript", image: visual("JavaScript"), featured: false, published: true, displayOrder: 3 },
+    { id: "cert-web", slug: "web-development-fundamentals", title: "Web Development Fundamentals", issuer: "Dicoding", category: "Development", issueDate: "2024-04-16", credentialId: "DCD-WEB-2024-FL", credentialUrl: "https://fazri.dev/certificates/web-development", image: visual("Certificate"), featured: true, published: true, displayOrder: 1 },
+    { id: "cert-ui", slug: "ui-ux-design-essentials", title: "UI/UX Design Essentials", issuer: "Coursera", category: "Design", issueDate: "2023-09-12", credentialId: "CRS-UIUX-FL", credentialUrl: "https://fazri.dev/certificates/uiux", image: visual("UI/UX Certificate", "red"), featured: false, published: true, displayOrder: 2 },
+    { id: "cert-js", slug: "javascript-intermediate", title: "JavaScript Intermediate", issuer: "Codepolitan", category: "Development", issueDate: "2023-06-20", credentialId: "CDP-JS-FL", credentialUrl: "https://fazri.dev/certificates/javascript", image: visual("JavaScript"), featured: false, published: true, displayOrder: 3 },
   ],
   articles: [
     {

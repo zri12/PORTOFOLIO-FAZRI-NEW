@@ -20,7 +20,7 @@ function DetailBlock({ title, children }: { title: string; children: React.React
 
 export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
-  const { projects } = usePortfolioData();
+  const { projects, settings, profile } = usePortfolioData();
   const { language, t } = useLanguage();
   const availableProjects = projects.filter((entry) => entry.status === "published" && hasProjectLanguage(entry, language));
   const anyLanguageProject = projects.find((entry) => entry.slug === slug && entry.status === "published");
@@ -31,8 +31,12 @@ export default function ProjectDetailPage() {
     title: project ? `${project.title} Case Study - Fazri` : "Project Not Found - Fazri",
     description: project?.shortDescription || "Project detail page for Fazri Lukman Nurrohman's portfolio.",
     canonicalPath: project ? `/projects/${project.slug}` : "/projects",
+    siteUrl: settings.siteUrl,
     image: project?.heroImage || project?.coverImage,
+    imageAlt: project?.title,
     language,
+    noIndex: !project,
+    structuredData: project ? { "@context": "https://schema.org", "@graph": [{ "@type": "CreativeWork", "@id": `${settings.siteUrl.replace(/\/$/, "")}/projects/${project.slug}#work`, name: project.title, description: project.shortDescription, image: project.heroImage || project.coverImage || undefined, author: { "@id": `${settings.siteUrl.replace(/\/$/, "")}/#person`, name: profile.fullName }, url: `${settings.siteUrl.replace(/\/$/, "")}/projects/${project.slug}`, keywords: project.techStack.join(", ") }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: t("Home"), item: settings.siteUrl }, { "@type": "ListItem", position: 2, name: t("Projects"), item: `${settings.siteUrl.replace(/\/$/, "")}/projects` }, { "@type": "ListItem", position: 3, name: project.title }] }] } : undefined,
   });
 
   if (!project) {

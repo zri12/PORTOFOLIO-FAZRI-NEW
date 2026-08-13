@@ -39,6 +39,7 @@ const AboutPage = lazy(() => import("./pages/public/AboutPage"));
 const BlogPage = lazy(() => import("./pages/public/BlogPage"));
 const ArticleDetailPage = lazy(() => import("./pages/public/ArticleDetailPage"));
 const CertificatesPage = lazy(() => import("./pages/public/CertificatesPage"));
+const CertificateDetailPage = lazy(() => import("./pages/public/CertificateDetailPage"));
 const ContactPage = lazy(() => import("./pages/public/ContactPage"));
 const CreativeWorkDetailPage = lazy(() => import("./pages/public/CreativeWorkDetailPage"));
 const CreativeWorksPage = lazy(() => import("./pages/public/CreativeWorksPage"));
@@ -134,6 +135,18 @@ export function AppRouter() {
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:slug" element={<ArticleDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/certificates/:slug" element={<CertificateDetailPage />} />
+            <Route path="/id" element={<HomePage />} />
+            <Route path="/id/about" element={<AboutPage />} />
+            <Route path="/id/projects" element={<ProjectsPage />} />
+            <Route path="/id/projects/:slug" element={<ProjectDetailPage />} />
+            <Route path="/id/creative-works" element={<CreativeWorksPage />} />
+            <Route path="/id/creative-works/:slug" element={<CreativeWorkDetailPage />} />
+            <Route path="/id/certificates" element={<CertificatesPage />} />
+            <Route path="/id/certificates/:slug" element={<CertificateDetailPage />} />
+            <Route path="/id/blog" element={<BlogPage />} />
+            <Route path="/id/blog/:slug" element={<ArticleDetailPage />} />
+            <Route path="/id/contact" element={<ContactPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
