@@ -620,6 +620,8 @@ const extraEnToIdEntries: Array<[string, string]> = [
   ["Please provide your name, a valid optional email, and a message with at least 10 characters.", "Masukkan nama, email opsional yang valid, dan pesan minimal 10 karakter."],
   ["Please provide a valid email and a message with at least 5 characters.", "Masukkan email yang valid dan komentar minimal 5 karakter."],
   ["WhatsApp number is not configured in the admin profile.", "Nomor WhatsApp belum diatur di profil admin."],
+  ["WhatsApp (optional)", "WhatsApp (opsional)"],
+  ["Please provide your name, a valid optional email, and a message with at least 10 characters.", "Masukkan nama, email opsional yang valid, dan pesan minimal 10 karakter."],
   ["WhatsApp is opening with your message template.", "WhatsApp sedang dibuka dengan template pesan Anda."],
   ["Opening WhatsApp...", "Membuka WhatsApp..."],
   ["Direct project inquiry", "Pertanyaan proyek langsung"],

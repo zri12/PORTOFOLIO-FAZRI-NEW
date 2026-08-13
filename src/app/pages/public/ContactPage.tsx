@@ -22,7 +22,6 @@ import { EmptyState } from "../../components/common/EmptyState";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
-import { isSupabaseEnabled } from "../../lib/supabase/client";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import { supabasePortfolioRepository } from "../../repositories/supabasePortfolioRepository";
 import type { VisitorComment } from "../../types/portfolio";
@@ -138,8 +137,9 @@ export default function ContactPage() {
     const budgetRange = String(form.get("budgetRange") || "Discuss first");
     const message = String(form.get("message") || "").trim();
     const ownerWhatsApp = (profile.whatsapp || "").replace(/\D/g, "");
-    if (!name || !whatsapp || (email && !email.includes("@")) || message.length < 10 || !ownerWhatsApp) {
-      setContactError(!ownerWhatsApp ? "WhatsApp number is not configured in the admin profile." : "Please provide your name, WhatsApp number, optional valid email, and a message with at least 10 characters.");
+    const isValidEmail = !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!name || !isValidEmail || message.length < 10 || !ownerWhatsApp) {
+      setContactError(!ownerWhatsApp ? "WhatsApp number is not configured in the admin profile." : "Please provide your name, a valid optional email, and a message with at least 10 characters.");
       setStatus("error");
       return;
     }
@@ -161,15 +161,15 @@ export default function ContactPage() {
     ].join("\n");
     const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${encodeURIComponent(template)}`;
 
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    formElement.reset();
+    setStatus("success");
+
     try {
-      if (!isSupabaseEnabled) throw new Error("Contact service is temporarily unavailable.");
       await supabasePortfolioRepository.submitContact(payload);
       void portfolioRepository.refresh();
-      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      formElement.reset();
-      setStatus("success");
-    } catch {
-      setStatus("error");
+    } catch (error) {
+      console.warn("Contact inbox save failed after opening WhatsApp.", error);
     }
   };
 
@@ -307,8 +307,8 @@ export default function ContactPage() {
               <div className="grid gap-5 md:grid-cols-2">
                 <Field label={t("Name")} name="name" required />
                 <Field label={t("Email")} name="email" type="email" />
-                <Field label="WhatsApp" name="whatsapp" required />
-                <Field label={t("Subject")} name="subject" required />
+                <Field label={t("WhatsApp (optional)")} name="whatsapp" type="tel" />
+                <Field label={t("Subject")} name="subject" />
                 <Select label={t("Project Type")} name="projectType" options={projectTypes} t={t} />
                 <Select label={t("Budget Range")} name="budgetRange" options={budgets} t={t} />
               </div>
@@ -316,7 +316,7 @@ export default function ContactPage() {
                 <span className="mb-2 block text-sm font-semibold text-[var(--color-text-secondary)]">{t("Message")}</span>
                 <textarea name="message" required rows={6} className="w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 leading-7 outline-none transition-colors duration-200 focus:border-[var(--color-accent-main)]" placeholder={t("Tell me about the goal, audience, timeline, and what already exists.")} />
               </label>
-              {status === "error" && <p className="mt-4 text-sm text-red-300">{t(contactError || "Please provide your name, WhatsApp number, a valid optional email, and a message with at least 10 characters.")}</p>}
+              {status === "error" && <p className="mt-4 text-sm text-red-300">{t(contactError || "Please provide your name, a valid optional email, and a message with at least 10 characters.")}</p>}
               {status === "success" && <p className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-300"><CheckCircle size={16} /> {t("WhatsApp is opening with your message template.")}</p>}
               <button disabled={status === "submitting"} className="mt-6 inline-flex w-full items-center justify-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] transition-[opacity,transform] duration-200 hover:-translate-y-0.5 disabled:opacity-60 sm:w-auto">{status === "submitting" ? t("Opening WhatsApp...") : t("Send Message")} <Send size={16} /></button>
             </form> : <div className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-[var(--color-text-secondary)]">{t("Contact form is currently unavailable.")}</div>}

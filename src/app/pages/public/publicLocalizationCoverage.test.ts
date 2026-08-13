@@ -23,4 +23,12 @@ describe("public localization render coverage", () => {
     expect(read("../../components/layout/Footer.tsx")).toContain('t("Navigation")');
     expect(read("../../components/layout/Navbar.tsx")).toContain("useLanguage");
   });
+
+  it("opens the admin WhatsApp template without making inbox storage or a visitor number a prerequisite", () => {
+    const contact = read("./ContactPage.tsx");
+    expect(contact).toContain('const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${encodeURIComponent(template)}`');
+    expect(contact).toContain('window.open(whatsappUrl, "_blank", "noopener,noreferrer");');
+    expect(contact).toContain('Field label={t("WhatsApp (optional)")} name="whatsapp" type="tel"');
+    expect(contact.indexOf('window.open(whatsappUrl, "_blank", "noopener,noreferrer");')).toBeLessThan(contact.indexOf("await supabasePortfolioRepository.submitContact(payload);"));
+  });
 });
