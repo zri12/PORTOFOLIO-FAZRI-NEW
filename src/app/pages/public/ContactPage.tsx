@@ -26,6 +26,8 @@ import { isSupabaseEnabled } from "../../lib/supabase/client";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
 import { supabasePortfolioRepository } from "../../repositories/supabasePortfolioRepository";
 import type { VisitorComment } from "../../types/portfolio";
+import { localizeProfile } from "../../lib/localizedContent";
+import { isPublicFeatureEnabled } from "../../lib/publicSettings";
 
 const projectTypes = ["Website", "Web Application", "Dashboard", "UI Implementation", "Website Maintenance", "UI Design", "Graphic Design", "Photography", "Videography", "Editing", "Other"];
 const budgets = ["Under Rp1 million", "Rp1-3 million", "Rp3-5 million", "Rp5-10 million", "More than Rp10 million", "Discuss first"];
@@ -72,8 +74,9 @@ function commentMatchKey(comment: Pick<VisitorComment, "name" | "message">) {
 }
 
 export default function ContactPage() {
-  const { profile, comments, settings } = usePortfolioData();
-  const { t } = useLanguage();
+  const { profile: rawProfile, comments, settings } = usePortfolioData();
+  const { t, language } = useLanguage();
+  const profile = localizeProfile(rawProfile, language);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [contactError, setContactError] = useState("");
   const [commentSort, setCommentSort] = useState("Newest");
@@ -84,7 +87,7 @@ export default function ContactPage() {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const commentMessageRef = useRef<HTMLTextAreaElement>(null);
 
-  useDocumentMeta({ title: "Contact - Fazri Lukman Nurrohman", description: "Start a web development, interface, or creative collaboration with Fazri Lukman Nurrohman." });
+  useDocumentMeta({ title: `${t("Contact")} | ${profile.fullName}`, description: profile.description, language });
 
   const resolvedCommentKeys = useMemo(() => new Set(comments.filter((comment) => comment.status !== "pending").map(commentMatchKey)), [comments]);
   const visibleComments = useMemo(() => {
@@ -127,8 +130,8 @@ export default function ContactPage() {
     const budgetRange = String(form.get("budgetRange") || "Discuss first");
     const message = String(form.get("message") || "").trim();
     const ownerWhatsApp = (profile.whatsapp || "").replace(/\D/g, "");
-    if (!name || (email && !email.includes("@")) || message.length < 10 || !ownerWhatsApp) {
-      setContactError(!ownerWhatsApp ? "WhatsApp number is not configured in the admin profile." : "Please provide your name, a valid optional email, and a message with at least 10 characters.");
+    if (!name || !whatsapp || (email && !email.includes("@")) || message.length < 10 || !ownerWhatsApp) {
+      setContactError(!ownerWhatsApp ? "WhatsApp number is not configured in the admin profile." : "Please provide your name, WhatsApp number, optional valid email, and a message with at least 10 characters.");
       setStatus("error");
       return;
     }
@@ -151,14 +154,10 @@ export default function ContactPage() {
     const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${encodeURIComponent(template)}`;
 
     try {
+      if (!isSupabaseEnabled) throw new Error("Contact service is temporarily unavailable.");
+      await supabasePortfolioRepository.submitContact(payload);
+      void portfolioRepository.refresh();
       window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      if (isSupabaseEnabled) {
-        void supabasePortfolioRepository.submitContact(payload)
-          .then(() => portfolioRepository.refresh())
-          .catch((error) => console.error("Contact archive failed", error));
-      } else {
-        portfolioRepository.createMessage(payload);
-      }
       formElement.reset();
       setStatus("success");
     } catch {
@@ -235,9 +234,9 @@ export default function ContactPage() {
               {comment.pinned && <span className="ml-auto border border-[var(--color-accent-main)]/30 px-2 py-0.5 text-[10px] text-[var(--color-accent-main)]">{t("Pinned")}</span>}
               {comment.status === "pending" && <span className="ml-auto border border-amber-300/30 px-2 py-0.5 text-[10px] text-amber-200">{t("Pending review")}</span>}
             </div>
-            {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{t(comment.reply)}</p>}
+            {comment.reply && <p className="mt-2 inline-flex border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)]">{comment.reply}</p>}
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{comment.message}</p>
-            {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {t(comment.adminReply)}</p>}
+            {comment.adminReply && <p className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">{t("Admin reply:")} {comment.adminReply}</p>}
             {!nested && [...(visibleRepliesByParent[comment.id] || []), ...(pendingRepliesByParent[comment.id] || [])].map((reply) => (
               <div key={reply.id} className="mt-3 border-l border-[var(--color-accent-main)] pl-3 text-xs leading-5 text-[var(--color-text-muted)]">
                 <div className="flex flex-wrap items-center gap-2">
@@ -288,7 +287,7 @@ export default function ContactPage() {
       <section className="px-5 pb-20 sm:px-6 sm:pb-24">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.04fr_.96fr]">
           <div className="min-w-0">
-            <form onSubmit={submitContact} className="relative overflow-hidden border border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface-elevated),var(--color-bg-secondary))] p-5 shadow-[0_24px_80px_rgba(0,0,0,.18)] sm:p-6 md:p-8">
+            {isPublicFeatureEnabled(settings, "contact") ? <form onSubmit={submitContact} className="relative overflow-hidden border border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface-elevated),var(--color-bg-secondary))] p-5 shadow-[0_24px_80px_rgba(0,0,0,.18)] sm:p-6 md:p-8">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent-main),transparent)]" />
               <div className="mb-7 flex items-start justify-between gap-5">
                 <div>
@@ -312,7 +311,7 @@ export default function ContactPage() {
               {status === "error" && <p className="mt-4 text-sm text-red-300">{t(contactError || "Please provide your name, a valid optional email, and a message with at least 10 characters.")}</p>}
               {status === "success" && <p className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-300"><CheckCircle size={16} /> {t("WhatsApp is opening with your message template.")}</p>}
               <button disabled={status === "submitting"} className="mt-6 inline-flex w-full items-center justify-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] transition-[opacity,transform] duration-200 hover:-translate-y-0.5 disabled:opacity-60 sm:w-auto">{status === "submitting" ? t("Opening WhatsApp...") : t("Send Message")} <Send size={16} /></button>
-            </form>
+            </form> : <div className="border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-[var(--color-text-secondary)]">{t("Contact form is currently unavailable.")}</div>}
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {contactChannels.map((channel, index) => <ContactCard key={channel.label} {...channel} index={index} />)}
@@ -320,7 +319,7 @@ export default function ContactPage() {
                 <div className="absolute right-5 top-5 font-mono text-[10px] text-[var(--color-text-muted)]">GMT+7</div>
                 <span className="flex h-12 w-12 items-center justify-center border border-[var(--color-accent-main)]/35 bg-[var(--color-accent-main)]/10 text-[var(--color-accent-main)]"><MapPin size={22} /></span>
                 <p className="mt-5 font-manrope text-xl font-bold">{profile.location}</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{t(profile.availability)}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{profile.availability}</p>
               </div>
             </div>
           </div>
@@ -336,7 +335,7 @@ export default function ContactPage() {
                 <option value="Most liked">{t("Most liked")}</option>
               </select>
             </div>
-            {settings.commentsEnabled ? (
+            {isPublicFeatureEnabled(settings, "comments") ? (
               <>
                 <form onSubmit={submitComment} className="my-6 space-y-3">
                   {replyTo && (

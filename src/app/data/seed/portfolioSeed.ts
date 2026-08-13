@@ -200,7 +200,7 @@ export const portfolioSeed: PortfolioData = {
     instagram: "https://instagram.com/fazrilukman",
     youtube: "https://youtube.com/@fazrilukman",
     tiktok: "https://tiktok.com/@fazrilukman",
-    cvUrl: "/cv-fazri-lukman.pdf",
+    cvUrl: "",
     logoUrl: "",
     faviconUrl: "",
     aboutImageUrl: "",

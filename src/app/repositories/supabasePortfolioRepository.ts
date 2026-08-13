@@ -1,6 +1,7 @@
 import { portfolioSeed } from "../data/seed/portfolioSeed";
 import { inferTechnologyCategory, technologyIconKey } from "../data/technologyCatalog";
 import { getSupabaseClient, isSupabaseEnabled, publicBucket } from "../lib/supabase/client";
+import type { Database } from "../lib/supabase/database.types";
 import {
   articleToRow,
   certificateToRow,
@@ -39,6 +40,9 @@ import type {
 } from "../types/portfolio";
 
 type Row = Record<string, unknown>;
+type TableName = keyof Database["public"]["Tables"];
+type InsertRow<T extends TableName> = Database["public"]["Tables"][T]["Insert"];
+const asInsert = <T extends TableName>(row: Row) => row as unknown as InsertRow<T>;
 
 const VISITOR_ID_KEY = "fazri-portfolio-visitor-id-v1";
 
@@ -98,6 +102,14 @@ function storagePathFromPublicUrl(value: string) {
   }
 }
 
+export function kickTranslationWorker() {
+  const supabase = getSupabaseClient();
+  if (!supabase) return Promise.resolve();
+  return supabase.functions.invoke("process-translations", { body: { limit: 3 } }).then(({ error }) => {
+    if (error) throw error;
+  });
+}
+
 export const supabasePortfolioRepository = {
   enabled: isSupabaseEnabled,
 
@@ -128,7 +140,9 @@ export const supabasePortfolioRepository = {
       supabase.from("experiences").select("*, projects(slug)").order("display_order"),
       supabase.from("certificates").select("*").order("display_order"),
       supabase.from("articles").select("*").order("display_order").order("published_at", { ascending: false }),
-      supabase.from("visitor_comments").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }),
+      includePrivate
+        ? supabase.from("visitor_comments").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false })
+        : supabase.rpc("public_approved_comments"),
       includePrivate ? supabase.from("contact_messages").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
       supabase.from("media_assets").select("*").order("created_at", { ascending: false }),
     ]);
@@ -208,22 +222,25 @@ export const supabasePortfolioRepository = {
   async upsertProfile(profile: PortfolioData["profile"]) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("site_profiles").upsert(profileToRow(profile), { onConflict: "singleton_key" });
+    const { error } = await supabase.from("site_profiles").upsert(asInsert<"site_profiles">(profileToRow(profile)), { onConflict: "singleton_key" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async upsertSettings(settings: SiteSettings) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("site_settings").upsert(settingsToRow(settings), { onConflict: "singleton_key" });
+    const { error } = await supabase.from("site_settings").upsert(asInsert<"site_settings">(settingsToRow(settings)), { onConflict: "singleton_key" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async upsertProject(project: Project) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { data, error } = await supabase.from("projects").upsert({ id: project.id, ...projectToRow(project) }, { onConflict: "id" }).select("id").single();
+    const { data, error } = await supabase.from("projects").upsert(asInsert<"projects">({ id: project.id, ...projectToRow(project) }), { onConflict: "id" }).select("id").single();
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
     const projectId = String((data as Row).id);
     const { error: deleteRelationsError } = await supabase.from("project_technologies").delete().eq("project_id", projectId);
     if (deleteRelationsError) throw deleteRelationsError;
@@ -232,7 +249,7 @@ export const supabasePortfolioRepository = {
       const { data: existingTech, error: findTechError } = await supabase.from("technologies").select("id").eq("name", name).maybeSingle();
       if (findTechError) throw findTechError;
 
-      let techId = asRow(existingTech)?.id;
+      let techId = asRow(existingTech)?.id ? String(asRow(existingTech)?.id) : undefined;
       if (!techId) {
         const technology: Technology = {
           id: crypto.randomUUID(),
@@ -248,11 +265,11 @@ export const supabasePortfolioRepository = {
         };
         const { data: createdTech, error: createTechError } = await supabase
           .from("technologies")
-          .insert({ id: technology.id, ...technologyToRow(technology) })
+          .insert(asInsert<"technologies">({ id: technology.id, ...technologyToRow(technology) }))
           .select("id")
           .single();
         if (createTechError) throw createTechError;
-        techId = asRow(createdTech)?.id;
+        techId = String(asRow(createdTech)?.id || "");
       }
 
       if (!techId) throw new Error(`Technology "${name}" could not be created.`);
@@ -270,13 +287,15 @@ export const supabasePortfolioRepository = {
     if (!supabase) return;
     const { error } = await supabase.from("projects").delete().eq("id", id);
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async upsertTechnology(item: Technology) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("technologies").upsert({ id: item.id, ...technologyToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("technologies").upsert(asInsert<"technologies">({ id: item.id, ...technologyToRow(item) }), { onConflict: "id" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async deleteTechnology(id: string) {
@@ -286,13 +305,15 @@ export const supabasePortfolioRepository = {
     if ((count || 0) > 0) throw new Error("Technology is assigned to a project. Remove relations first.");
     const { error } = await supabase.from("technologies").delete().eq("id", id);
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async upsertCreativeWork(item: CreativeWork) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("creative_works").upsert({ id: item.id, ...creativeWorkToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("creative_works").upsert(asInsert<"creative_works">({ id: item.id, ...creativeWorkToRow(item) }), { onConflict: "id" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async deleteCreativeWork(id: string) {
@@ -308,10 +329,11 @@ export const supabasePortfolioRepository = {
     const row = experienceToRow(item);
     if (item.relatedProjectSlug) {
       const { data } = await supabase.from("projects").select("id").eq("slug", item.relatedProjectSlug).maybeSingle();
-      row.related_project_id = asRow(data)?.id || null;
+      row.related_project_id = asRow(data)?.id ? String(asRow(data)?.id) : null;
     }
-    const { error } = await supabase.from("experiences").upsert({ id: item.id, ...row }, { onConflict: "id" });
+    const { error } = await supabase.from("experiences").upsert(asInsert<"experiences">({ id: item.id, ...row }), { onConflict: "id" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async deleteExperience(id: string) {
@@ -324,8 +346,9 @@ export const supabasePortfolioRepository = {
   async upsertCertificate(item: Certificate) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("certificates").upsert({ id: item.id, ...certificateToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("certificates").upsert(asInsert<"certificates">({ id: item.id, ...certificateToRow(item) }), { onConflict: "id" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async deleteCertificate(id: string) {
@@ -338,8 +361,9 @@ export const supabasePortfolioRepository = {
   async upsertArticle(item: Article) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("articles").upsert({ id: item.id, ...articleToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("articles").upsert(asInsert<"articles">({ id: item.id, ...articleToRow(item) }), { onConflict: "id" });
     if (error) throw error;
+    void kickTranslationWorker().catch(() => {});
   },
 
   async deleteArticle(id: string) {
@@ -360,24 +384,7 @@ export const supabasePortfolioRepository = {
     const supabase = getSupabaseClient();
     if (!supabase) return;
     const { error } = await supabase.functions.invoke("submit-comment", { body: item });
-    if (!error) return;
-    const { data, error: insertError } = await supabase.from("visitor_comments").insert({
-      name: item.name,
-      avatar: item.avatar,
-      message: item.message,
-      parent_comment_id: item.replyToId || null,
-      status: "pending",
-      likes_count: 0,
-      pinned: false,
-    }).select("id").single();
-    if (insertError) throw insertError;
-    const commentId = asRow(data)?.id;
-    if (!commentId) return;
-    const { error: contactError } = await supabase.from("visitor_comment_contacts").insert({
-      comment_id: commentId,
-      email: item.email,
-    });
-    if (contactError) throw contactError;
+    if (error) throw error;
   },
 
   async likeComment(commentId: string) {
@@ -385,20 +392,13 @@ export const supabasePortfolioRepository = {
     if (!supabase) return;
     const visitorId = getVisitorId();
     const { error } = await supabase.functions.invoke("like-comment", { body: { commentId, visitorId } });
-    if (!error) return;
-    const { error: rpcError } = await supabase.rpc("public_like_comment", {
-      target_comment_id: commentId,
-      target_visitor_id: visitorId,
-    });
-    if (!rpcError) return;
-    const { error: insertError } = await supabase.from("comment_likes").insert({ comment_id: commentId, visitor_id: visitorId });
-    if (insertError && insertError.code !== "23505") throw insertError;
+    if (error) throw error;
   },
 
   async upsertComment(item: VisitorComment) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("visitor_comments").upsert({ id: item.id, ...commentToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("visitor_comments").upsert(asInsert<"visitor_comments">({ id: item.id, ...commentToRow(item) }), { onConflict: "id" });
     if (error) throw error;
   },
 
@@ -412,7 +412,7 @@ export const supabasePortfolioRepository = {
   async upsertMessage(item: ContactMessage) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.from("contact_messages").upsert({ id: item.id, ...messageToRow(item) }, { onConflict: "id" });
+    const { error } = await supabase.from("contact_messages").upsert(asInsert<"contact_messages">({ id: item.id, ...messageToRow(item) }), { onConflict: "id" });
     if (error) throw error;
   },
 
@@ -426,6 +426,14 @@ export const supabasePortfolioRepository = {
   async deleteMedia(id: string) {
     const supabase = getSupabaseClient();
     if (!supabase) return;
+    const { data, error: readError } = await supabase.from("media_assets").select("bucket_id, object_path").eq("id", id).single();
+    if (readError) throw readError;
+    const row = asRow(data);
+    const bucket = String(row?.bucket_id || publicBucket);
+    const path = String(row?.object_path || "");
+    if (!path) throw new Error("Media object path is missing.");
+    const { error: storageError } = await supabase.storage.from(bucket).remove([path]);
+    if (storageError) throw storageError;
     const { error } = await supabase.from("media_assets").delete().eq("id", id);
     if (error) throw error;
   },

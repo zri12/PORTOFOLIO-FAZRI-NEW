@@ -1,5 +1,6 @@
-import { createContext, useState, useEffect, useRef, ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router";
+import type { ReactNode } from "react";
+import { createContext, useState, useEffect, useRef } from "react";
+import { usePortfolioData } from "../hooks/usePortfolioData";
 
 type Mode = "professional" | "spider";
 
@@ -14,17 +15,19 @@ export const ThemeModeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeModeProvider = ({ children }: { children: ReactNode }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const firstToggleFrame = useRef<number | null>(null);
-  const secondToggleFrame = useRef<number | null>(null);
+  const { settings } = usePortfolioData();
+  const hasUserPreference = useRef(typeof window !== "undefined" && Boolean(window.localStorage.getItem("portfolio-mode")));
   const [mode, setMode] = useState<Mode>(() => {
-    const saved = localStorage.getItem("portfolio-mode");
+    const saved = window.localStorage.getItem("portfolio-mode");
     return (saved as Mode) || "professional";
   });
 
   useEffect(() => {
-    localStorage.setItem("portfolio-mode", mode);
+    if (!hasUserPreference.current) setMode(settings.defaultMode);
+  }, [settings.defaultMode]);
+
+  useEffect(() => {
+    if (hasUserPreference.current) window.localStorage.setItem("portfolio-mode", mode);
     let enteringTimer: number | undefined;
 
     if (mode === "spider") {
@@ -43,45 +46,9 @@ export const ThemeModeProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [mode]);
 
-  useEffect(() => {
-    return () => {
-      if (firstToggleFrame.current) {
-        window.cancelAnimationFrame(firstToggleFrame.current);
-      }
-      if (secondToggleFrame.current) {
-        window.cancelAnimationFrame(secondToggleFrame.current);
-      }
-    };
-  }, []);
-
   const toggleMode = () => {
-    if (firstToggleFrame.current) {
-      window.cancelAnimationFrame(firstToggleFrame.current);
-    }
-    if (secondToggleFrame.current) {
-      window.cancelAnimationFrame(secondToggleFrame.current);
-    }
-
-    navigate("/", {
-      replace:
-        location.pathname === "/" &&
-        location.search === "" &&
-        location.hash === "",
-    });
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    });
-
-    firstToggleFrame.current = window.requestAnimationFrame(() => {
-      secondToggleFrame.current = window.requestAnimationFrame(() => {
-        setMode((prev) =>
-          prev === "professional" ? "spider" : "professional",
-        );
-        firstToggleFrame.current = null;
-        secondToggleFrame.current = null;
-      });
-    });
+    hasUserPreference.current = true;
+    setMode((prev) => prev === "professional" ? "spider" : "professional");
   };
 
   return (

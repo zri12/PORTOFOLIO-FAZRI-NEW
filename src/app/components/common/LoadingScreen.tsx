@@ -1,6 +1,7 @@
 import { lazy, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { ThemeModeContext } from "../../context/ThemeModeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { SplashProgress } from "../animation/SplashProgress";
 import professionalCharacter from "../../../imports/character-professional.png";
 import spiderCharacter from "../../../imports/character-spider.png";
@@ -23,15 +24,18 @@ function preloadImage(src: string) {
 
 interface LoadingScreenProps {
   onComplete?: () => void;
+  enabled?: boolean;
+  threeEnabled?: boolean;
 }
 
-export function LoadingScreen({ onComplete }: LoadingScreenProps) {
+export function LoadingScreen({ onComplete, enabled = true, threeEnabled = true }: LoadingScreenProps) {
   const { mode } = useContext(ThemeModeContext);
+  const { t } = useLanguage();
   const reduced = !!useReducedMotion();
   const compactViewport = window.matchMedia("(max-width: 767px)").matches;
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const bodyOverflowRef = useRef("");
-  const [visible, setVisible] = useState(() => !(window as Window & { [BOOT_SPLASH_KEY]?: boolean })[BOOT_SPLASH_KEY]);
+  const [visible, setVisible] = useState(() => enabled && !(window as Window & { [BOOT_SPLASH_KEY]?: boolean })[BOOT_SPLASH_KEY]);
   const [exiting, setExiting] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -41,11 +45,13 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       : ["Preparing Fazri portfolio", "Loading web and creative works", "Opening personal workspace", "Portfolio ready"],
     [mode]
   );
-  const status = statusSteps[Math.min(statusSteps.length - 1, Math.floor(progress / 28))];
+  const status = t(statusSteps[Math.min(statusSteps.length - 1, Math.floor(progress / 28))]);
 
   useEffect(() => {
     if (!visible) onComplete?.();
   }, [onComplete, visible]);
+
+  useEffect(() => { if (!enabled) setVisible(false); }, [enabled]);
 
   useEffect(() => {
     if (!visible) return;
@@ -118,7 +124,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       aria-live="polite"
       aria-label={status}
     >
-      {!reduced && !compactViewport && (
+      {threeEnabled && !reduced && !compactViewport && (
         <Suspense fallback={null}>
           <SplashWebGLShader exiting={exiting} />
         </Suspense>
@@ -128,7 +134,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
       <div className="splash-layout relative z-20 grid h-[100svh] min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8">
         <header className="flex items-center justify-between gap-4 font-mono text-[9px] uppercase tracking-[.24em] text-white/45 sm:text-[10px]">
-          <span>Fazri Portfolio Studio</span>
+          <span>{t("Fazri Portfolio Studio")}</span>
           <span className="hidden text-white/30 sm:block">Fazri / Portfolio</span>
         </header>
 
@@ -137,7 +143,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
           <div className="splash-kicker mb-5 flex flex-wrap items-center justify-center gap-3 font-mono text-[9px] uppercase tracking-[.24em] text-white/45 sm:mb-7 sm:text-[10px]">
             <span>Fazri Lukman Nurrohman</span>
             <span className="h-px w-8 bg-white/20" />
-            <span>Creative Web Developer</span>
+            <span>{t("Creative Web Developer")}</span>
           </div>
 
           <h1 className="splash-title font-manrope text-[clamp(2.65rem,12vw,5.5rem)] font-black leading-[.9] text-white drop-shadow-[0_14px_48px_rgba(0,0,0,.84)] lg:text-[104px]">
@@ -145,22 +151,22 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
           </h1>
 
           <p className="splash-description mx-auto mt-6 max-w-2xl text-base font-semibold leading-7 text-white/62 sm:mt-8 sm:text-lg sm:leading-8 md:text-xl">
-            Personal portfolio showcasing web applications, interface design, photography, videography, and visual editing.
+            {t("Personal portfolio showcasing web applications, interface design, photography, videography, and visual editing.")}
           </p>
 
           <div className="splash-skills mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55 sm:mt-8 sm:gap-3 sm:text-xs">
-            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">Web Development</span>
-            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">UI Design</span>
-            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">Photography</span>
-            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">Videography</span>
-            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">Visual Editing</span>
+            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">{t("Web Development")}</span>
+            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">{t("UI Design")}</span>
+            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">{t("Photography")}</span>
+            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">{t("Videography")}</span>
+            <span className="border border-white/12 bg-white/[.035] px-3 py-2 backdrop-blur">{t("Visual Editing")}</span>
           </div>
 
           <div className="splash-availability mt-7 inline-flex items-center gap-2.5 rounded-full border border-emerald-400/20 bg-black/30 px-4 py-2 text-xs font-semibold text-emerald-400 shadow-[0_0_40px_rgba(52,211,153,.15)] backdrop-blur sm:mt-9 sm:text-sm">
             <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 shadow-[0_0_28px_rgba(52,211,153,.35)]">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,.9)]" />
             </span>
-            Available for selected projects
+            {t("Available for selected projects")}
           </div>
 
           <button
@@ -168,7 +174,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
             onClick={skipIntro}
             className="splash-skip mt-7 rounded-full border border-white/35 bg-white/10 px-8 py-3.5 text-sm font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.55),0_18px_52px_rgba(0,0,0,.62),0_0_34px_rgba(255,255,255,.1)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-white sm:mt-10 sm:px-9 sm:py-4"
           >
-            Skip Intro
+            {t("Skip Intro")}
           </button>
           </div>
         </section>

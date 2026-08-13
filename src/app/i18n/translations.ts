@@ -8,7 +8,12 @@ const enToIdEntries: Array<[string, string]> = [
   ["Projects", "Proyek"],
   ["Creative Works", "Karya Kreatif"],
   ["Certificates", "Sertifikat"],
+  ["Blog", "Blog"],
   ["Contact", "Kontak"],
+  ["Availability", "Ketersediaan"],
+  ["Let's create a clear next step.", "Mari tentukan langkah berikutnya dengan jelas."],
+  ["CRM", "CRM"],
+  ["Cloud Computing", "Cloud Computing"],
   ["Contact Me", "Hubungi Saya"],
   ["Explore Projects", "Lihat Proyek"],
   ["Download CV", "Unduh CV"],
@@ -38,7 +43,8 @@ const enToIdEntries: Array<[string, string]> = [
   ["Need a similar web system?", "Butuh sistem web serupa?"],
   ["The project data is managed from the local admin prototype, so this archive is ready to connect to a real backend later.", "Data proyek dikelola dari prototipe admin lokal, sehingga arsip ini siap dihubungkan ke backend nyata nanti."],
   ["Hello, I'm Fazri.", "Halo, saya Fazri."],
-  ["Creative Web Developer", "Creative Web Developer"],
+  ["Hello, I'm", "Halo, saya"],
+  ["Creative Web Developer", "Pengembang Web Kreatif"],
   ["Fazri Portfolio Studio", "Studio Portofolio Fazri"],
   ["Fazri / Portfolio", "Fazri / Portofolio"],
   ["Preparing Fazri portfolio", "Menyiapkan portofolio Fazri"],
@@ -53,6 +59,9 @@ const enToIdEntries: Array<[string, string]> = [
   ["Web development is my main focus, supported by UI design, photography, videography, and visual editing.", "Pengembangan web adalah fokus utama saya, didukung oleh desain UI, fotografi, videografi, dan editing visual."],
   ["Based in Indonesia", "Berbasis di Indonesia"],
   ["Available for selected projects", "Tersedia untuk proyek terpilih"],
+  ["Start a conversation", "Mulai percakapan"],
+  ["notes", "catatan"],
+  ["11 / Let's make it real", "11 / Mari wujudkan"],
   ["Transforming ideas into functional and engaging digital experiences.", "Mengubah ide menjadi pengalaman digital yang fungsional dan menarik."],
   ["I focus on building modern, responsive, and functional web applications. My experience in interface design, photography, videography, and editing helps me create digital products that are technically clear, visually engaging, and effective in communicating ideas.", "Saya fokus membangun aplikasi web modern, responsif, dan fungsional. Pengalaman saya dalam desain antarmuka, fotografi, videografi, dan editing membantu saya membuat produk digital yang jelas secara teknis, menarik secara visual, dan efektif dalam menyampaikan ide."],
   ["Technology becomes more meaningful when functionality, design, and visual storytelling work together.", "Teknologi menjadi lebih bermakna ketika fungsi, desain, dan penceritaan visual bekerja bersama."],
@@ -93,9 +102,45 @@ const enToIdEntries: Array<[string, string]> = [
   ["Search", "Cari"],
   ["Loading", "Memuat"],
   ["Empty", "Kosong"],
+  ["A clear idea, a complex challenge, or an early sketch-the right next step can start with a conversation.", "Ide yang jelas, tantangan yang kompleks, atau sketsa awal—langkah berikutnya dapat dimulai dengan percakapan."],
+  ["Certificate preview", "Pratinjau sertifikat"],
+  ["Find a destination", "Cari destinasi"],
+  ["Follow ups", "Tindak lanjut"],
+  ["Grade performance", "Performa nilai"],
+  ["High potential", "Potensi tinggi"],
+  ["Independent learning", "Pembelajaran mandiri"],
+  ["Interactive module · Matter", "Modul interaktif · Materi"],
+  ["Issue Date", "Tanggal terbit"],
+  ["June 2024", "Juni 2024"],
+  ["Leave balance", "Sisa cuti"],
+  ["Lesson progress ", "Kemajuan pelajaran "],
+  ["North Sumatra · 21 destinations", "Sumatera Utara · 21 destinasi"],
+  ["Occupancy overview", "Ringkasan hunian"],
+  ["Progress", "Kemajuan"],
+  ["Quiz score ", "Nilai kuis "],
+  ["ROOM", "RUANG"],
+  ["Request status", "Status permintaan"],
+  ["Revenue pipeline", "Alur pendapatan"],
+  ["Selected learning records that strengthen the web development practice and keep the portfolio grounded in real progress.", "Rekam pembelajaran pilihan yang memperkuat praktik pengembangan web dan menjaga portofolio tetap berlandaskan kemajuan nyata."],
+  ["Today", "Hari ini"],
+  ["Top recommendation", "Rekomendasi utama"],
+  ["Whether you are planning a system, shaping a product, or refining an experience, I'd love to hear the context.", "Baik Anda merencanakan sistem, membentuk produk, atau menyempurnakan pengalaman, saya ingin mengetahui konteksnya."],
+  ["days left", "hari tersisa"],
 ];
 
 const extraEnToIdEntries: Array<[string, string]> = [
+  ["Page Not Found", "Halaman Tidak Ditemukan"],
+  ["Each published case study is managed through the portfolio CMS.", "Setiap studi kasus yang diterbitkan dikelola melalui CMS portofolio."],
+  ["Certificate details", "Detail sertifikat"],
+  ["Issuer", "Penerbit"],
+  ["Year", "Tahun"],
+  ["Credential ID", "ID kredensial"],
+  ["Open credential", "Buka kredensial"],
+  ["Now exploring", "Sedang menjelajah"],
+  ["SCROLL TO EXPLORE", "GULIR UNTUK MENJELAJAHI"],
+  ["Confirmation required", "Konfirmasi diperlukan"],
+  ["Contact form is currently unavailable.", "Formulir kontak sedang tidak tersedia."],
+  ["Comments are currently unavailable.", "Komentar sedang tidak tersedia."],
   ["Hello, I’m Fazri.", "Halo, saya Fazri."],
   ["Hello, I’m", "Halo, saya"],
   ["Creative Web", "Creative Web"],
@@ -773,5 +818,9 @@ export function translateText(value: string, language: Language) {
   if (direct) return direct;
   const sentenceTranslated = translateBySentence(value, dictionary);
   if (sentenceTranslated !== value) return sentenceTranslated;
-  return autoTranslateByPhrases(value, language);
+  const phraseTranslated = autoTranslateByPhrases(value, language);
+  if (phraseTranslated === value && language === "id" && import.meta.env.DEV) {
+    console.warn(`[translation missing:id] "${value}"`);
+  }
+  return phraseTranslated;
 }

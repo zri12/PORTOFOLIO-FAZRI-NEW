@@ -12,10 +12,10 @@ import { hasProjectLanguage, localizeProject } from "../../lib/localizedContent"
 const categories = ["All Work", "Web Application", "Education", "Dashboard", "Data Mining", "CRM", "Company Profile", "Client Work", "Personal Project", "Academic Project"];
 
 export default function ProjectsPage() {
-  const { projects, techStack } = usePortfolioData();
+  const { projects } = usePortfolioData();
   const { language, t } = useLanguage();
   const localizedProjects = useMemo(
-    () => projects.filter((project) => hasProjectLanguage(project, language)).map((project) => localizeProject(project, language)),
+    () => projects.filter((project) => project.status === "published" && hasProjectLanguage(project, language)).map((project) => localizeProject(project, language)),
     [language, projects],
   );
   const [activeCategory, setActiveCategory] = useState("All Work");
@@ -90,16 +90,16 @@ export default function ProjectsPage() {
                     <div className="mt-5 flex flex-wrap gap-2">
                       {project.techStack.slice(0, 4).map((item) => <span key={item} className="border border-[var(--color-border)] px-2 py-1 font-mono text-[9px] text-[var(--color-text-muted)]">{item}</span>)}
                     </div>
-                    <span className="mt-auto inline-flex items-center gap-2 pt-8 text-sm font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-accent-main)]">Open case study <ArrowRight size={16} /></span>
+                    <span className="mt-auto inline-flex items-center gap-2 pt-8 text-sm font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-accent-main)]">{t("Open case study")} <ArrowRight size={16} /></span>
                   </div>
                 </Link>
               ))}
             </div>
           )}
           <div className="mt-12 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-6 sm:mt-16 sm:p-8">
-            <h2 className="font-manrope text-2xl font-bold">Need a similar web system?</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">The project data is managed from the local admin prototype, so this archive is ready to connect to a real backend later.</p>
-            <Link to="/contact" className="mt-6 inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">Discuss a project <ArrowRight size={16} /></Link>
+            <h2 className="font-manrope text-2xl font-bold">{t("Need a similar web system?")}</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">{t("Each published case study is managed through the portfolio CMS.")}</p>
+            <Link to="/contact" className="mt-6 inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]">{t("Discuss a project")} <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

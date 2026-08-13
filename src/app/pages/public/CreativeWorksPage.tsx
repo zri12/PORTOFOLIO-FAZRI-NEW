@@ -18,7 +18,7 @@ export default function CreativeWorksPage() {
   useDocumentMeta({ title: "Creative Works - Fazri", description: "Selected UI design, graphic design, photography, videography, and editing works by Fazri." });
 
   const works = creativeWorks
-    .filter((work) => hasCreativeWorkLanguage(work, language))
+    .filter((work) => work.status === "published" && hasCreativeWorkLanguage(work, language))
     .map((work) => localizeCreativeWork(work, language))
     .filter((work) => {
       const categoryMatch = category === "All" || work.category === category;
@@ -30,7 +30,7 @@ export default function CreativeWorksPage() {
     <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
       <section className="px-5 pb-10 sm:px-6 sm:pb-12">
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow={t("Creative archive")} title={t("Visual work that supports the web development practice.")} description={t("A compact archive for interface studies, visual design, photography, video, and editing. Web development remains the center; this work supports visual storytelling.")} />
+          <SectionHeading eyebrow="Creative archive" title="Visual work that supports the web development practice." description="A compact archive for interface studies, visual design, photography, video, and editing. Web development remains the center; this work supports visual storytelling." />
         </div>
       </section>
       <section className="px-5 sm:px-6">
@@ -46,7 +46,7 @@ export default function CreativeWorksPage() {
       </section>
       <section className="px-5 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-7xl">
-          {works.length === 0 ? <EmptyState title={t("No creative works found")} description={t("Try another category or search term.")} /> : (
+          {works.length === 0 ? <EmptyState title="No creative works found" description="Try another category or search term." /> : (
             <div className="grid auto-rows-[240px] gap-4 sm:gap-5 md:grid-cols-6 md:auto-rows-[220px]">
               {works.map((work, index) => (
                 <Link key={work.id} to={`/creative-works/${work.slug}`} className={`group relative overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] ${index === 0 ? "md:col-span-4 md:row-span-2" : "md:col-span-2"}`}>
@@ -69,8 +69,8 @@ export default function CreativeWorksPage() {
                     }}
                   />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/65 to-transparent p-5">
-                    <p className="font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-secondary)]">{t(work.category)}</p>
-                    <h2 className="mt-2 font-manrope text-xl font-bold sm:text-2xl">{t(work.title)}</h2>
+                    <p className="font-mono text-[9px] uppercase tracking-[.16em] text-[var(--color-accent-secondary)]">{work.category}</p>
+                    <h2 className="mt-2 font-manrope text-xl font-bold sm:text-2xl">{work.title}</h2>
                     <span className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-white/80">{t("Open work")} <ArrowRight size={15} /></span>
                   </div>
                 </Link>

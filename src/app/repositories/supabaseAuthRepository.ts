@@ -7,14 +7,13 @@ export interface AdminSession {
 }
 
 export const ADMIN_AUTH_CHANGE_EVENT = "admin-auth-change";
-const DEFAULT_ADMIN_EMAIL = "fajrilukman194@gmail.com";
 
 function normalizeIdentifier(identifier: string) {
   const value = identifier.trim();
   if (value.includes("@")) return value.toLowerCase();
   const configuredUsername = (import.meta.env.VITE_ADMIN_USERNAME || "Fazrilukman").trim().toLowerCase();
-  const configuredEmail = (import.meta.env.VITE_ADMIN_AUTH_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase();
-  if (value.toLowerCase() === configuredUsername && configuredEmail.includes("@")) return configuredEmail;
+  const configuredEmail = import.meta.env.VITE_ADMIN_AUTH_EMAIL?.trim().toLowerCase();
+  if (value.toLowerCase() === configuredUsername && configuredEmail?.includes("@")) return configuredEmail;
   const domain = import.meta.env.VITE_ADMIN_AUTH_DOMAIN || "portfolio-admin.example";
   return `${value.toLowerCase()}@${domain}`;
 }
@@ -23,28 +22,12 @@ function emitChange() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(ADMIN_AUTH_CHANGE_EVENT));
 }
 
-function configuredAdminEmail() {
-  return (import.meta.env.VITE_ADMIN_AUTH_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase();
-}
-
-function isPermissionError(error: unknown) {
-  if (!error || typeof error !== "object") return false;
-  const value = error as { code?: string; message?: string };
-  return value.code === "42501" || value.message?.toLowerCase().includes("permission denied");
-}
-
 function sessionFromUser(user: { email?: string | null; created_at?: string; user_metadata?: Record<string, unknown> }, displayName?: string): AdminSession {
   return {
     name: displayName || String(user.user_metadata?.display_name || "Fazri L."),
-    email: user.email || configuredAdminEmail(),
+    email: user.email || "",
     createdAt: user.created_at || new Date().toISOString(),
   };
-}
-
-function isConfiguredAdminUser(user: { email?: string | null; user_metadata?: Record<string, unknown> }) {
-  const role = String(user.user_metadata?.role || "").toLowerCase();
-  const username = String(user.user_metadata?.username || "").toLowerCase();
-  return user.email?.toLowerCase() === configuredAdminEmail() || role === "owner" || role === "admin" || username === "fazrilukman";
 }
 
 export const supabaseAuthRepository = {
@@ -56,12 +39,11 @@ export const supabaseAuthRepository = {
     const session = data.session;
     if (!session?.user?.email) return null;
     const { data: admin, error: adminError } = await supabase.from("admin_users").select("display_name, active").eq("user_id", session.user.id).maybeSingle();
-    if (adminError && isPermissionError(adminError) && isConfiguredAdminUser(session.user)) return sessionFromUser(session.user);
     if (adminError) {
       await supabase.auth.signOut();
       return null;
     }
-    if (admin && admin.active === false) {
+    if (!admin?.active) {
       await supabase.auth.signOut();
       return null;
     }
@@ -74,14 +56,16 @@ export const supabaseAuthRepository = {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user?.email) throw error || new Error("Login failed.");
     const { data: admin, error: adminError } = await supabase.from("admin_users").select("display_name, active").eq("user_id", data.user.id).maybeSingle();
-    if (adminError && !(isPermissionError(adminError) && isConfiguredAdminUser(data.user))) throw adminError;
+    if (adminError) throw adminError;
     if (!admin?.active) {
-      if (!isConfiguredAdminUser(data.user)) {
-        await supabase.auth.signOut();
-        throw new Error("This account is not an active portfolio admin.");
-      }
+      await supabase.auth.signOut();
+      throw new Error("This account is not an active portfolio admin.");
     }
-    await supabase.from("admin_users").update({ last_login_at: new Date().toISOString() }).eq("user_id", data.user.id);
+    const { error: touchError } = await supabase.rpc("touch_admin_login");
+    if (touchError) {
+      await supabase.auth.signOut();
+      throw touchError;
+    }
     const session = sessionFromUser(data.user, typeof admin?.display_name === "string" ? admin.display_name : undefined);
     emitChange();
     return session;

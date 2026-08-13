@@ -1,4 +1,6 @@
-import { ReactNode, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, User, Image as ImageIcon, Briefcase, Code2, PenTool, Award, MessageSquare, Mail, Settings, LogOut, ExternalLink, Menu, Newspaper } from "lucide-react";
 import { AdminAuthContext } from "../../context/AdminAuthContext";
@@ -62,7 +64,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const AdminNavLink = ({ to, icon: Icon, children }: { to: string, icon: any, children: ReactNode }) => {
+const AdminNavLink = ({ to, icon: Icon, children }: { to: string, icon: LucideIcon, children: ReactNode }) => {
   const location = useLocation();
   const isActive = location.pathname === to || (to !== "/admin/dashboard" && location.pathname.startsWith(to));
   

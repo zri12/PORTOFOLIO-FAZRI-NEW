@@ -4,19 +4,12 @@ import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { AdminImageField, AdminGalleryField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { LanguageEditorTabs } from "../../components/admin/LanguageEditorTabs";
 import { inferTechnologyCategory, technologyCatalog } from "../../data/technologyCatalog";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
-import {
-  createAutomaticProjectTranslations,
-  projectTranslationIsPublishable,
-} from "../../lib/automaticTranslation";
 import { slugify } from "../../lib/storage";
-import { emptyProjectTranslation, ensureProjectTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { ContentLanguage, Project, ProjectTranslation, Technology } from "../../types/portfolio";
-import { Languages } from "lucide-react";
+import type { Project, ProjectTranslation, Technology } from "../../types/portfolio";
 
 const toLines = (items: string[]) => items.join("\n");
 const fromLines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
@@ -32,8 +25,6 @@ type ProjectDraft = Omit<Project, "clientType"> & {
 };
 
 function createDraftProject(): ProjectDraft {
-  const en = emptyProjectTranslation();
-  const id = emptyProjectTranslation();
   return {
     id: crypto.randomUUID(),
     slug: "",
@@ -72,20 +63,11 @@ function createDraftProject(): ProjectDraft {
     mobilePreviewImage: "",
     relatedProjectSlug: "",
     displayOrder: 0,
-    translations: { en, id },
+    translations: {},
   };
 }
 
-function prepareProjectForEditor(project: Project): ProjectDraft {
-  const translations = ensureProjectTranslations(project) ?? {};
-  return {
-    ...project,
-    translations: {
-      en: { ...emptyProjectTranslation(), ...translations.en },
-      id: { ...emptyProjectTranslation(), ...translations.id },
-    },
-  };
-}
+function prepareProjectForEditor(project: Project): ProjectDraft { return { ...project }; }
 
 export default function AdminProjectFormPage() {
   const { id } = useParams();
@@ -98,8 +80,6 @@ export default function AdminProjectFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [translationStatus, setTranslationStatus] = useState("");
-  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
@@ -122,14 +102,11 @@ export default function AdminProjectFormPage() {
   const set = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) => {
     updateDraft((current) => ({ ...current, [key]: value }));
   };
-  const translation = { ...emptyProjectTranslation(), ...(draft.translations?.[editingLanguage] ?? {}) };
+  const translation: ProjectTranslation = draft;
   const setTranslation = <K extends keyof ProjectTranslation>(key: K, value: ProjectTranslation[K]) => {
     updateDraft((current) => ({
       ...current,
-      translations: {
-        ...current.translations,
-        [editingLanguage]: { ...emptyProjectTranslation(), ...current.translations?.[editingLanguage], [key]: value },
-      },
+      [key]: value,
     }));
   };
   const save = async (status: Project["status"]) => {
@@ -137,69 +114,29 @@ export default function AdminProjectFormPage() {
       setError("Select a client type before saving.");
       return;
     }
-    const sourceTranslations = {
-      en: { ...emptyProjectTranslation(), ...draft.translations?.en },
-      id: { ...emptyProjectTranslation(), ...draft.translations?.id },
-    };
-    if (!sourceTranslations.en.title.trim() && !sourceTranslations.id.title.trim()) {
-      setError("Add a project title in at least one language.");
+    if (!draft.title.trim()) {
+      setError("Add a project title before saving.");
       return;
     }
     
     setSaving(true);
     setError("");
     
-    let finalTranslations = sourceTranslations;
-    
     try {
-      if (status === "published" && (!projectTranslationIsPublishable(sourceTranslations.en) || !projectTranslationIsPublishable(sourceTranslations.id))) {
-        setTranslationStatus("Generating missing translations...");
-        finalTranslations = await createAutomaticProjectTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-        setTranslationStatus("Translation complete!");
-        setTimeout(() => setTranslationStatus(""), 3000);
-      }
-      
-      const primary = finalTranslations.en;
       const next: Project = {
         ...draft,
-        ...primary,
-        translations: finalTranslations,
         clientType: draft.clientType,
         status,
-        slug: draft.slug || slugify(primary.title || finalTranslations.id.title),
+        slug: draft.slug || slugify(draft.title),
       };
       portfolioRepository.updateProject(next);
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/projects");
     } catch (saveError) {
-      setError(formatAdminSaveError(saveError, "Project could not be saved. If translation failed, try saving as draft first."));
-      setTranslationStatus("");
+      setError(formatAdminSaveError(saveError, "Project could not be saved."));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleTranslate = async () => {
-    const targetLang = editingLanguage === "en" ? "id" : "en";
-    const sourceTranslations = {
-      en: { ...emptyProjectTranslation(), ...draft.translations?.en },
-      id: { ...emptyProjectTranslation(), ...draft.translations?.id },
-    };
-    setError("");
-    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
-    try {
-      const translated = await createAutomaticProjectTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-      updateDraft((current) => ({
-        ...current,
-        translations: translated,
-      }));
-      setIsDirty(true);
-      setTranslationStatus("Translation complete!");
-      setTimeout(() => setTranslationStatus(""), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Translation failed.");
-      setTranslationStatus("");
     }
   };
 
@@ -209,10 +146,9 @@ export default function AdminProjectFormPage() {
     <div className="mx-auto max-w-6xl">
       <AdminPageHeader title={id ? "Edit Project" : "New Project"} description="Manage all project metadata, screenshots, case-study sections, gallery images, and related project links." />
       <div className="grid gap-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} onTranslate={handleTranslate} isTranslating={!!translationStatus && translationStatus !== "Translation complete!"} />
         <FormSection title="Project Identity">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminInput label={`Title (${editingLanguage.toUpperCase()})`} value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
+            <AdminInput label="Title" value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
             <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
             <AdminInput label="Full Name" value={translation.fullName} onChange={(value) => setTranslation("fullName", value)} />
             <AdminInput label="Category" value={translation.category} onChange={(value) => setTranslation("category", value)} />
@@ -303,7 +239,6 @@ export default function AdminProjectFormPage() {
           <button onClick={() => void save("published")} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Publish"}</button>
           <button onClick={() => void save("draft")} disabled={saving} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold disabled:opacity-60">Save Draft</button>
           <button onClick={() => navigate("/admin/projects")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button>
-          {translationStatus && <span className="self-center text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</span>}
           {error && <span className="self-center text-sm text-red-300">{error}</span>}
         </div>
       </div>

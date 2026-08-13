@@ -6,10 +6,11 @@ import { useLocation } from "react-router";
  * Motion components own their detailed reveals, avoiding duplicate animation
  * work on every nested card, image, and grid item.
  */
-export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+export function SmoothScrollProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    if (!enabled) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const compactViewport = window.matchMedia("(max-width: 1023px)").matches;
     const sections = Array.from(document.querySelectorAll<HTMLElement>("main > section"));
@@ -47,7 +48,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
         element.style.removeProperty("--reveal-delay");
       });
     };
-  }, [pathname]);
+  }, [enabled, pathname]);
 
   return <>{children}</>;
 }

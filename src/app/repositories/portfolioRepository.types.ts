@@ -59,7 +59,7 @@ export interface PortfolioRepository {
   deleteMessage(id: string): void;
   getMedia(): MediaItem[];
   createMedia(item: Omit<MediaItem, "id" | "createdAt">): MediaItem;
-  deleteMedia(id: string): void;
+  deleteMedia(id: string): Promise<void>;
   getSettings(): SiteSettings;
   updateSettings(settings: SiteSettings): SiteSettings;
   exportData(): string;

@@ -11,7 +11,7 @@ export default function CertificatesPage() {
   const { certificates: rawCertificates } = usePortfolioData();
   const { t, language } = useLanguage();
   const certificates = rawCertificates
-    .filter((cert) => hasCertificateLanguage(cert, language))
+    .filter((cert) => cert.published && hasCertificateLanguage(cert, language))
     .map((cert) => localizeCertificate(cert, language));
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
@@ -27,13 +27,13 @@ export default function CertificatesPage() {
     <main className="min-h-screen bg-[var(--color-bg-primary)] pt-24 text-[var(--color-text-main)] sm:pt-28 lg:pt-32">
       <section className="px-5 pb-12 sm:px-6 sm:pb-14">
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow={t("Recognition")} title={t("Certificates and learning milestones.")} description={t("A concise archive of learning credentials that support the web development and design practice.")} />
+          <SectionHeading eyebrow="Recognition" title="Certificates and learning milestones." description="A concise archive of learning credentials that support the web development and design practice." />
           {featured && (
             <button onClick={() => setActive(featured.id)} className="mt-12 grid w-full overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left lg:grid-cols-[1fr_.8fr]">
               <div className="p-6 sm:p-8">
                 <Award className="text-[var(--color-accent-main)]" />
                 <p className="mt-10 font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)] sm:mt-16">{t("Featured certificate")}</p>
-                <h2 className="mt-3 font-manrope text-2xl font-bold sm:text-3xl">{t(featured.title)}</h2>
+                <h2 className="mt-3 font-manrope text-2xl font-bold sm:text-3xl">{featured.title}</h2>
                 <p className="mt-3 text-[var(--color-text-secondary)]">{featured.issuer} / {featured.issueDate}</p>
               </div>
               <div className="flex min-h-[280px] items-center justify-center overflow-hidden bg-[linear-gradient(135deg,rgba(78,187,232,.22),transparent_48%),var(--color-bg-primary)] p-4">
@@ -55,14 +55,14 @@ export default function CertificatesPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 border-y border-[var(--color-border)] py-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="no-scrollbar flex gap-2 overflow-x-auto">
-              {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`border px-4 py-2 text-sm font-semibold ${category === item ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}>{t(item)}</button>)}
+              {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`border px-4 py-2 text-sm font-semibold ${category === item ? "border-[var(--color-text-main)] bg-[var(--color-text-main)] text-[var(--color-bg-primary)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}>{item === "All" ? t(item) : item}</button>)}
             </div>
             <label className="relative lg:w-80">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search certificates...")} className="w-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-accent-main)]" />
             </label>
           </div>
-          {filtered.length === 0 ? <EmptyState title={t("No certificates found")} description={t("Try a different search or category.")} /> : (
+          {filtered.length === 0 ? <EmptyState title="No certificates found" description="Try a different search or category." /> : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map((item) => (
                 <button key={item.id} onClick={() => setActive(item.id)} className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-left transition hover:-translate-y-1 hover:border-[var(--color-accent-main)]">
@@ -79,8 +79,8 @@ export default function CertificatesPage() {
                     />
                   </div>
                   <div className="p-5">
-                    <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{t(item.category)}</p>
-                    <h2 className="mt-3 font-manrope text-xl font-bold">{t(item.title)}</h2>
+                    <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-accent-main)]">{item.category}</p>
+                    <h2 className="mt-3 font-manrope text-xl font-bold">{item.title}</h2>
                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{item.issuer} / {item.issueDate}</p>
                   </div>
                 </button>
@@ -94,8 +94,8 @@ export default function CertificatesPage() {
           <div className="flex h-[calc(100svh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-secondary)] shadow-2xl sm:h-[calc(100svh-2.5rem)]">
             <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3 sm:px-5">
               <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(modal.category)}</p>
-                <h2 className="truncate font-manrope text-xl font-bold sm:text-2xl">{t(modal.title)}</h2>
+                <p className="font-mono text-[9px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{modal.category}</p>
+                <h2 className="truncate font-manrope text-xl font-bold sm:text-2xl">{modal.title}</h2>
               </div>
               <button onClick={() => setActive(null)} className="shrink-0 p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]" aria-label={t("Close certificate preview")}><X size={20} /></button>
             </div>

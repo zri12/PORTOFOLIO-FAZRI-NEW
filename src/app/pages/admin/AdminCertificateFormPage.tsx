@@ -3,16 +3,10 @@ import { useNavigate, useParams } from "react-router";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { LanguageEditorTabs } from "../../components/admin/LanguageEditorTabs";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
-import {
-  certificateTranslationIsPublishable,
-  createAutomaticCertificateTranslations,
-} from "../../lib/automaticTranslation";
-import { emptyCertificateTranslation } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { Certificate, CertificateTranslation, ContentLanguage } from "../../types/portfolio";
+import type { Certificate, CertificateTranslation } from "../../types/portfolio";
 
 function createDraft(): Certificate {
   return {
@@ -41,8 +35,6 @@ export default function AdminCertificateFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [translationStatus, setTranslationStatus] = useState("");
-  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
@@ -62,78 +54,33 @@ export default function AdminCertificateFormPage() {
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
-  const translation = { ...emptyCertificateTranslation(), ...(draft.translations?.[editingLanguage] ?? {}) };
+  const translation: CertificateTranslation = draft;
   const setTranslation = <K extends keyof CertificateTranslation>(key: K, value: CertificateTranslation[K]) => {
     setIsDirty(true);
     setDraft((current) => ({
       ...current,
-      translations: {
-        ...current.translations,
-        [editingLanguage]: { ...emptyCertificateTranslation(), ...current.translations?.[editingLanguage], [key]: value },
-      },
+      [key]: value,
     }));
   };
 
   const save = async () => {
-    const sourceTranslations = {
-      en: { ...emptyCertificateTranslation(), ...draft.translations?.en },
-      id: { ...emptyCertificateTranslation(), ...draft.translations?.id },
-    };
-    
-    if (!sourceTranslations.en.title.trim() && !sourceTranslations.id.title.trim()) {
-      setError("Add a title in at least one language.");
+    if (!draft.title.trim()) {
+      setError("Add a title before saving.");
       return;
     }
 
     setSaving(true);
     setError("");
     
-    let finalTranslations = sourceTranslations;
-    
     try {
-      if (draft.published && (!certificateTranslationIsPublishable(sourceTranslations.en) || !certificateTranslationIsPublishable(sourceTranslations.id))) {
-        setTranslationStatus("Generating missing translations...");
-        finalTranslations = await createAutomaticCertificateTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-        setTranslationStatus("Translation complete!");
-        setTimeout(() => setTranslationStatus(""), 3000);
-      }
-
-      const primary = finalTranslations.en;
-      const next: Certificate = {
-        ...draft,
-        ...primary,
-        translations: finalTranslations,
-      };
-
-      portfolioRepository.updateCertificate(next);
+      portfolioRepository.updateCertificate(draft);
       await portfolioRepository.flushPendingWrites();
       setIsDirty(false);
       navigate("/admin/certificates");
     } catch (saveError) {
-      setError(formatAdminSaveError(saveError, "Certificate could not be saved. If translation failed, try saving unpublished first."));
-      setTranslationStatus("");
+      setError(formatAdminSaveError(saveError, "Certificate could not be saved."));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleTranslate = async () => {
-    const targetLang = editingLanguage === "en" ? "id" : "en";
-    const sourceTranslations = {
-      en: { ...emptyCertificateTranslation(), ...draft.translations?.en },
-      id: { ...emptyCertificateTranslation(), ...draft.translations?.id },
-    };
-    setError("");
-    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
-    try {
-      const translated = await createAutomaticCertificateTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-      setDraft((current) => ({ ...current, translations: translated }));
-      setIsDirty(true);
-      setTranslationStatus("Translation complete!");
-      setTimeout(() => setTranslationStatus(""), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Translation failed.");
-      setTranslationStatus("");
     }
   };
 
@@ -141,7 +88,6 @@ export default function AdminCertificateFormPage() {
     <div className="mx-auto max-w-4xl">
       <AdminPageHeader title={id ? "Edit Certificate" : "New Certificate"} description="Manage certificate metadata, credential links, preview image, and publication state." />
       <div className="grid gap-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} onTranslate={handleTranslate} isTranslating={!!translationStatus && translationStatus !== "Translation complete!"} />
         <FormSection title="Certificate Details">
           <div className="grid gap-4 md:grid-cols-2">
             <AdminInput label="Title" value={translation.title} onChange={(value) => { setError(""); setTranslation("title", value); }} />
@@ -160,7 +106,6 @@ export default function AdminCertificateFormPage() {
         <FormSection title="Certificate Image">
           <AdminImageField label="Certificate Preview Image" value={draft.image} folder={`certificates/${translation.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || draft.id}`} hint="Upload the certificate at its original size. The website keeps the real image ratio so certificate text remains readable." cropMode="original" onChange={(value) => set("image", value)} />
         </FormSection>
-        {translationStatus && <p className="border border-[var(--color-accent-main)]/30 bg-[var(--color-accent-main)]/5 p-3 text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</p>}
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
         <div className="flex flex-wrap gap-3">
           <button onClick={() => void save()} disabled={saving} className="bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60">{saving ? "Saving..." : "Save Certificate"}</button>

@@ -11,10 +11,13 @@ import type {
   ExperienceTranslation,
   PortfolioData,
   Profile,
+  ProfileTranslation,
   Project,
   ProjectTranslation,
   SiteSettings,
+  SiteSettingsTranslation,
   Technology,
+  TechnologyTranslation,
   VisitorComment,
 } from "../../types/portfolio";
 import { getSupabaseClient, publicBucket } from "./client";
@@ -108,6 +111,33 @@ function asCertificateTranslation(value: unknown): CertificateTranslation | unde
   };
 }
 
+function asTechnologyTranslation(value: unknown): TechnologyTranslation | undefined {
+  const row = asRecord(value);
+  return row ? { description: asString(row.description) } : undefined;
+}
+
+function asSettingsTranslation(value: unknown): SiteSettingsTranslation | undefined {
+  const row = asRecord(value);
+  return row ? { websiteName: asString(row.websiteName), description: asString(row.description), copyright: asString(row.copyright), seoTitle: asString(row.seoTitle), seoDescription: asString(row.seoDescription), keywords: asString(row.keywords) } : undefined;
+}
+
+function translationMetadata(row: Row) {
+  return {
+    sourceLanguage: asString(row.source_language) === "id" ? "id" as const : asString(row.source_language) === "en" ? "en" as const : undefined,
+    translationStatus: ["pending", "processing", "ready", "failed"].includes(asString(row.translation_status)) ? asString(row.translation_status) as "pending" | "processing" | "ready" | "failed" : undefined,
+    translationSourceHash: asString(row.translation_source_hash) || undefined,
+    translationVersion: typeof row.translation_version === "number" ? row.translation_version : undefined,
+    translationUpdatedAt: asString(row.translation_updated_at) || undefined,
+    translationError: asString(row.translation_error) || undefined,
+  };
+}
+
+function asProfileTranslation(value: unknown): ProfileTranslation | undefined {
+  const row = asRecord(value);
+  if (!row) return undefined;
+  return { title: asString(row.title), greeting: asString(row.greeting), headline: asString(row.headline), description: asString(row.description), biography: asString(row.biography), aboutContent: asString(row.aboutContent), availability: asString(row.availability) };
+}
+
 function asTranslations<T>(
   value: unknown,
   parser: (translation: unknown) => T | undefined,
@@ -172,6 +202,8 @@ export function mapProfile(row: Row | null | undefined, fallback: Profile): Prof
     logoUrl: publicAssetUrl(row.logo_path) || fallback.logoUrl || "",
     faviconUrl: publicAssetUrl(row.favicon_path) || fallback.faviconUrl || "",
     aboutImageUrl: publicAssetUrl(row.profile_image_path) || fallback.aboutImageUrl || "",
+    translations: asTranslations(row.translations, asProfileTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -199,6 +231,7 @@ export function profileToRow(profile: Profile): Row {
     logo_path: toStoredAsset(profile.logoUrl),
     favicon_path: toStoredAsset(profile.faviconUrl),
     profile_image_path: toStoredAsset(profile.aboutImageUrl),
+    translations: profile.translations ?? {},
   };
 }
 
@@ -221,6 +254,8 @@ export function mapSettings(row: Row | null | undefined, fallback: SiteSettings)
     siteUrl: asString(row.site_url, fallback.siteUrl),
     seoImage: publicAssetUrl(row.seo_image_path) || fallback.seoImage,
     googleSiteVerification: asString(row.google_site_verification, fallback.googleSiteVerification),
+    translations: asTranslations(row.translations, asSettingsTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -243,6 +278,7 @@ export function settingsToRow(settings: SiteSettings): Row {
     site_url: settings.siteUrl,
     seo_image_path: toStoredAsset(settings.seoImage),
     google_site_verification: settings.googleSiteVerification || null,
+    translations: settings.translations ?? {},
   };
 }
 
@@ -287,7 +323,8 @@ export function mapProject(row: Row, techStack: string[] = []): Project {
     mobilePreviewImage: publicAssetUrl(row.mobile_preview_path),
     relatedProjectSlug: asString(row.related_project_slug) || undefined,
     displayOrder: asNumber(row.display_order),
-    translations: asTranslations(decisionsEnvelope?.translations, asProjectTranslation),
+    translations: asTranslations(row.translations ?? decisionsEnvelope?.translations, asProjectTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -330,8 +367,8 @@ export function projectToRow(project: Project): Row {
       version: 2,
       items: project.decisions,
       techStack: Array.from(new Set(project.techStack.map((name) => name.trim()).filter(Boolean))),
-      translations: project.translations ?? {},
     },
+    translations: project.translations ?? {},
     display_order: project.displayOrder,
   };
 }
@@ -348,6 +385,8 @@ export function mapTechnology(row: Row): Technology {
     featured: asBool(row.featured),
     active: asBool(row.active, true),
     displayOrder: asNumber(row.display_order),
+    translations: asTranslations(row.translations, asTechnologyTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -361,6 +400,7 @@ export const technologyToRow = (item: Technology): Row => ({
   featured: item.featured,
   active: item.active,
   display_order: item.displayOrder,
+  translations: item.translations ?? {},
 });
 
 export function mapCreativeWork(row: Row): CreativeWork {
@@ -384,6 +424,7 @@ export function mapCreativeWork(row: Row): CreativeWork {
     status: asString(row.status, "draft") as CreativeWork["status"],
     displayOrder: asNumber(row.display_order),
     translations: asTranslations(row.translations, asCreativeWorkTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -423,6 +464,7 @@ export function mapExperience(row: Row, projectSlug?: string): Experience {
     published: asBool(row.published, true),
     displayOrder: asNumber(row.display_order),
     translations: asTranslations(row.translations, asExperienceTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -454,6 +496,7 @@ export function mapCertificate(row: Row): Certificate {
     published: asBool(row.published, true),
     displayOrder: asNumber(row.display_order),
     translations: asTranslations(row.translations, asCertificateTranslation),
+    ...translationMetadata(row),
   };
 }
 
@@ -492,6 +535,7 @@ export function mapArticle(row: Row): Article {
     blocks: asArticleBlocks(row.content),
     displayOrder: asNumber(row.display_order),
     translations: asTranslations(row.translations, asArticleTranslation),
+    ...translationMetadata(row),
   };
 }
 

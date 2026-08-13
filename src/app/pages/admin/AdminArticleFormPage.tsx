@@ -4,38 +4,21 @@ import { useNavigate, useParams } from "react-router";
 import { AdminImageField } from "../../components/admin/AdminImageFields";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
 import { AdminInput, FormSection } from "../../components/admin/FormSection";
-import { LanguageEditorTabs } from "../../components/admin/LanguageEditorTabs";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { normalizeArticleEditorBlocks } from "../../lib/articleMarkdown";
-import {
-  articleTranslationIsPublishable,
-  createAutomaticArticleTranslations,
-} from "../../lib/automaticTranslation";
-import { emptyArticleTranslation, ensureArticleTranslations } from "../../lib/localizedContent";
 import { formatAdminSaveError } from "../../lib/supabase/errorMessages";
 import { slugify } from "../../lib/storage";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import type { Article, ArticleBlock, ArticleTranslation, ContentLanguage } from "../../types/portfolio";
-import { Languages } from "lucide-react";
+import type { Article, ArticleBlock, ArticleTranslation } from "../../types/portfolio";
 
 const blockId = () => crypto.randomUUID();
 
 function newDraft(): Article {
-  const en = { ...emptyArticleTranslation(), blocks: [{ id: blockId(), type: "markdown" as const, source: "" }] };
-  const id = { ...emptyArticleTranslation(), blocks: [{ id: blockId(), type: "markdown" as const, source: "" }] };
-  return { id: crypto.randomUUID(), slug: "", ...en, coverImage: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, displayOrder: 0, translations: { en, id } };
+  return { id: crypto.randomUUID(), slug: "", title: "", excerpt: "", category: "", tags: [], coverImage: "", coverAlt: "", author: "", status: "draft", featured: false, publishedAt: "", updatedAt: "", readingTime: 0, seoTitle: "", seoDescription: "", blocks: [{ id: blockId(), type: "markdown", source: "" }], displayOrder: 0, translations: {} };
 }
 
 const prepareArticleForEditor = (article: Article): Article => {
-  const translations = ensureArticleTranslations(article) ?? {};
-  return {
-    ...article,
-    blocks: normalizeArticleEditorBlocks(article.blocks),
-    translations: {
-      en: { ...emptyArticleTranslation(), ...translations.en, blocks: normalizeArticleEditorBlocks(translations.en?.blocks ?? []) },
-      id: { ...emptyArticleTranslation(), ...translations.id, blocks: normalizeArticleEditorBlocks(translations.id?.blocks ?? []) },
-    },
-  };
+  return { ...article, blocks: normalizeArticleEditorBlocks(article.blocks) };
 };
 
 export default function AdminArticleFormPage() {
@@ -49,8 +32,6 @@ export default function AdminArticleFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [translationStatus, setTranslationStatus] = useState("");
-  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
 
   useEffect(() => {
     if (loadedFormKey !== formKey) {
@@ -69,16 +50,13 @@ export default function AdminArticleFormPage() {
     setIsDirty(true);
     setDraft((current) => ({ ...current, [key]: value }));
   };
-  const translation = { ...emptyArticleTranslation(), ...(draft.translations?.[editingLanguage] ?? {}) };
+  const translation: ArticleTranslation = draft;
   const setTranslation = <K extends keyof ArticleTranslation>(key: K, value: ArticleTranslation[K]) => {
     setError("");
     setIsDirty(true);
     setDraft((current) => ({
       ...current,
-      translations: {
-        ...current.translations,
-        [editingLanguage]: { ...emptyArticleTranslation(), ...current.translations?.[editingLanguage], [key]: value },
-      },
+      [key]: value,
     }));
   };
   const updateBlock = (index: number, block: ArticleBlock) => setTranslation("blocks", translation.blocks.map((item, itemIndex) => itemIndex === index ? block : item));
@@ -95,12 +73,7 @@ export default function AdminArticleFormPage() {
   const removeImage = (index: number) => setTranslation("blocks", normalizeArticleEditorBlocks(translation.blocks.filter((_, itemIndex) => itemIndex !== index)));
 
   const save = async (status: Article["status"]) => {
-    const sourceTranslations = {
-      en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
-      id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
-    };
-    const primary = sourceTranslations.en;
-    const title = primary.title.trim() || sourceTranslations.id.title.trim();
+    const title = draft.title.trim();
     const slug = (draft.slug || slugify(title)).trim();
     if (!title || !slug) {
       setError("Add a title and slug in either English or Indonesian.");
@@ -114,29 +87,15 @@ export default function AdminArticleFormPage() {
     setSaving(true);
     setError("");
     
-    let finalTranslations = sourceTranslations;
-    
     try {
-      if (status === "published" && (!articleTranslationIsPublishable(sourceTranslations.en) || !articleTranslationIsPublishable(sourceTranslations.id))) {
-        setTranslationStatus("Generating missing translations...");
-        finalTranslations = await createAutomaticArticleTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-        setTranslationStatus("Translation complete!");
-        setTimeout(() => setTranslationStatus(""), 3000);
-      }
-      
-      const finalPrimary = finalTranslations.en;
-
       portfolioRepository.updateArticle({
         ...draft,
-        ...finalPrimary,
-        blocks: finalPrimary.blocks,
-        translations: finalTranslations,
         status,
-        title: finalPrimary.title.trim(),
+        title,
         slug,
-        seoTitle: finalPrimary.seoTitle.trim() || finalPrimary.title.trim(),
-        seoDescription: finalPrimary.seoDescription.trim() || finalPrimary.excerpt.trim(),
-        coverAlt: finalPrimary.coverAlt.trim() || finalPrimary.title.trim(),
+        seoTitle: draft.seoTitle.trim() || title,
+        seoDescription: draft.seoDescription.trim() || draft.excerpt.trim(),
+        coverAlt: draft.coverAlt.trim() || title,
         readingTime: Math.max(1, draft.readingTime),
         publishedAt: draft.publishedAt || new Date().toISOString(),
       });
@@ -144,33 +103,9 @@ export default function AdminArticleFormPage() {
       setIsDirty(false);
       navigate("/admin/articles");
     } catch (saveError) {
-      setError(formatAdminSaveError(saveError, "Article could not be saved. If translation failed, try saving as draft first."));
-      setTranslationStatus("");
+      setError(formatAdminSaveError(saveError, "Article could not be saved."));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleTranslate = async () => {
-    const targetLang = editingLanguage === "en" ? "id" : "en";
-    const sourceTranslations = {
-      en: { ...emptyArticleTranslation(), ...draft.translations?.en, blocks: normalizeArticleEditorBlocks(draft.translations?.en?.blocks ?? []) },
-      id: { ...emptyArticleTranslation(), ...draft.translations?.id, blocks: normalizeArticleEditorBlocks(draft.translations?.id?.blocks ?? []) },
-    };
-    setError("");
-    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
-    try {
-      const translated = await createAutomaticArticleTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-      setDraft((current) => ({
-        ...current,
-        translations: translated,
-      }));
-      setIsDirty(true);
-      setTranslationStatus("Translation complete!");
-      setTimeout(() => setTranslationStatus(""), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Translation failed.");
-      setTranslationStatus("");
     }
   };
 
@@ -178,9 +113,7 @@ export default function AdminArticleFormPage() {
     <div className="mx-auto max-w-5xl">
       <AdminPageHeader title={id ? "Edit Article" : "New Article"} description="Write continuous Markdown-style content, insert images between text sections, and manage publication metadata." />
       <div className="grid gap-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} onTranslate={handleTranslate} isTranslating={!!translationStatus && translationStatus !== "Translation complete!"} />
         <FormSection title="Article Details">
-          <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--color-accent-main)]">{editingLanguage === "en" ? "English content" : "Konten Indonesia"}</p>
           <AdminInput label="Title" value={translation.title} onChange={(value) => { setTranslation("title", value); if (!id && !draft.slug) set("slug", slugify(value)); }} />
           <AdminInput label="Slug" value={draft.slug} onChange={(value) => set("slug", slugify(value))} />
           <AdminInput label="Excerpt" value={translation.excerpt} onChange={(value) => setTranslation("excerpt", value)} textarea />
@@ -190,7 +123,7 @@ export default function AdminArticleFormPage() {
 
         <FormSection title="Cover Image">
           <AdminImageField label="Article Cover" value={draft.coverImage} folder={`articles/${draft.slug || draft.id}/cover`} hint="The original image ratio and full frame are preserved." cropMode="original" onChange={(value) => set("coverImage", value)} />
-          <AdminInput label={`Image Alt Text (${editingLanguage.toUpperCase()})`} value={translation.coverAlt} onChange={(value) => setTranslation("coverAlt", value)} />
+          <AdminInput label="Image Alt Text" value={translation.coverAlt} onChange={(value) => setTranslation("coverAlt", value)} />
         </FormSection>
 
         <FormSection title="Article Content">
@@ -213,7 +146,6 @@ export default function AdminArticleFormPage() {
           <div className="border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4"><p className="text-xs text-emerald-400">{draft.slug ? `${location.origin}/blog/${draft.slug}` : "Article URL"}</p><p className="mt-2 text-lg text-sky-300">{translation.seoTitle || translation.title || "Article title"}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">{translation.seoDescription || translation.excerpt || "Article description"}</p></div>
         </FormSection>
 
-        {translationStatus && <p className="border border-[var(--color-accent-main)]/30 bg-[var(--color-accent-main)]/5 p-3 text-sm text-[var(--color-accent-main)]" role="status">{translationStatus}</p>}
         {error && <p className="border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300" role="alert">{error}</p>}
         <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void save("published")} disabled={saving} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)] disabled:opacity-60"><CheckCircle2 size={17} /> {saving ? "Saving..." : draft.status === "published" ? "Update Published Article" : "Publish Article"}</button><button type="button" onClick={() => void save("draft")} disabled={saving} className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)] disabled:opacity-60"><Save size={17} /> Save Draft</button><button type="button" onClick={() => navigate("/admin/articles")} className="border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-secondary)]">Cancel</button></div>
       </div>

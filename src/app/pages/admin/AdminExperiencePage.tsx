@@ -1,32 +1,23 @@
 import { useState } from "react";
 import { Plus, Trash } from "lucide-react";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
-import { LanguageEditorTabs } from "../../components/admin/LanguageEditorTabs";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { portfolioRepository } from "../../repositories/portfolioRepository";
-import {
-  createAutomaticExperienceTranslations,
-} from "../../lib/automaticTranslation";
-import { emptyExperienceTranslation } from "../../lib/localizedContent";
-import type { ContentLanguage, Experience, ExperienceTranslation } from "../../types/portfolio";
+import type { Experience, ExperienceTranslation } from "../../types/portfolio";
 
 export default function AdminExperiencePage() {
   const { experiences } = usePortfolioData();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingLanguage, setEditingLanguage] = useState<ContentLanguage>("en");
   const target = experiences.find((item) => item.id === deleteId);
 
   return (
     <div className="mx-auto max-w-5xl">
       <AdminPageHeader title="Experience" description="Manage timeline entries, responsibilities, publication state, and related project references." action={<button onClick={() => portfolioRepository.createExperience({ role: "", organization: "", type: "", period: "", location: "", description: "", responsibilities: [], technologies: [], published: false, displayOrder: experiences.length + 1 })} className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-4 py-2.5 text-sm font-bold text-[var(--color-bg-primary)]"><Plus size={16} /> Add Experience</button>} />
-      <div className="mb-6">
-        <LanguageEditorTabs value={editingLanguage} onChange={setEditingLanguage} hideTranslateButton />
-      </div>
       <div className="space-y-4">
         {experiences.map((item) => (
-          <ExperienceCard key={item.id} item={item} editingLanguage={editingLanguage} onDelete={() => setDeleteId(item.id)} />
+          <ExperienceCard key={item.id} item={item} onDelete={() => setDeleteId(item.id)} />
         ))}
       </div>
       <ConfirmDialog open={Boolean(deleteId)} title="Delete experience?" description={`"${target?.role || "This experience"}" will be removed permanently. This action cannot be undone.`} confirmLabel="Delete experience" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteExperience(deleteId); setDeleteId(null); }} />
@@ -34,36 +25,14 @@ export default function AdminExperiencePage() {
   );
 }
 
-function ExperienceCard({ item, editingLanguage, onDelete }: { item: Experience; editingLanguage: ContentLanguage; onDelete: () => void }) {
-  const [translationStatus, setTranslationStatus] = useState("");
-  const translation = { ...emptyExperienceTranslation(), ...(item.translations?.[editingLanguage] ?? {}) };
+function ExperienceCard({ item, onDelete }: { item: Experience; onDelete: () => void }) {
+  const translation: ExperienceTranslation = item;
 
   const setTranslation = (key: keyof ExperienceTranslation, value: string) => {
     portfolioRepository.updateExperience({
       ...item,
-      translations: {
-        ...item.translations,
-        [editingLanguage]: { ...translation, [key]: value },
-      },
+      [key]: value,
     });
-  };
-
-  const handleTranslate = async () => {
-    const targetLang = editingLanguage === "en" ? "id" : "en";
-    const sourceTranslations = {
-      en: { ...emptyExperienceTranslation(), ...item.translations?.en },
-      id: { ...emptyExperienceTranslation(), ...item.translations?.id },
-    };
-    setTranslationStatus(`Translating to ${targetLang === "en" ? "English" : "Indonesian"}...`);
-    try {
-      const translated = await createAutomaticExperienceTranslations(sourceTranslations, editingLanguage, setTranslationStatus);
-      portfolioRepository.updateExperience({ ...item, translations: translated });
-      setTranslationStatus("Translation complete!");
-      setTimeout(() => setTranslationStatus(""), 3000);
-    } catch (err) {
-      setTranslationStatus("Translation failed.");
-      setTimeout(() => setTranslationStatus(""), 3000);
-    }
   };
 
   return (
@@ -83,8 +52,6 @@ function ExperienceCard({ item, editingLanguage, onDelete }: { item: Experience;
       <textarea value={translation.description} onChange={(event) => setTranslation("description", event.target.value)} placeholder="Description..." rows={3} className="mt-4 w-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 text-sm outline-none" />
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button onClick={() => portfolioRepository.updateExperience({ ...item, published: !item.published })} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold">{item.published ? "Unpublish" : "Publish"}</button>
-        <button onClick={() => void handleTranslate()} disabled={!!translationStatus && translationStatus !== "Translation complete!"} className="border border-[var(--color-border)] px-3 py-2 text-xs font-bold text-[var(--color-accent-main)] disabled:opacity-50">Translate to {editingLanguage === "en" ? "Indonesian" : "English"}</button>
-        {translationStatus && <span className="text-xs text-[var(--color-accent-main)]">{translationStatus}</span>}
       </div>
     </article>
   );

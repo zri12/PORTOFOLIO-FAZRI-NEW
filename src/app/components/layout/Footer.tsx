@@ -5,12 +5,22 @@ import { ThemeModeContext } from "../../context/ThemeModeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
 import { BrandMark } from "../common/BrandMark";
+import { hasCreativeWorkLanguage, hasProjectLanguage, localizeCreativeWork, localizeProfile, localizeProject } from "../../lib/localizedContent";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const { profile, projects, creativeWorks } = usePortfolioData();
+  const { profile: rawProfile, projects, creativeWorks } = usePortfolioData();
   const { mode } = useContext(ThemeModeContext);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const profile = localizeProfile(rawProfile, language);
+  const publishedProjects = projects.filter((project) => project.status === "published" && hasProjectLanguage(project, language)).map((project) => localizeProject(project, language));
+  const publishedCreativeWorks = creativeWorks.filter((work) => work.status === "published" && hasCreativeWorkLanguage(work, language)).map((work) => localizeCreativeWork(work, language));
+  const socialLinks = [
+    { icon: Github, href: profile.github, label: "GitHub" },
+    { icon: Linkedin, href: profile.linkedin, label: "LinkedIn" },
+    { icon: Instagram, href: profile.instagram, label: "Instagram" },
+    { icon: Youtube, href: profile.youtube, label: "YouTube" },
+  ].filter((social) => /^https?:\/\//i.test(social.href));
 
   return (
     <footer className="relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] pb-[calc(3rem+env(safe-area-inset-bottom))] pt-14 sm:pt-20">
@@ -22,28 +32,23 @@ export const Footer = () => {
               <BrandMark className="h-12 w-12 [&_span]:text-xl" />
               <div>
                 <span className="block font-manrope text-lg font-bold">{profile.fullName}</span>
-                <span className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{t(profile.title)}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-text-muted)]">{profile.title}</span>
               </div>
             </Link>
-            <p className="mt-6 max-w-sm leading-7 text-[var(--color-text-secondary)]">{t(profile.description)}</p>
+            <p className="mt-6 max-w-sm leading-7 text-[var(--color-text-secondary)]">{profile.description}</p>
             <div className="mt-7 flex flex-wrap gap-2 text-xs text-[var(--color-text-secondary)]">
-              <span className="border border-[var(--color-border)] px-3 py-2">{t(profile.availability)}</span>
+              <span className="border border-[var(--color-border)] px-3 py-2">{profile.availability}</span>
               <span className="border border-[var(--color-border)] px-3 py-2">{profile.location} / GMT+7</span>
               <span className="border border-[var(--color-border)] px-3 py-2 capitalize">{mode === "professional" ? t("Professional Mode") : t("Spider Mode")}</span>
             </div>
           </div>
           <FooterList title={t("Navigation")} items={[["Home", "/"], ["About", "/about"], ["Projects", "/projects"], ["Creative Works", "/creative-works"], ["Certificates", "/certificates"], ["Blog", "/blog"], ["Contact", "/contact"]]} t={t} />
-          <FooterList title={t("Featured Projects")} items={projects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} />
+          <FooterList title={t("Featured Projects")} items={publishedProjects.slice(0, 5).map((project) => [project.title, `/projects/${project.slug}`])} t={t} translateItems={false} />
           <div className="sm:col-span-2 lg:col-span-3">
             <h4 className="mb-5 font-manrope font-bold">{t("Connect")}</h4>
             <div className="mb-6 grid grid-cols-4 gap-3">
-              {[
-                { icon: Github, href: profile.github, label: "GitHub" },
-                { icon: Linkedin, href: profile.linkedin, label: "LinkedIn" },
-                { icon: Instagram, href: profile.instagram, label: "Instagram" },
-                { icon: Youtube, href: profile.youtube, label: "YouTube" },
-              ].map((social) => (
-                <a key={social.label} href={social.href} target="_blank" rel="noreferrer" aria-label={social.label} className="flex aspect-square items-center justify-center border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-accent-main)]">
+              {socialLinks.map((social) => (
+                <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.label} className="flex aspect-square items-center justify-center border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-main)] hover:text-[var(--color-accent-main)]">
                   <social.icon size={19} />
                 </a>
               ))}
@@ -55,7 +60,7 @@ export const Footer = () => {
             <div className="mt-6">
               <h5 className="mb-3 text-sm font-bold">{t("Creative Links")}</h5>
               <div className="space-y-2">
-                {creativeWorks.slice(0, 2).map((work) => <Link key={work.id} to={`/creative-works/${work.slug}`} className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{t(work.title)}</Link>)}
+                {publishedCreativeWorks.slice(0, 2).map((work) => <Link key={work.id} to={`/creative-works/${work.slug}`} className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{work.title}</Link>)}
               </div>
             </div>
           </div>
@@ -73,12 +78,12 @@ export const Footer = () => {
   );
 };
 
-function FooterList({ title, items, t }: { title: string; items: string[][]; t: (value: string) => string }) {
+function FooterList({ title, items, t, translateItems = true }: { title: string; items: string[][]; t: (value: string) => string; translateItems?: boolean }) {
   return (
     <div className="lg:col-span-2">
       <h4 className="mb-5 font-manrope font-bold">{title}</h4>
       <ul className="space-y-3">
-        {items.map(([label, href]) => <li key={href}><Link to={href} className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{t(label)}</Link></li>)}
+        {items.map(([label, href]) => <li key={href}><Link to={href} className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-main)]">{translateItems ? t(label) : label}</Link></li>)}
       </ul>
     </div>
   );

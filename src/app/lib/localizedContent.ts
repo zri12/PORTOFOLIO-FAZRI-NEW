@@ -1,6 +1,5 @@
 import type {
   Article,
-  ArticleBlock,
   ArticleTranslation,
   Certificate,
   CertificateTranslation,
@@ -11,6 +10,12 @@ import type {
   ExperienceTranslation,
   Project,
   ProjectTranslation,
+  Profile,
+  ProfileTranslation,
+  SiteSettings,
+  SiteSettingsTranslation,
+  Technology,
+  TechnologyTranslation,
 } from "../types/portfolio";
 
 export const contentLanguages: ContentLanguage[] = ["en", "id"];
@@ -70,6 +75,45 @@ export const emptyCertificateTranslation = (): CertificateTranslation => ({
   title: "",
   issuer: "",
 });
+
+export const technologyTranslationFromLegacy = (technology: Technology): TechnologyTranslation => ({ description: technology.description });
+export const settingsTranslationFromLegacy = (settings: SiteSettings): SiteSettingsTranslation => ({ websiteName: settings.websiteName, description: settings.description, copyright: settings.copyright, seoTitle: settings.seoTitle, seoDescription: settings.seoDescription, keywords: settings.keywords });
+
+function hasMeaningfulContent(value: object | undefined) {
+  return Boolean(value && Object.values(value).some((field) => {
+    if (typeof field === "string") return Boolean(field.trim());
+    return Array.isArray(field) && field.length > 0;
+  }));
+}
+
+function mergeMeaningfulTranslation<T extends object>(source: T, translation: Partial<T> | undefined): T {
+  if (!translation) return source;
+  const meaningful = Object.fromEntries(Object.entries(translation).filter(([, field]) => {
+    if (typeof field === "string") return Boolean(field.trim());
+    return !Array.isArray(field) || field.length > 0;
+  }));
+  return { ...source, ...meaningful };
+}
+
+export const profileTranslationFromLegacy = (profile: Profile): ProfileTranslation => ({ title: profile.title, greeting: profile.greeting, headline: profile.headline, description: profile.description, biography: profile.biography, aboutContent: profile.aboutContent, availability: profile.availability });
+
+export function localizeProfile(profile: Profile, language: ContentLanguage): Profile {
+  const translations = profile.translations;
+  const selected = translations?.[language] || (profile.sourceLanguage === language ? profileTranslationFromLegacy(profile) : undefined) || translations?.[language === "en" ? "id" : "en"] || profileTranslationFromLegacy(profile);
+  return mergeMeaningfulTranslation(profile, selected);
+}
+
+export function publishedProjectsForLanguage(items: Project[], language: ContentLanguage) {
+  return items.filter((item) => item.status === "published" && hasProjectLanguage(item, language)).map((item) => localizeProject(item, language));
+}
+
+export function publishedCreativeWorksForLanguage(items: CreativeWork[], language: ContentLanguage) {
+  return items.filter((item) => item.status === "published" && hasCreativeWorkLanguage(item, language)).map((item) => localizeCreativeWork(item, language));
+}
+
+export function publishedCertificatesForLanguage(items: Certificate[], language: ContentLanguage) {
+  return items.filter((item) => item.published && hasCertificateLanguage(item, language)).map((item) => localizeCertificate(item, language));
+}
 
 export function projectTranslationFromLegacy(project: Project): ProjectTranslation {
   const empty = emptyProjectTranslation();
@@ -188,36 +232,37 @@ export function hasCertificateLanguage(certificate: Certificate, language: Conte
   return Boolean(selectCertificateTranslation(certificate, language));
 }
 
-function blockHasContent(block: ArticleBlock) {
-  if (block.type === "markdown") return Boolean(block.source.trim());
-  if (block.type === "image") return Boolean(block.url.trim());
-  if (block.type === "list") return block.items.some(Boolean);
-  return Boolean(block.text.trim());
-}
-
 export function localizeProject(project: Project, language: ContentLanguage): Project {
   const translation = selectProjectTranslation(project, language);
-  return translation ? { ...project, ...translation } : project;
+  return mergeMeaningfulTranslation(project, translation);
 }
 
 export function localizeArticle(article: Article, language: ContentLanguage): Article {
-  const translation = selectArticleTranslation(article, language);
-  return translation ? { ...article, ...translation } : article;
+  return mergeMeaningfulTranslation(article, selectArticleTranslation(article, language));
 }
 
 export function localizeCreativeWork(work: CreativeWork, language: ContentLanguage): CreativeWork {
-  const translation = selectCreativeWorkTranslation(work, language);
-  return translation ? { ...work, ...translation } : work;
+  return mergeMeaningfulTranslation(work, selectCreativeWorkTranslation(work, language));
 }
 
 export function localizeExperience(experience: Experience, language: ContentLanguage): Experience {
-  const translation = selectExperienceTranslation(experience, language);
-  return translation ? { ...experience, ...translation } : experience;
+  return mergeMeaningfulTranslation(experience, selectExperienceTranslation(experience, language));
 }
 
 export function localizeCertificate(certificate: Certificate, language: ContentLanguage): Certificate {
-  const translation = selectCertificateTranslation(certificate, language);
-  return translation ? { ...certificate, ...translation } : certificate;
+  return mergeMeaningfulTranslation(certificate, selectCertificateTranslation(certificate, language));
+}
+
+export function localizeTechnology(technology: Technology, language: ContentLanguage): Technology {
+  const translations = technology.translations;
+  const selected = translations?.[language] || translations?.[language === "en" ? "id" : "en"] || technologyTranslationFromLegacy(technology);
+  return mergeMeaningfulTranslation(technology, selected);
+}
+
+export function localizeSettings(settings: SiteSettings, language: ContentLanguage): SiteSettings {
+  const translations = settings.translations;
+  const selected = translations?.[language] || (settings.sourceLanguage === language ? settingsTranslationFromLegacy(settings) : undefined) || translations?.[language === "en" ? "id" : "en"] || settingsTranslationFromLegacy(settings);
+  return mergeMeaningfulTranslation(settings, selected);
 }
 
 function selectProjectTranslation(project: Project, language: ContentLanguage) {
@@ -227,7 +272,7 @@ function selectProjectTranslation(project: Project, language: ContentLanguage) {
   const fallbackLanguage = language === "en" ? "id" : "en";
   const fallback = translations?.[fallbackLanguage];
   if (projectTranslationHasContent(fallback)) return fallback;
-  return undefined;
+  return projectTranslationFromLegacy(project);
 }
 
 function selectArticleTranslation(article: Article, language: ContentLanguage) {
@@ -237,7 +282,7 @@ function selectArticleTranslation(article: Article, language: ContentLanguage) {
   const fallbackLanguage = language === "en" ? "id" : "en";
   const fallback = translations?.[fallbackLanguage];
   if (articleTranslationHasContent(fallback)) return fallback;
-  return undefined;
+  return articleTranslationFromLegacy(article);
 }
 
 function selectCreativeWorkTranslation(work: CreativeWork, language: ContentLanguage) {
@@ -247,7 +292,7 @@ function selectCreativeWorkTranslation(work: CreativeWork, language: ContentLang
   const fallbackLanguage = language === "en" ? "id" : "en";
   const fallback = translations?.[fallbackLanguage];
   if (creativeWorkTranslationHasContent(fallback)) return fallback;
-  return undefined;
+  return creativeWorkTranslationFromLegacy(work);
 }
 
 function selectExperienceTranslation(experience: Experience, language: ContentLanguage) {
@@ -257,7 +302,7 @@ function selectExperienceTranslation(experience: Experience, language: ContentLa
   const fallbackLanguage = language === "en" ? "id" : "en";
   const fallback = translations?.[fallbackLanguage];
   if (experienceTranslationHasContent(fallback)) return fallback;
-  return undefined;
+  return experienceTranslationFromLegacy(experience);
 }
 
 function selectCertificateTranslation(certificate: Certificate, language: ContentLanguage) {
@@ -267,25 +312,25 @@ function selectCertificateTranslation(certificate: Certificate, language: Conten
   const fallbackLanguage = language === "en" ? "id" : "en";
   const fallback = translations?.[fallbackLanguage];
   if (certificateTranslationHasContent(fallback)) return fallback;
-  return undefined;
+  return certificateTranslationFromLegacy(certificate);
 }
 
 function articleTranslationHasContent(translation: ArticleTranslation | undefined): translation is ArticleTranslation {
-  return Boolean(translation?.title?.trim());
+  return hasMeaningfulContent(translation);
 }
 
 function projectTranslationHasContent(translation: ProjectTranslation | undefined): translation is ProjectTranslation {
-  return Boolean(translation?.title?.trim());
+  return hasMeaningfulContent(translation);
 }
 
 function creativeWorkTranslationHasContent(translation: CreativeWorkTranslation | undefined): translation is CreativeWorkTranslation {
-  return Boolean(translation?.title?.trim());
+  return hasMeaningfulContent(translation);
 }
 
 function experienceTranslationHasContent(translation: ExperienceTranslation | undefined): translation is ExperienceTranslation {
-  return Boolean(translation?.role?.trim() && translation?.organization?.trim());
+  return hasMeaningfulContent(translation);
 }
 
 function certificateTranslationHasContent(translation: CertificateTranslation | undefined): translation is CertificateTranslation {
-  return Boolean(translation?.title?.trim());
+  return hasMeaningfulContent(translation);
 }

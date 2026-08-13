@@ -22,14 +22,17 @@ export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
   const { projects } = usePortfolioData();
   const { language, t } = useLanguage();
-  const availableProjects = projects.filter((entry) => hasProjectLanguage(entry, language));
-  const anyLanguageProject = projects.find((entry) => entry.slug === slug);
+  const availableProjects = projects.filter((entry) => entry.status === "published" && hasProjectLanguage(entry, language));
+  const anyLanguageProject = projects.find((entry) => entry.slug === slug && entry.status === "published");
   const sourceProject = availableProjects.find((entry) => entry.slug === slug);
   const project = sourceProject ? localizeProject(sourceProject, language) : undefined;
 
   useDocumentMeta({
     title: project ? `${project.title} Case Study - Fazri` : "Project Not Found - Fazri",
     description: project?.shortDescription || "Project detail page for Fazri Lukman Nurrohman's portfolio.",
+    canonicalPath: project ? `/projects/${project.slug}` : "/projects",
+    image: project?.heroImage || project?.coverImage,
+    language,
   });
 
   if (!project) {
@@ -67,18 +70,18 @@ export default function ProjectDetailPage() {
           <Link to="/projects" className="mb-10 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"><ArrowLeft size={16} /> {t("Back to Projects")}</Link>
           <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-14">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(project.category)} / {project.year}</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{project.category} / {project.year}</p>
               <h1 className="mt-5 break-words font-manrope text-4xl font-extrabold tracking-tight sm:text-5xl md:text-7xl">{project.title}</h1>
-              <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)] sm:text-xl">{t(project.fullDescription)}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href={project.liveUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]"><ExternalLink size={16} /> {t("Live Demo")}</a>
-                <a href={project.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-main)]"><Github size={16} /> {t("Source Code")}</a>
-              </div>
+              <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)] sm:text-xl">{project.fullDescription}</p>
+              {(project.liveUrl || project.sourceUrl) && <div className="mt-8 flex flex-wrap gap-3">
+                {project.liveUrl && <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[var(--color-text-main)] px-5 py-3 text-sm font-bold text-[var(--color-bg-primary)]"><ExternalLink size={16} /> {t("Live Demo")}</a>}
+                {project.sourceUrl && <a href={project.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-[var(--color-border)] px-5 py-3 text-sm font-bold text-[var(--color-text-main)]"><Github size={16} /> {t("Source Code")}</a>}
+              </div>}
               <div className="mt-10 grid grid-cols-2 gap-6 border-t border-[var(--color-border)] pt-8">
-                <Meta label={t("Role")} value={t(project.role)} />
-                <Meta label={t("Type")} value={t(project.type)} />
-                <Meta label={t("Client")} value={t(project.clientType)} />
-                <Meta label={t("Status")} value={t(project.status)} />
+                <Meta label={t("Role")} value={project.role} />
+                <Meta label={t("Type")} value={project.type} />
+                <Meta label={t("Client")} value={project.clientType} />
+                <Meta label={t("Status")} value={project.status} />
               </div>
             </div>
             <div className="min-w-0 border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-2xl sm:p-4">
@@ -86,7 +89,7 @@ export default function ProjectDetailPage() {
                 <span className="h-3 w-3 rounded-full bg-red-400" />
                 <span className="h-3 w-3 rounded-full bg-yellow-300" />
                 <span className="h-3 w-3 rounded-full bg-green-400" />
-                <span className="ml-auto font-mono text-[10px] text-[var(--color-text-muted)]">{project.slug}.fazri.dev</span>
+                <span className="ml-auto font-mono text-[10px] text-[var(--color-text-muted)]">{project.slug}</span>
               </div>
               <div>
                 {project.heroImage ? <img src={project.heroImage} alt={`${project.title} interface preview`} className="h-auto w-full object-contain" /> : <ProjectPreview slug={project.slug} />}
@@ -108,20 +111,20 @@ export default function ProjectDetailPage() {
             <div>
               <h2 className="font-manrope text-xl font-bold">{t("Main Features")}</h2>
               <ul className="mt-4 space-y-3">
-                {project.features.map((feature) => <li key={feature} className="flex min-w-0 gap-3 text-sm text-[var(--color-text-secondary)]"><ShieldCheck size={16} className="mt-1 shrink-0 text-[var(--color-accent-main)]" /><span className="min-w-0 break-words">{t(feature)}</span></li>)}
+                {project.features.map((feature) => <li key={feature} className="flex min-w-0 gap-3 text-sm text-[var(--color-text-secondary)]"><ShieldCheck size={16} className="mt-1 shrink-0 text-[var(--color-accent-main)]" /><span className="min-w-0 break-words">{feature}</span></li>)}
               </ul>
             </div>
           </aside>
           <article className="min-w-0">
-            <DetailBlock title={t("Overview")}><p>{t(project.overview)}</p></DetailBlock>
-            <DetailBlock title={t("Background and Problem")}><p>{t(project.background)}</p></DetailBlock>
-            <DetailBlock title={t("Objectives")}><List items={project.objectives.map(t)} /></DetailBlock>
-            <DetailBlock title={t("Target Users")}><List items={project.targetUsers.map(t)} /></DetailBlock>
-            <DetailBlock title={t("Role and Responsibilities")}><List items={project.responsibilities.map(t)} /></DetailBlock>
-            <DetailBlock title={t("Solution")}><p>{t(project.solution)}</p></DetailBlock>
-            <DetailBlock title={t("System Architecture")}><IconBlock icon={<Layers />} text={t(project.architecture)} /></DetailBlock>
-            <DetailBlock title={t("Data Structure")}><p>{t(project.dataStructure)}</p></DetailBlock>
-            <DetailBlock title={t("Development Process")}><Process items={project.process.map(t)} /></DetailBlock>
+            <DetailBlock title={t("Overview")}><p>{project.overview}</p></DetailBlock>
+            <DetailBlock title={t("Background and Problem")}><p>{project.background}</p></DetailBlock>
+            <DetailBlock title={t("Objectives")}><List items={project.objectives} /></DetailBlock>
+            <DetailBlock title={t("Target Users")}><List items={project.targetUsers} /></DetailBlock>
+            <DetailBlock title={t("Role and Responsibilities")}><List items={project.responsibilities} /></DetailBlock>
+            <DetailBlock title={t("Solution")}><p>{project.solution}</p></DetailBlock>
+            <DetailBlock title={t("System Architecture")}><IconBlock icon={<Layers />} text={project.architecture} /></DetailBlock>
+            <DetailBlock title={t("Data Structure")}><p>{project.dataStructure}</p></DetailBlock>
+            <DetailBlock title={t("Development Process")}><Process items={project.process} /></DetailBlock>
             <DetailBlock title={t("Interface Gallery")}>
               <div className="grid gap-5 md:grid-cols-2">
                 {project.gallery.map((image, imageIndex) => <img key={image} src={image} alt={`${project.title} interface ${imageIndex + 1}`} className={imageIndex === 0 ? "md:col-span-2" : ""} loading="lazy" />)}
@@ -131,22 +134,22 @@ export default function ProjectDetailPage() {
               <IconBlock icon={<Monitor />} text={t("Layouts are structured for desktop dashboards, tablet review, and mobile reading flows without relying on horizontal scrolling.")} />
               {project.mobilePreviewImage && <img src={project.mobilePreviewImage} alt={`${project.title} responsive preview`} className="mt-5 max-h-[560px] w-full border border-[var(--color-border)] object-contain" loading="lazy" />}
             </DetailBlock>
-            <DetailBlock title={t("Challenges")}><List items={project.challenges.map(t)} /></DetailBlock>
-            <DetailBlock title={t("Technical Decisions")}><List items={project.decisions.map(t)} /></DetailBlock>
-            <DetailBlock title={t("Testing")}><p>{t(project.testing)}</p></DetailBlock>
-            <DetailBlock title={t("Deployment")}><p>{t(project.deployment)}</p></DetailBlock>
-            <DetailBlock title={t("Result")}><p>{t(project.result)}</p></DetailBlock>
+            <DetailBlock title={t("Challenges")}><List items={project.challenges} /></DetailBlock>
+            <DetailBlock title={t("Technical Decisions")}><List items={project.decisions} /></DetailBlock>
+            <DetailBlock title={t("Testing")}><p>{project.testing}</p></DetailBlock>
+            <DetailBlock title={t("Deployment")}><p>{project.deployment}</p></DetailBlock>
+            <DetailBlock title={t("Result")}><p>{project.result}</p></DetailBlock>
           </article>
         </div>
       </section>
 
       <section className="px-5 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow={t("Related project")} title={related.title} description={t(related.shortDescription)} />
+          <SectionHeading eyebrow={t("Related project")} title={related.title} description={related.shortDescription} />
           <Link to={`/projects/${related.slug}`} className="mt-8 inline-flex items-center gap-2 border-b border-[var(--color-accent-main)] pb-2 text-sm font-bold">{t("Read related case study")} <ArrowRight size={16} /></Link>
           <div className="mt-16 grid gap-4 border-t border-[var(--color-border)] pt-10 md:grid-cols-2">
-            <ProjectNav label={t("Previous")} project={{ ...previous, shortDescription: t(previous.shortDescription) }} />
-            <ProjectNav label={t("Next")} project={{ ...next, shortDescription: t(next.shortDescription) }} align="right" />
+            <ProjectNav label={t("Previous")} project={previous} />
+            <ProjectNav label={t("Next")} project={next} align="right" />
           </div>
         </div>
       </section>

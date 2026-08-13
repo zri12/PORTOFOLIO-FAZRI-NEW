@@ -3,6 +3,7 @@ import { ensureArticleTranslations, ensureProjectTranslations } from "../lib/loc
 import { slugify, uid, writeJson } from "../lib/storage";
 import { isSupabaseEnabled } from "../lib/supabase/client";
 import { supabasePortfolioRepository } from "./supabasePortfolioRepository";
+import { findMediaReferences } from "../lib/mediaReferences";
 import type {
   Article,
   Certificate,
@@ -602,9 +603,14 @@ export const portfolioRepository = {
     syncToBackend(() => supabasePortfolioRepository.upsertMedia(media));
     return media;
   },
-  deleteMedia(id: string) {
+  async deleteMedia(id: string) {
+    const current = getData();
+    const media = current.media.find((item) => item.id === id);
+    if (!media) return;
+    const references = findMediaReferences(current, media);
+    if (references.length) throw new Error(`This media is still used by: ${references.join(", ")}.`);
+    await supabasePortfolioRepository.deleteMedia(id);
     updateData((data) => { data.media = data.media.filter((item) => item.id !== id); });
-    syncToBackend(() => supabasePortfolioRepository.deleteMedia(id));
   },
   getSettings: () => getData().settings,
   updateSettings(settings: SiteSettings) {

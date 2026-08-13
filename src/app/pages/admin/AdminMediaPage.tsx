@@ -66,7 +66,7 @@ export default function AdminMediaPage() {
           ))}
         </div>
       )}
-      <ConfirmDialog open={Boolean(deleteId)} title="Delete media item?" description={`"${target?.name || "This media item"}" will be removed from the media library. This action cannot be undone.`} confirmLabel="Delete media" onCancel={() => setDeleteId(null)} onConfirm={() => { if (deleteId) portfolioRepository.deleteMedia(deleteId); setDeleteId(null); }} />
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete media item?" description={`"${target?.name || "This media item"}" will be deleted only when it is not referenced by portfolio content.`} confirmLabel="Delete media" onCancel={() => setDeleteId(null)} onConfirm={() => { if (!deleteId) return; void portfolioRepository.deleteMedia(deleteId).then(() => setDeleteId(null)).catch((deleteError) => setError(deleteError instanceof Error ? deleteError.message : "Media could not be deleted.")); }} />
     </div>
   );
 }

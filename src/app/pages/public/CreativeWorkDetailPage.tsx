@@ -5,16 +5,16 @@ import { SectionHeading } from "../../components/common/SectionHeading";
 import { useLanguage } from "../../context/LanguageContext";
 import { useDocumentMeta } from "../../hooks/useDocumentMeta";
 import { usePortfolioData } from "../../hooks/usePortfolioData";
-import { localizeCreativeWork } from "../../lib/localizedContent";
+import { hasCreativeWorkLanguage, localizeCreativeWork } from "../../lib/localizedContent";
 
 export default function CreativeWorkDetailPage() {
   const { slug = "" } = useParams();
   const { creativeWorks } = usePortfolioData();
   const { t, language } = useLanguage();
-  const rawWork = creativeWorks.find((item) => item.slug === slug);
+  const rawWork = creativeWorks.find((item) => item.slug === slug && item.status === "published" && hasCreativeWorkLanguage(item, language));
   const work = rawWork ? localizeCreativeWork(rawWork, language) : undefined;
 
-  useDocumentMeta({ title: work ? `${work.title} - Creative Work` : "Creative Work Not Found", description: work?.description || "Creative work detail page." });
+  useDocumentMeta({ title: work ? `${work.title} - Creative Work` : "Creative Work Not Found", description: work?.description || "Creative work detail page.", canonicalPath: work ? `/creative-works/${work.slug}` : "/creative-works", image: work?.cover, language });
 
   if (!work) {
     return <main className="min-h-screen bg-[var(--color-bg-primary)] px-6 pt-32"><div className="mx-auto max-w-4xl"><EmptyState title={t("Creative work not found")} description={t("The selected work is unavailable.")} /></div></main>;
@@ -27,20 +27,20 @@ export default function CreativeWorkDetailPage() {
           <Link to="/creative-works" className="mb-10 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"><ArrowLeft size={16} /> {t("Back to Creative Works")}</Link>
           <div className="grid gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{t(work.category)} / {work.year}</p>
-              <h1 className="mt-5 break-words font-manrope text-4xl font-extrabold tracking-tight sm:text-5xl md:text-7xl">{t(work.title)}</h1>
-              <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)]">{t(work.description)}</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.18em] text-[var(--color-accent-main)]">{work.category} / {work.year}</p>
+              <h1 className="mt-5 break-words font-manrope text-4xl font-extrabold tracking-tight sm:text-5xl md:text-7xl">{work.title}</h1>
+              <p className="mt-6 text-lg leading-8 text-[var(--color-text-secondary)]">{work.description}</p>
               <div className="mt-8 flex flex-wrap gap-2">{work.tools.map((tool) => <span key={tool} className="border border-[var(--color-border)] px-3 py-2 text-sm">{tool}</span>)}</div>
             </div>
-            <img src={work.cover} alt={t(work.title)} className="h-auto w-full border border-[var(--color-border)] object-contain" />
+            <img src={work.cover} alt={work.title} className="h-auto w-full border border-[var(--color-border)] object-contain" />
           </div>
         </div>
       </section>
       <section className="border-y border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-5 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow={t("Creative brief")} title={t("Intent, process, and output.")} description={t(work.brief)} />
+          <SectionHeading eyebrow={t("Creative brief")} title={t("Intent, process, and output.")} description={work.brief} />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-                {work.gallery.map((image, index) => <img key={image} src={image} alt={`${t(work.title)} ${t("gallery")} ${index + 1}`} className="h-auto w-full border border-[var(--color-border)] object-contain" loading="lazy" />)}
+                {work.gallery.map((image, index) => <img key={image} src={image} alt={`${work.title} ${t("gallery")} ${index + 1}`} className="h-auto w-full border border-[var(--color-border)] object-contain" loading="lazy" />)}
           </div>
           {work.beforeImage && work.afterImage && (
             <div className="mt-14 grid gap-6 md:grid-cols-2">

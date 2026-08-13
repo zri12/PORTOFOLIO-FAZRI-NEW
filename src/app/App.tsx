@@ -14,6 +14,7 @@ import { SpiderModeEffects } from "./components/portfolio/SpiderModeEffects";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeModeProvider } from "./context/ThemeModeContext";
+import { usePortfolioData } from "./hooks/usePortfolioData";
 
 const AdminCertificatesPage = lazy(() => import("./pages/admin/AdminCertificatesPage"));
 const AdminArticlesPage = lazy(() => import("./pages/admin/AdminArticlesPage"));
@@ -52,13 +53,14 @@ function RouteFallback() {
 
 function PublicLayout() {
   const location = useLocation();
+  const { settings } = usePortfolioData();
   const [publicReady, setPublicReady] = useState(() => Boolean((window as Window & { __fazri_portfolio_boot_splash_seen__?: boolean }).__fazri_portfolio_boot_splash_seen__));
 
   return (
     <div className="flex min-h-screen flex-col font-inter selection:bg-[var(--color-accent-main)] selection:text-white">
-      <LoadingScreen onComplete={() => setPublicReady(true)} />
+      <LoadingScreen enabled={settings.splashEnabled} threeEnabled={settings.threeEnabled} onComplete={() => setPublicReady(true)} />
       {publicReady && (
-        <SmoothScrollProvider>
+        <SmoothScrollProvider enabled={settings.smoothScroll}>
           <div className="flex min-h-screen flex-col">
             <Navbar />
             <SpiderModeEffects />

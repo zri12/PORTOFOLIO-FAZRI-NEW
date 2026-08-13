@@ -3,6 +3,7 @@ import { errorResponse, jsonResponse } from "../_shared/response.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createAdminClient } from "../_shared/supabaseAdmin.ts";
 import { validateContact } from "../_shared/validation.ts";
+import { requirePublicFeature } from "../_shared/siteSettings.ts";
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -11,9 +12,10 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createAdminClient();
+    await requirePublicFeature(supabase, "contact_enabled");
     const body = await req.json();
     const payload = validateContact(body);
-    const identifier = req.headers.get("x-forwarded-for") || payload.email;
+    const identifier = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || payload.whatsapp || payload.email;
     await checkRateLimit(supabase, identifier, "submit-contact", 5, 3600);
     const { error } = await supabase.from("contact_messages").insert({
       name: payload.name,
@@ -28,6 +30,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
     return jsonResponse({ ok: true });
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Contact submission failed.", 400);
+    const message = error instanceof Error ? error.message : "Contact submission failed.";
+    return errorResponse(message, message === "This feature is currently disabled." ? 403 : 400);
   }
 });

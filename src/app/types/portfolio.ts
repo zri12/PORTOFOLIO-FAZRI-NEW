@@ -1,8 +1,16 @@
 export type PublishStatus = "draft" | "published" | "archived";
 export type LevelLabel = "Main Stack" | "Frequently Used" | "Familiar" | "Currently Learning";
 export type ContentLanguage = "en" | "id";
+export interface TranslationMetadata {
+  sourceLanguage?: ContentLanguage;
+  translationStatus?: "pending" | "processing" | "ready" | "failed";
+  translationSourceHash?: string;
+  translationVersion?: number;
+  translationUpdatedAt?: string;
+  translationError?: string;
+}
 
-export interface Profile {
+export interface Profile extends TranslationMetadata {
   fullName: string;
   displayName: string;
   title: string;
@@ -24,7 +32,10 @@ export interface Profile {
   logoUrl: string;
   faviconUrl: string;
   aboutImageUrl: string;
+  translations?: Partial<Record<ContentLanguage, ProfileTranslation>>;
 }
+
+export type ProfileTranslation = Pick<Profile, "title" | "greeting" | "headline" | "description" | "biography" | "aboutContent" | "availability">;
 
 export interface ProjectTranslation {
   title: string;
@@ -51,7 +62,7 @@ export interface ProjectTranslation {
   result: string;
 }
 
-export interface Project extends ProjectTranslation {
+export interface Project extends ProjectTranslation, TranslationMetadata {
   id: string;
   slug: string;
   title: string;
@@ -92,7 +103,11 @@ export interface Project extends ProjectTranslation {
   translations?: Partial<Record<ContentLanguage, ProjectTranslation>>;
 }
 
-export interface Technology {
+export interface TechnologyTranslation {
+  description: string;
+}
+
+export interface Technology extends TranslationMetadata {
   id: string;
   name: string;
   iconKey: string;
@@ -103,6 +118,7 @@ export interface Technology {
   featured: boolean;
   active: boolean;
   displayOrder: number;
+  translations?: Partial<Record<ContentLanguage, TechnologyTranslation>>;
 }
 
 export interface CreativeWorkTranslation {
@@ -112,7 +128,7 @@ export interface CreativeWorkTranslation {
   brief: string;
 }
 
-export interface CreativeWork extends CreativeWorkTranslation {
+export interface CreativeWork extends CreativeWorkTranslation, TranslationMetadata {
   id: string;
   slug: string;
   title: string;
@@ -142,7 +158,7 @@ export interface ExperienceTranslation {
   responsibilities: string[];
 }
 
-export interface Experience extends ExperienceTranslation {
+export interface Experience extends ExperienceTranslation, TranslationMetadata {
   id: string;
   role: string;
   organization: string;
@@ -163,7 +179,7 @@ export interface CertificateTranslation {
   issuer: string;
 }
 
-export interface Certificate extends CertificateTranslation {
+export interface Certificate extends CertificateTranslation, TranslationMetadata {
   id: string;
   title: string;
   issuer: string;
@@ -197,7 +213,7 @@ export interface ArticleTranslation {
   blocks: ArticleBlock[];
 }
 
-export interface Article extends ArticleTranslation {
+export interface Article extends ArticleTranslation, TranslationMetadata {
   id: string;
   slug: string;
   title: string;
@@ -258,7 +274,9 @@ export interface MediaItem {
   createdAt: string;
 }
 
-export interface SiteSettings {
+export type SiteSettingsTranslation = Pick<SiteSettings, "websiteName" | "description" | "copyright" | "seoTitle" | "seoDescription" | "keywords">;
+
+export interface SiteSettings extends TranslationMetadata {
   websiteName: string;
   description: string;
   language: string;
@@ -275,6 +293,7 @@ export interface SiteSettings {
   siteUrl: string;
   seoImage: string;
   googleSiteVerification: string;
+  translations?: Partial<Record<ContentLanguage, SiteSettingsTranslation>>;
 }
 
 export interface PortfolioData {
